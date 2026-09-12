@@ -368,11 +368,11 @@ function finaliserPremiereConfiguration() {
 function routinesDemarrage(prenom, silhouette) {
   const enRobe = silhouette === "robe";
   const dessous = enRobe
-    ? { id: "culotte",  texte: "Mets ta culotte.",  emoji: "🩲", zone: "zone-bassin", calque: "calque-culotte" }
-    : { id: "calecon",  texte: "Mets ton caleçon.", emoji: "🩲", zone: "zone-bassin", calque: "calque-calecon" };
+    ? { id: "culotte",  texte: "Mets ta culotte.",  emoji: "🩲", zone: "zone-corps", calque: "calque-culotte" }
+    : { id: "calecon",  texte: "Mets ton caleçon.", emoji: "🩲", zone: "zone-corps", calque: "calque-calecon" };
   const bas = enRobe
-    ? { id: "robe",     texte: "Mets ta robe.",     emoji: "👗", zone: "zone-jambes", calque: "calque-robe" }
-    : { id: "pantalon", texte: "Mets ton pantalon.", emoji: "👖", zone: "zone-jambes", calque: "calque-pantalon" };
+    ? { id: "robe",     texte: "Mets ta robe.",     emoji: "👗", zone: "zone-corps", calque: "calque-robe" }
+    : { id: "pantalon", texte: "Mets ton pantalon.", emoji: "👖", zone: "zone-corps", calque: "calque-pantalon" };
   const calquesHabits = enRobe
     ? ["calque-haut", "calque-robe", "calque-chaussettes", "calque-chaussures", "calque-manteau"]
     : ["calque-haut", "calque-pantalon", "calque-chaussettes", "calque-chaussures", "calque-manteau"];
@@ -385,9 +385,9 @@ function routinesDemarrage(prenom, silhouette) {
       felicitation: "Bravo " + prenom + ", tu t'es habillé·e tout seul·e !",
       taches: [
         dessous,
-        { id: "haut",        texte: "Mets ton haut.",        emoji: "👚", zone: "zone-torse",  calque: "calque-haut" },
+        { id: "haut",        texte: "Mets ton haut.",        emoji: "👚", zone: "zone-corps",  calque: "calque-haut" },
         bas,
-        { id: "chaussettes", texte: "Mets tes chaussettes.", emoji: "🧦", zone: "zone-pieds",  calque: "calque-chaussettes" },
+        { id: "chaussettes", texte: "Mets tes chaussettes.", emoji: "🧦", zone: "zone-corps",  calque: "calque-chaussettes" },
       ],
     },
     {
@@ -401,7 +401,7 @@ function routinesDemarrage(prenom, silhouette) {
       // tâche "Mets ton manteau" (calque "calque-manteau") ou "Prends ton
       // sac" (badge "dos") depuis l'espace parent (modifier la routine).
       taches: [
-        { id: "chaussures", texte: "Mets tes chaussures.", emoji: "👟", zone: "zone-pieds", calque: "calque-chaussures" },
+        { id: "chaussures", texte: "Mets tes chaussures.", emoji: "👟", zone: "zone-corps", calque: "calque-chaussures" },
       ],
     },
     {
@@ -449,7 +449,7 @@ function routinesDemarrage(prenom, silhouette) {
         // (image + texte) en tapant la ligne, plutôt qu'un glisser-déposer
         // — pas de geste à faire, juste un moment calme sur le canapé.
         { id: "histoire", texte: "On lit l'histoire.",                      emoji: "📖", miniJeu: "histoire" },
-        { id: "coucher",  texte: "Je vais me coucher.",                     emoji: "😴", zone: "zone-pieds" },
+        { id: "coucher",  texte: "Je vais me coucher.",                     emoji: "😴", zone: "zone-corps" },
       ],
     },
   ];
@@ -710,6 +710,12 @@ function chargerEtat() {
   if (etat && etat.jour && etat.jour !== cleJour()) {
     archiverJournee(etat);
     etat = null;
+    // Nouveau jour : les minuteurs d'hier n'ont plus de sens (cf. la
+    // section "Minuteur générique" plus bas) — sans ça, un `tacheId`/
+    // `routineId` qui coïncide avec une tâche d'aujourd'hui (cas courant,
+    // mêmes ids d'un jour à l'autre) empêcherait à tort son minuteur de
+    // redémarrer.
+    sauverMinuteursActifs([]);
   }
 
   etat = etatRepare(etat) || etatParDefaut(consommerPlanningFuturPourAujourdhui());
@@ -897,6 +903,28 @@ function jouerSon() {
       gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.3);
       osc.connect(gain).connect(ctx.destination);
       osc.start(t0); osc.stop(t0 + 0.3);
+    });
+  } catch (e) {}
+}
+
+// Signal d'attention (fin de minuteur non résolue, cf. tickMinuteurGlobal()/
+// entrerBlocageMinuteur()) — volontairement distinct du carillon de succès
+// ci-dessus (deux notes montantes en sinusoïde) : timbre carré, note grave,
+// répétée deux fois, pour ne jamais se confondre avec "bravo".
+function jouerAlerte() {
+  try {
+    if (!audioCtxPartage) audioCtxPartage = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtxPartage;
+    if (ctx.state === "suspended") ctx.resume();
+    [0, 1].forEach((tour) => {
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = "square"; osc.frequency.value = 392;
+      const t0 = ctx.currentTime + tour * 0.55;
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(0.2, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.35);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t0); osc.stop(t0 + 0.4);
     });
   } catch (e) {}
 }
@@ -1833,12 +1861,18 @@ function synchroniserRoutineEcran() {
     const enCours = prochaine && t.id === prochaine.id;
     const noeud = document.createElement("div");
     noeud.className = "noeud" + (fait ? " fait" : "") + (enCours ? " en-cours" : "") + (enCours && t.miniJeu ? " noeud-tapable" : "");
-    const glisserIci = enCours && !t.avatarGlissable && !t.miniJeu && !t.pileGlissable;
+    // `!!t.zone` : une tâche sans zone (ex. "Fais tes devoirs", cf.
+    // synchroniserMinuteurWidget() plus bas) n'a rien à glisser, même
+    // sans être avatarGlissable/miniJeu/pileGlissable pour autant.
+    const glisserIci = enCours && !!t.zone && !t.avatarGlissable && !t.miniJeu && !t.pileGlissable;
     const classeIcone = "pastille-mini" + (glisserIci ? " pastille-glissable" : "");
     noeud.innerHTML = `<div class="${classeIcone}">${t.emoji}</div><div class="texte-etape">${t.texte}</div><div class="coche-mini">✓</div>`;
     if (glisserIci) rendreGlissable(noeud.querySelector(".pastille-glissable"), t);
     // `miniJeu` (ex. "dents") : ouvre un écran dédié en tapant la ligne,
-    // plutôt qu'en y glissant l'icône (cf. ouvrirMiniJeu()).
+    // plutôt qu'en y glissant l'icône (cf. ouvrirMiniJeu()). Un minuteur
+    // (`t.minuteurDuree`) n'a pas ce traitement : il se règle/se termine
+    // depuis le widget sous la consigne, jamais en tapant la ligne
+    // (cf. synchroniserMinuteurWidget()).
     if (enCours && t.miniJeu) noeud.onclick = () => ouvrirMiniJeu(t);
     liste.appendChild(noeud);
   });
@@ -1851,6 +1885,17 @@ function synchroniserRoutineEcran() {
   }
   [...barre.children].forEach((seg, i) => seg.classList.toggle("fait", etatR.fait.includes(routine.taches[i].id)));
 
+  // Minuteur global de routine : n'a de sens que tant qu'il reste une
+  // tâche à faire — une fois la routine finie (`!prochaine`), on l'efface
+  // plutôt que de le laisser tourner pour rien (cf. finDeRoutine() juste
+  // en dessous, qui prend le relais).
+  if (prochaine) synchroniserMinuteurRoutineWidget(routine);
+  else {
+    retirerUnMinuteur("routine", routine.id, null);
+    document.getElementById("minuteur-routine-widget").classList.add("hidden");
+  }
+  synchroniserMinuteurWidget(prochaine, routine);
+
   if (!prochaine) setTimeout(() => finDeRoutine(), 500);
 }
 
@@ -1861,6 +1906,14 @@ function marquerTache(id, valeur) {
   if (valeur && pos === -1) etatR.fait.push(id);
   if (!valeur && pos !== -1) etatR.fait.splice(pos, 1);
   sauverEtat(etat);
+  // Le minuteur de cette tâche (s'il y en avait un) devient sans objet
+  // dès qu'elle est faite — que ce soit via le glisser-déposer normal ou
+  // "J'ai fini" (cf. synchroniserMinuteurWidget()), les deux passent par
+  // ici : plus besoin de vérifier/alerter dessus. `routineId` ET
+  // `tacheId` (pas `tacheId` seul, cf. assurerMinuteurPourTache()) :
+  // "t1" d'une routine ne doit pas nettoyer le minuteur de "t1" d'une
+  // autre routine.
+  if (valeur) retirerUnMinuteur("tache", routineActuelleId, id);
   synchroniserRoutineEcran();
   if (valeur) {
     jouerSon();
@@ -1932,7 +1985,7 @@ function rendreGlissable(el, etape) {
 // listés dans `etape.calque`) tirés hors de la scène — succès si on les
 // lâche sous le bas de #scene (pas de zone précise à viser, cible
 // volontairement large et sans ambiguïté avec la tâche suivante "Range
-// tes vêtements", qui a sa propre zone-dos).
+// tes vêtements", qui cible "zone-panier").
 //
 // Retour de terrain (session précédente) : cloner tout #avatar-wrap et
 // le cacher pendant le geste faisait disparaître l'enfant entier de la
@@ -2199,6 +2252,333 @@ function finHistoire() {
   histoireEtapeRoutine = null;
   marquerTache(etape.id, true);
   afficherEcran("screen-routine");
+}
+
+// ---------------------------------------------------------------------
+// Minuteur générique — deux portées possibles : "tache" (`tache.minuteurDuree`,
+// widget sous la consigne courante) ou "routine" (`routine.dureeGlobale`,
+// widget en haut de l'écran, cf. synchroniserMinuteurRoutineWidget() plus
+// bas) — même mécanique pour les deux, juste des tailles/emplacements de
+// widget différents. Affiché SUR l'écran de routine, jamais un écran
+// séparé. Un minuteur de tâche est indépendant de `zone` : une tâche à
+// glisser-déposer (ex. "Mets ton caleçon") garde son geste normal, le
+// widget est juste un repère en plus ; une tâche SANS zone (ex. "Fais tes
+// devoirs") se valide via le bouton "J'ai fini" du même widget, faute de
+// cible à glisser (cf. synchroniserMinuteurWidget()).
+//
+// Plusieurs minuteurs peuvent tourner EN MÊME TEMPS (cle("minuteurs_actifs"),
+// un tableau plutôt qu'un seul objet) : le minuteur global d'une routine
+// et celui d'une de ses tâches, ou même les minuteurs de deux routines
+// différentes si l'enfant a quitté l'une sans finir sa tâche chronométrée
+// avant d'en commencer une autre — chacun identifié par
+// (portee, routineId, tacheId), cf. trouverMinuteur()/sauverUnMinuteur().
+//
+// Le minuteur continue de tourner même si l'enfant quitte l'écran de la
+// routine (menu, autre routine...) : vérifié par tickMinuteurGlobal(),
+// lancé au chargement de la page (tout en bas du fichier) et jamais
+// arrêté, indépendamment de l'écran affiché — c'est ce qui permet à la
+// vérification/l'alerte d'interrompre l'enfant même s'il n'est pas
+// devant la tablette au moment où le temps s'écoule (cf. "Fais tes
+// devoirs").
+//
+// État persisté (horodatage de fin réel `finPrevue`) plutôt qu'un simple
+// compte à rebours en mémoire — même principe que cle("reveil") : survit
+// à une mise en veille/fermeture de l'app, contrairement à un nombre de
+// secondes qui repartirait de zéro n'importe comment à la réouverture.
+//
+// Cycle si `alertes` est actif (sinon le minuteur s'arrête simplement à
+// 00:00 sans rien déclencher d'autre, cf. tickMinuteurGlobal()) :
+// decompte (durée réglée) -> temps écoulé, tâche/routine pas finie ->
+// verification1 ("As-tu besoin d'aide ?", plein écran) -> "Non" ->
+// decompte2 (durée réduite, widget à nouveau) -> temps écoulé -> bloque
+// directement (pas de 3e question ; "Oui" à verification1 -> bloque
+// aussi). "🆘 Besoin d'aide" (dans le widget, toujours visible pendant un
+// décompte même si `alertes` est désactivé : l'enfant peut demander de
+// l'aide même sur un minuteur sans escalade automatique) -> bloque
+// directement, à tout moment. Une fois bloque résolu par un parent (code
+// entré), l'aide vient d'être donnée : le cycle repart de `decompte`
+// avec la durée d'origine, plutôt que de laisser le minuteur inerte (cf.
+// debloquerMinuteurAvecCode()) — une nouvelle chance de finir dans les
+// temps, avec le même filet en cas de blocage répété. `minuteurEnDialogue`
+// retient LEQUEL des minuteurs actifs est concerné pendant qu'un écran de
+// vérification/blocage est affiché (un seul à la fois peut interrompre
+// l'enfant, cf. tickMinuteurGlobal()).
+function chargerMinuteursActifs() {
+  try { return JSON.parse(localStorage.getItem(cle("minuteurs_actifs")) || "[]"); } catch (e) { return []; }
+}
+function sauverMinuteursActifs(liste) {
+  try { localStorage.setItem(cle("minuteurs_actifs"), JSON.stringify(liste)); } catch (e) {}
+}
+function trouverMinuteur(portee, routineId, tacheId) {
+  return chargerMinuteursActifs().find(m => m.portee === portee && m.routineId === routineId && m.tacheId === tacheId) || null;
+}
+// Remplace l'entrée existante (même portee/routineId/tacheId) ou l'ajoute.
+function sauverUnMinuteur(minuteur) {
+  const liste = chargerMinuteursActifs();
+  const idx = liste.findIndex(m => m.portee === minuteur.portee && m.routineId === minuteur.routineId && m.tacheId === minuteur.tacheId);
+  if (idx === -1) liste.push(minuteur); else liste[idx] = minuteur;
+  sauverMinuteursActifs(liste);
+}
+function retirerUnMinuteur(portee, routineId, tacheId) {
+  sauverMinuteursActifs(chargerMinuteursActifs().filter(m => !(m.portee === portee && m.routineId === routineId && m.tacheId === tacheId)));
+}
+let minuteurEnDialogue = null;
+
+// Démarre le minuteur de `etape` s'il n'existe pas encore, ou renvoie
+// celui déjà en cours (decompte/decompte2/verification1/bloque) sans y
+// toucher — appelée à CHAQUE rendu de l'écran de routine tant que la
+// tâche courante a un minuteur (cf. synchroniserMinuteurWidget()), donc
+// volontairement idempotente : ne doit jamais réinitialiser un minuteur
+// déjà en cours pour la même tâche. `routineId` ET `tacheId` (pas
+// `tacheId` seul) : les tâches créées depuis ce formulaire partagent le
+// même id générique "t1".."t5" d'une routine à l'autre (cf.
+// creerNouvelleRoutine()), donc un `tacheId` seul confondrait la tâche
+// "t1" d'une routine avec la tâche "t1" d'une autre.
+// `routine` (en plus de `etape`) seulement pour lire son `styleMinuteur` —
+// posé sur la routine entière plutôt que par tâche (cf. dessinerMinuteur()
+// plus bas) : pas d'écran de réglages sensoriels par enfant aujourd'hui,
+// mais deux enfants peuvent déjà avoir des styles différents puisqu'une
+// routine appartient à un seul profil.
+function assurerMinuteurPourTache(etape, routine) {
+  const existant = trouverMinuteur("tache", routineActuelleId, etape.id);
+  if (existant) return existant;
+  const minuteur = {
+    portee: "tache",
+    routineId: routineActuelleId,
+    tacheId: etape.id,
+    etape: "decompte",
+    alertes: etape.minuteurAlertes !== false,
+    style: (routine && routine.styleMinuteur) || "jauge",
+    dureeEtape: etape.minuteurDuree,
+    finPrevue: new Date(dateActuelle().getTime() + etape.minuteurDuree * 1000).toISOString(),
+  };
+  sauverUnMinuteur(minuteur);
+  return minuteur;
+}
+
+// Même principe qu'assurerMinuteurPourTache(), pour le minuteur global
+// d'une routine entière (`routine.dureeGlobale`) — `tacheId: null` le
+// distingue de tous les minuteurs de tâche de cette même routine.
+function assurerMinuteurPourRoutine(routine) {
+  if (!routine.dureeGlobale) return null;
+  const existant = trouverMinuteur("routine", routine.id, null);
+  if (existant) return existant;
+  const minuteur = {
+    portee: "routine",
+    routineId: routine.id,
+    tacheId: null,
+    etape: "decompte",
+    alertes: routine.alertesGlobales !== false,
+    style: routine.styleMinuteur || "jauge",
+    dureeEtape: routine.dureeGlobale,
+    finPrevue: new Date(dateActuelle().getTime() + routine.dureeGlobale * 1000).toISOString(),
+  };
+  sauverUnMinuteur(minuteur);
+  return minuteur;
+}
+
+// Affiche/masque le widget de tâche (#minuteur-widget, dans screen-routine)
+// selon la tâche courante — appelée depuis synchroniserRoutineEcran() à
+// chaque rendu. `btn-minuteur-widget-fini` n'apparaît que pour une tâche
+// SANS zone (rien d'autre pour la valider) ; la jauge/chrono/SOS
+// n'apparaissent que pendant un vrai décompte (pas verification1/bloque,
+// gérés par leurs propres écrans plein écran).
+function synchroniserMinuteurWidget(prochaine, routine) {
+  const widget = document.getElementById("minuteur-widget");
+  if (!prochaine || !prochaine.minuteurDuree) { widget.classList.add("hidden"); return; }
+  const minuteur = assurerMinuteurPourTache(prochaine, routine);
+  widget.classList.remove("hidden");
+  const enDecompte = minuteur.etape === "decompte" || minuteur.etape === "decompte2";
+  document.getElementById("minuteur-widget-decompte").classList.toggle("hidden", !enDecompte);
+  if (enDecompte) dessinerMinuteurWidget(minuteur);
+  const btnFini = document.getElementById("btn-minuteur-widget-fini");
+  btnFini.classList.toggle("hidden", !!prochaine.zone);
+  btnFini.onclick = () => marquerTache(prochaine.id, true);
+}
+
+// Même principe que synchroniserMinuteurWidget() ci-dessus, pour le
+// widget global (#minuteur-routine-widget, en haut de screen-routine,
+// cf. index.html) — pas de bouton "J'ai fini" ici : une routine se
+// termine quand toutes ses tâches sont faites (cf. synchroniserRoutineEcran()),
+// jamais par un geste dédié au minuteur lui-même.
+function synchroniserMinuteurRoutineWidget(routine) {
+  const widget = document.getElementById("minuteur-routine-widget");
+  if (!routine.dureeGlobale) { widget.classList.add("hidden"); return; }
+  const minuteur = assurerMinuteurPourRoutine(routine);
+  const enDecompte = minuteur.etape === "decompte" || minuteur.etape === "decompte2";
+  widget.classList.toggle("hidden", !enDecompte);
+  if (enDecompte) dessinerMinuteurWidget(minuteur);
+}
+
+// Rendu (jauge + chrono) — appelé à la fois par synchroniserMinuteurWidget()/
+// synchroniserMinuteurRoutineWidget() (dès qu'un décompte est affiché) et
+// par tickMinuteurGlobal() (à chaque tick tant que ce décompte tourne).
+// `minuteur.portee` choisit le widget (tâche ou routine) à mettre à jour ;
+// sans effet visible si ce widget est masqué (l'élément existe quand même
+// dans le DOM), donc pas besoin de vérifier lequel est affiché avant.
+function dessinerMinuteurWidget(minuteur) {
+  const restant = Math.max(0, (new Date(minuteur.finPrevue) - dateActuelle()) / 1000);
+  const pourcentage = minuteur.dureeEtape > 0 ? Math.max(0, Math.min(1, restant / minuteur.dureeEtape)) : 0;
+  const prefixe = minuteur.portee === "routine" ? "minuteur-routine" : "minuteur-widget";
+  dessinerMinuteur(prefixe, pourcentage, minuteur.style || "jauge");
+  document.getElementById(prefixe + "-chrono").textContent = formatChrono(restant);
+}
+
+// Fonction de rendu — deux styles au choix (routine.styleMinuteur, cf.
+// creerNouvelleRoutine()) : "jauge" (barre qui se vide) ou "cadran"
+// (disque qui rétrécit en rotation horaire, façon Time Timer). Les deux
+// éléments existent toujours dans le DOM pour un widget donné (cf.
+// index.html) ; seul celui du style actif est démasqué, plutôt que d'en
+// injecter/retirer un dynamiquement à chaque tick. `prefixe` (pas un
+// élément déjà résolu) car "cadran" et "jauge" ciblent des éléments
+// différents — aux appelants de ne connaître que "quel widget, quel
+// style, quelle fraction restante", jamais le détail de chaque style.
+function dessinerMinuteur(prefixe, pourcentageRestant, style) {
+  const enCadran = style === "cadran";
+  document.getElementById(prefixe + "-jauge").classList.toggle("hidden", enCadran);
+  document.getElementById(prefixe + "-cadran").classList.toggle("hidden", !enCadran);
+  if (enCadran) {
+    document.getElementById(prefixe + "-cadran").style.setProperty("--pct", pourcentageRestant);
+  } else {
+    document.getElementById(prefixe + "-remplissage").style.width = (pourcentageRestant * 100) + "%";
+  }
+}
+
+// Vérifie l'état de TOUS les minuteurs actifs, indépendamment de l'écran
+// affiché — c'est ce qui permet à la vérification/l'alerte d'apparaître
+// même si l'enfant est revenu au menu (ou ailleurs) entre-temps, pas
+// seulement s'il est resté sur l'écran de la routine. Lancé en continu
+// depuis le tout début du chargement de la page (cf. tout en bas du
+// fichier), pas seulement pendant une routine — sans effet la plupart du
+// temps (pas de minuteur actif), coût négligeable (une lecture localStorage).
+function tickMinuteurGlobal() {
+  if (!profilActifId()) return; // pas encore de profil configuré sur cet appareil (cf. cle())
+  const liste = chargerMinuteursActifs();
+  if (!liste.length) return;
+
+  // Rendu continu de tous les décomptes en cours, qu'ils soient affichés
+  // ou non en ce moment (sans effet si le widget correspondant est
+  // masqué) — avant toute transition, pour que le dernier chiffre visible
+  // avant une éventuelle interruption soit à jour.
+  liste.forEach(m => { if (m.etape === "decompte" || m.etape === "decompte2") dessinerMinuteurWidget(m); });
+
+  // Un seul écran de vérification/blocage à la fois : si l'un est déjà
+  // affiché (pour un autre minuteur, coïncidence rare), on attend qu'il
+  // se résolve avant d'en déclencher un second.
+  const ecranActifId = document.querySelector(".screen.active").id;
+  if (ecranActifId === "screen-minuteur-verification" || ecranActifId === "screen-minuteur-bloque") return;
+
+  for (const m of liste) {
+    if (m.etape !== "decompte" && m.etape !== "decompte2") continue;
+    const restant = (new Date(m.finPrevue) - dateActuelle()) / 1000;
+    if (restant > 0) continue;
+
+    if (!m.alertes) { retirerUnMinuteur(m.portee, m.routineId, m.tacheId); continue; }
+
+    if (m.etape === "decompte") {
+      m.etape = "verification1";
+      sauverUnMinuteur(m);
+      minuteurEnDialogue = { portee: m.portee, routineId: m.routineId, tacheId: m.tacheId };
+      jouerAlerte();
+      if (navigator.vibrate) navigator.vibrate([100, 80, 100, 80, 100]);
+      afficherEcran("screen-minuteur-verification");
+      dire("As-tu besoin d'aide pour faire ta routine ou ta mission ?");
+    } else {
+      entrerBlocageMinuteur(m);
+    }
+    return; // un seul déclenchement par tick, cf. commentaire plus haut
+  }
+}
+
+function repondreVerificationMinuteur(besoinAide) {
+  if (!minuteurEnDialogue) return;
+  const minuteur = trouverMinuteur(minuteurEnDialogue.portee, minuteurEnDialogue.routineId, minuteurEnDialogue.tacheId);
+  if (!minuteur) { minuteurEnDialogue = null; construireMenu(); return; }
+  if (besoinAide) { entrerBlocageMinuteur(minuteur); return; }
+  // "Non, ça va" : nouveau décompte, plus court (borné à 60s minimum pour
+  // rester utile même sur un très petit minuteur d'origine) — pas de 3e
+  // question si celui-ci arrive aussi à zéro, cf. tickMinuteurGlobal().
+  // Retour sur l'écran de la routine : le(s) widget(s) reprennent le
+  // décompte (cf. synchroniserMinuteurWidget()/synchroniserMinuteurRoutineWidget(),
+  // assurerMinuteurPourTache()/assurerMinuteurPourRoutine()).
+  minuteur.etape = "decompte2";
+  minuteur.dureeEtape = Math.max(60, Math.round(minuteur.dureeEtape / 3));
+  minuteur.finPrevue = new Date(dateActuelle().getTime() + minuteur.dureeEtape * 1000).toISOString();
+  sauverUnMinuteur(minuteur);
+  minuteurEnDialogue = null;
+  demarrerRoutine(minuteur.routineId);
+}
+
+// "🆘 Besoin d'aide" (dans l'un des deux widgets, cf.
+// demanderAideMinuteurTache()/demanderAideMinuteurRoutine()) ou 2e
+// décompte écoulé sans réponse (cf. tickMinuteurGlobal()) : passe direct
+// par-dessus une 3e question, sur l'idée que si ça bloque encore après
+// une relance, un parent doit s'en mêler plutôt que d'insister.
+function entrerBlocageMinuteur(minuteur) {
+  minuteur.etape = "bloque";
+  sauverUnMinuteur(minuteur);
+  minuteurEnDialogue = { portee: minuteur.portee, routineId: minuteur.routineId, tacheId: minuteur.tacheId };
+  jouerAlerte();
+  if (navigator.vibrate) navigator.vibrate([150, 100, 150, 100, 150, 100, 150]);
+  afficherEcran("screen-minuteur-bloque");
+  dire("Un parent est nécessaire.");
+}
+
+// Boutons SOS des deux widgets — chacun cherche SON minuteur (celui de la
+// tâche courante, ou celui de la routine active) plutôt que de supposer
+// "le seul actif" : plusieurs peuvent tourner en même temps (cf. tête de
+// section).
+function demanderAideMinuteurTache() {
+  const routine = routineParId(routineActuelleId);
+  if (!routine) return;
+  const etat = chargerEtat();
+  const prochaine = routine.taches.find(t => !etat.routines[routine.id].fait.includes(t.id));
+  const minuteur = prochaine && trouverMinuteur("tache", routineActuelleId, prochaine.id);
+  if (minuteur) entrerBlocageMinuteur(minuteur);
+}
+function demanderAideMinuteurRoutine() {
+  const minuteur = trouverMinuteur("routine", routineActuelleId, null);
+  if (minuteur) entrerBlocageMinuteur(minuteur);
+}
+
+// Déblocage réservé à un parent — même pavé numérique que le reste (cf.
+// construireClavier()/validerCode(), "Points d'entrée utiles" dans
+// app/README.md), pas un mécanisme séparé. Une fois validé, l'aide vient
+// d'être donnée : le cycle repart de `decompte` avec la durée d'origine
+// (`tache.minuteurDuree` ou `routine.dureeGlobale`, jamais
+// `minuteur.dureeEtape`, qui peut avoir été réduite par un décompte2
+// entre-temps) et revient sur la routine concernée. Si la tâche/routine a
+// disparu depuis (cas limite — modifiée entre-temps), efface simplement
+// le minuteur plutôt que de planter.
+function debloquerMinuteurAvecCode() {
+  ecranAvantValidation = "screen-minuteur-bloque";
+  codeSaisi = "";
+  modeCode = "verifier";
+  document.getElementById("validation-sous-titre").textContent = "Un parent entre le code pour continuer.";
+  document.getElementById("correction-wrap").classList.add("hidden");
+  document.getElementById("pavecode-wrap").classList.remove("hidden");
+  document.getElementById("pavecode-erreur").textContent = "";
+  construireClavier(document.getElementById("pavecode-clavier"), appuyerTouche);
+  majCasesCode(document.getElementById("pavecode-cases"), codeSaisi);
+  apresCodeValide = () => {
+    if (!minuteurEnDialogue) { construireMenu(); return; }
+    const { portee, routineId, tacheId } = minuteurEnDialogue;
+    minuteurEnDialogue = null;
+    const minuteur = trouverMinuteur(portee, routineId, tacheId);
+    if (!minuteur) { construireMenu(); return; }
+    const routine = routineParId(routineId);
+    const dureeOrigine = routine && (portee === "tache" ? (routine.taches.find(t => t.id === tacheId) || {}).minuteurDuree : routine.dureeGlobale);
+    if (!dureeOrigine) {
+      retirerUnMinuteur(portee, routineId, tacheId);
+    } else {
+      minuteur.etape = "decompte";
+      minuteur.dureeEtape = dureeOrigine;
+      minuteur.finPrevue = new Date(dateActuelle().getTime() + dureeOrigine * 1000).toISOString();
+      sauverUnMinuteur(minuteur);
+    }
+    demarrerRoutine(routineId);
+  };
+  afficherEcran("screen-validation");
 }
 
 function formatChrono(secondes) {
@@ -2740,49 +3120,29 @@ function demarrerChangementCode() {
 }
 
 // Liste de toutes les activités (catalogue en dur + créées par un
-// parent) — accès + création, cf. carte "Activités" du hub. Toucher une
-// activité l'ajoute/la retire du planning du jour, donc de "Partir à
-// l'aventure" (même logique que le catalogue de "Ma journée", ici
-// recentré sur les seules activités).
+// parent) — accès + création, cf. carte "Activités" du hub. Simple
+// catalogue à consulter/éditer : programmer une activité pour un jour
+// (aujourd'hui ou à venir) se fait depuis "Planning des journées" (cf.
+// construireParentPlanningJournees()) — rien ici à sélectionner ni à
+// mettre en surbrillance, une carte ne fait qu'ouvrir son édition.
 function construireParentActivites() {
-  const etat = chargerEtat();
-  const planifiees = new Set(etat.planning.filter(it => it.type === "aventure").map(it => it.id));
   const liste = document.getElementById("parent-activites-liste");
   liste.innerHTML = "";
   toutesLesAventures().forEach(a => {
-    const programmee = planifiees.has(a.id);
     const carte = document.createElement("div");
-    carte.className = "carte-routine" + (programmee ? " faite" : "");
+    carte.className = "carte-routine";
     const nom = document.createElement("div");
     nom.className = "carte-routine-nom";
     nom.textContent = a.emoji + " " + a.lieu;
-    const droite = document.createElement("div");
-    droite.className = "carte-routine-droite";
-    // Bouton dédié : éditer une activité ne doit pas se confondre avec le
-    // tap sur le reste de la carte, qui l'ajoute/la retire d'aujourd'hui
-    // (cf. basculerActivitePlanning) — d'où le stopPropagation.
     const btnEditer = document.createElement("button");
     btnEditer.type = "button";
     btnEditer.className = "btn-mini-edition";
     btnEditer.textContent = "✏️";
     btnEditer.setAttribute("aria-label", "Modifier « " + a.lieu + " »");
-    btnEditer.onclick = (ev) => { ev.stopPropagation(); ouvrirEditionAventure(a.id); };
-    const etatDiv = document.createElement("div");
-    etatDiv.className = "carte-routine-etat";
-    etatDiv.textContent = programmee ? "✓ aujourd'hui" : "";
-    droite.append(btnEditer, etatDiv);
-    carte.append(nom, droite);
-    carte.onclick = () => basculerActivitePlanning(a.id);
+    btnEditer.onclick = () => ouvrirEditionAventure(a.id);
+    carte.append(nom, btnEditer);
     liste.appendChild(carte);
   });
-}
-
-function basculerActivitePlanning(id) {
-  const etat = chargerEtat();
-  const pos = etat.planning.findIndex(it => it.type === "aventure" && it.id === id);
-  if (pos === -1) etat.planning.push({ type: "aventure", id }); else etat.planning.splice(pos, 1);
-  sauverEtat(etat);
-  construireParentActivites();
 }
 
 // Nouvelle activité : formulaire minimal. Une nouvelle aventure n'a ni
@@ -3024,7 +3384,6 @@ function construireRoutinesCatalogue() {
 // comme "Range tes vêtements"/"Je vais me coucher" dans "Aller se
 // coucher" aujourd'hui.
 const EMOJI_ROUTINE = ["🪥","🛁","🧦","🧸","📚","🍽️","🧴","✏️","🧹","🚿","🎒","👕","🧼","⏰","🌟","🧦"];
-const ZONE_PAR_DEFAUT_ROUTINE = "zone-torse";
 let emojiChoisiRoutine = EMOJI_ROUTINE[0];
 let lieuChoisiRoutine = "chambre";
 
@@ -3034,10 +3393,46 @@ function choisirLieuRoutine(lieu) {
   document.getElementById("nr-lieu-salon").classList.toggle("choisi", lieu === "salon");
 }
 
+// Style visuel des minuteurs de cette routine (cf. dessinerMinuteur() —
+// "jauge" ou "cadran"), même principe de bouton à deux choix que
+// choisirLieuRoutine() ci-dessus.
+let styleMinuteurChoisi = "jauge";
+function choisirStyleMinuteur(style) {
+  styleMinuteurChoisi = style;
+  document.getElementById("nr-style-jauge").classList.toggle("choisi", style === "jauge");
+  document.getElementById("nr-style-cadran").classList.toggle("choisi", style === "cadran");
+}
+
 let entourageChoisiRoutine = [];
 // Même principe que aventureEnEditionId ci-dessus : `null` = création,
 // sinon id de la routine en cours de modification.
 let routineEnEditionId = null;
+
+// Bouton "⏱️ Minuteur" par tâche (cf. index.html, .btn-toggle-minuteur) :
+// replié par défaut, ne montre les champs (durée/alertes) que si un
+// parent l'ouvre explicitement ou que la tâche en avait déjà un à
+// l'édition — évite que 5 lignes toujours visibles allongent le
+// formulaire pour rien pour la grande majorité des tâches sans minuteur.
+function afficherChampsMinuteurRoutine(i, visible) {
+  document.getElementById("nr-t" + i + "-minuteur-champs").classList.toggle("hidden", !visible);
+  document.getElementById("nr-t" + i + "-minuteur-toggle").classList.toggle("actif", visible);
+}
+function toggleChampsMinuteurRoutine(i) {
+  const champs = document.getElementById("nr-t" + i + "-minuteur-champs");
+  afficherChampsMinuteurRoutine(i, champs.classList.contains("hidden"));
+}
+
+// Même principe qu'afficherChampsMinuteurRoutine()/toggleChampsMinuteurRoutine()
+// ci-dessus, pour le minuteur global (au niveau de la routine entière plutôt
+// que d'une tâche) — un seul jeu de champs, pas besoin d'index `i`.
+function afficherChampsMinuteurGlobal(visible) {
+  document.getElementById("nr-global-minuteur-champs").classList.toggle("hidden", !visible);
+  document.getElementById("nr-global-minuteur-toggle").classList.toggle("actif", visible);
+}
+function toggleChampsMinuteurGlobal() {
+  const champs = document.getElementById("nr-global-minuteur-champs");
+  afficherChampsMinuteurGlobal(champs.classList.contains("hidden"));
+}
 
 function ouvrirNouvelleRoutine() {
   routineEnEditionId = null;
@@ -3047,8 +3442,15 @@ function ouvrirNouvelleRoutine() {
   for (let i = 1; i <= 5; i++) {
     document.getElementById("nr-t" + i + "-texte").value = "";
     document.getElementById("nr-t" + i + "-emoji").value = "";
-    document.getElementById("nr-t" + i + "-zone").value = ZONE_PAR_DEFAUT_ROUTINE;
+    document.getElementById("nr-t" + i + "-corps").checked = true;
+    document.getElementById("nr-t" + i + "-minuteur").value = "";
+    document.getElementById("nr-t" + i + "-minuteur-alertes").checked = true;
+    afficherChampsMinuteurRoutine(i, false);
   }
+  document.getElementById("nr-global-minuteur").value = "";
+  document.getElementById("nr-global-minuteur-alertes").checked = true;
+  afficherChampsMinuteurGlobal(false);
+  choisirStyleMinuteur("jauge");
   document.getElementById("nr-mots-cles").value = "";
   document.getElementById("nr-erreur").textContent = "";
   emojiChoisiRoutine = EMOJI_ROUTINE[0];
@@ -3075,8 +3477,19 @@ function ouvrirEditionRoutine(id) {
     const t = r.taches[i - 1];
     document.getElementById("nr-t" + i + "-texte").value = t ? t.texte : "";
     document.getElementById("nr-t" + i + "-emoji").value = t ? t.emoji : "";
-    document.getElementById("nr-t" + i + "-zone").value = (t && t.zone) || ZONE_PAR_DEFAUT_ROUTINE;
+    // `!t || !!t.zone` — un emplacement encore vide (nouvelle tâche) part
+    // coché par défaut ; une tâche existante reflète son vrai état (ex.
+    // décoché pour "Fais tes devoirs", ou dents/histoire qui n'ont de
+    // toute façon pas de zone).
+    document.getElementById("nr-t" + i + "-corps").checked = !t || !!t.zone;
+    document.getElementById("nr-t" + i + "-minuteur").value = (t && t.minuteurDuree) ? Math.round(t.minuteurDuree / 60) : "";
+    document.getElementById("nr-t" + i + "-minuteur-alertes").checked = !t || t.minuteurAlertes !== false;
+    afficherChampsMinuteurRoutine(i, !!(t && t.minuteurDuree));
   }
+  document.getElementById("nr-global-minuteur").value = r.dureeGlobale ? Math.round(r.dureeGlobale / 60) : "";
+  document.getElementById("nr-global-minuteur-alertes").checked = r.alertesGlobales !== false;
+  afficherChampsMinuteurGlobal(!!r.dureeGlobale);
+  choisirStyleMinuteur(r.styleMinuteur || "jauge");
   document.getElementById("nr-mots-cles").value = (r.motsCles || []).join(", ");
   document.getElementById("nr-erreur").textContent = "";
   emojiChoisiRoutine = r.emoji;
@@ -3087,15 +3500,6 @@ function ouvrirEditionRoutine(id) {
   afficherEcran("screen-parent-nouvelle-routine");
 }
 
-// Zones proposées par le <select> du formulaire (cf. index.html,
-// #nr-t1-zone...) — une tâche `retire` (ex. "Enlève tes vêtements") n'a
-// PAS de zone, et "Range tes vêtements" cible "zone-panier", hors de
-// cette liste : le <select> ne peut représenter ni l'une ni l'autre
-// fidèlement. Sert de garde dans creerNouvelleRoutine() pour ne jamais
-// écraser une de ces deux valeurs avec ce que le <select> affiche par
-// défaut faute de mieux.
-const ZONES_FORMULAIRE_ROUTINE = ["zone-visage", "zone-torse", "zone-bassin", "zone-jambes", "zone-pieds", "zone-dos"];
-
 function creerNouvelleRoutine() {
   const nom = document.getElementById("nr-nom").value.trim();
   const original = routineEnEditionId ? routineParId(routineEnEditionId) : null;
@@ -3104,22 +3508,41 @@ function creerNouvelleRoutine() {
     const texte = document.getElementById("nr-t" + i + "-texte").value.trim();
     if (!texte) continue;
     const emoji = document.getElementById("nr-t" + i + "-emoji").value.trim() || "✅";
-    const zone = document.getElementById("nr-t" + i + "-zone").value;
+    const corpsCoche = document.getElementById("nr-t" + i + "-corps").checked;
+    const minuteurMinutes = document.getElementById("nr-t" + i + "-minuteur").value.trim();
+    const minuteurAlertes = document.getElementById("nr-t" + i + "-minuteur-alertes").checked;
     // Fusion positionnelle (emplacement i du formulaire <- tâche i de
     // l'originale) plutôt qu'un objet neuf : préserve les champs propres
     // à certaines routines codées en dur, absents de ce formulaire mais
     // essentiels ailleurs (`calque`/`retire`/`avatarGlissable` pour
-    // l'habillage, `miniJeu`/`badge`/`badgeFait`/`pileGlissable` pour le
-    // coucher, cf. routinesDemarrage() plus haut).
+    // l'habillage, `badge`/`badgeFait`/`pileGlissable` pour le coucher,
+    // cf. routinesDemarrage() plus haut).
     const origTache = original && original.taches[i - 1];
     const tache = Object.assign({}, origTache, { texte, emoji, id: (origTache && origTache.id) || ("t" + i) });
-    // `zone` à part : seulement écrasée par le <select> si l'originale
-    // était déjà une des 6 zones qu'il propose (donc éditable à l'écran
-    // sans surprise) ou s'il n'y avait pas d'originale (tâche neuve,
-    // ajoutée au-delà de celles de la routine de départ) — sinon
-    // (absente, ou "zone-panier") la valeur du <select>, forcément
-    // approximative, est ignorée et l'originale conservée telle quelle.
-    if (!origTache || ZONES_FORMULAIRE_ROUTINE.includes(origTache.zone)) tache.zone = zone;
+    // Minuteur : indépendant de la case "Corps" — une tâche à glisser-
+    // déposer (ex. "Mets ton caleçon") peut très bien avoir un minuteur
+    // affiché à côté (cf. synchroniserMinuteurWidget()) sans que ça
+    // change comment elle se valide. Seule une tâche SANS zone (case
+    // décochée, ex. "Fais tes devoirs") s'appuie sur le bouton "J'ai
+    // fini" du widget pour se faire valider, faute de cible à glisser.
+    if (minuteurMinutes) {
+      tache.minuteurDuree = Math.max(1, Math.round(parseFloat(minuteurMinutes) * 60));
+      tache.minuteurAlertes = minuteurAlertes;
+    } else {
+      delete tache.minuteurDuree; delete tache.minuteurAlertes;
+    }
+    // Case "Corps" (une seule cible pour tout l'habillage, #zone-corps,
+    // cf. index.html/styles.css) : jamais pour "dents"/"histoire"
+    // (miniJeu déjà présent sur l'originale, préservé tel quel par
+    // Object.assign() ci-dessus) ni pour une tâche structurellement à
+    // part (`avatarGlissable`/"enlève tes vêtements", `pileGlissable`/
+    // "range tes vêtements" qui cible "zone-panier") — ces trois gèrent
+    // leur propre zone (ou absence de zone) indépendamment de cette case,
+    // qui ne les concerne pas.
+    const zoneAPart = origTache && (origTache.avatarGlissable || origTache.pileGlissable);
+    if ((!origTache || !origTache.miniJeu) && !zoneAPart) {
+      if (corpsCoche) tache.zone = "zone-corps"; else delete tache.zone;
+    }
     taches.push(tache);
   }
 
@@ -3129,6 +3552,11 @@ function creerNouvelleRoutine() {
   }
 
   const motsCles = document.getElementById("nr-mots-cles").value.trim();
+  // Minuteur global : même logique que le minuteur par tâche plus haut,
+  // au niveau de la routine entière (cf. assurerMinuteurPourRoutine()) —
+  // coexiste sans conflit avec les minuteurs de tâche individuels.
+  const globalMinutes = document.getElementById("nr-global-minuteur").value.trim();
+  const globalAlertes = document.getElementById("nr-global-minuteur-alertes").checked;
 
   // Édition d'une routine existante : fusionne les champs du formulaire
   // SUR l'objet d'origine (Object.assign), comme creerNouvelleAventure()
@@ -3137,9 +3565,11 @@ function creerNouvelleRoutine() {
   // ("Aller se coucher"). Sauvée dans `routines_perso` sous le même id,
   // qui masque alors l'originale (cf. toutesLesRoutines()).
   if (original) {
-    const maj = Object.assign({}, original, { nom, emoji: emojiChoisiRoutine, lieu: lieuChoisiRoutine, taches });
+    const maj = Object.assign({}, original, { nom, emoji: emojiChoisiRoutine, lieu: lieuChoisiRoutine, taches, styleMinuteur: styleMinuteurChoisi });
     if (entourageChoisiRoutine.length) maj.entourageIds = [...entourageChoisiRoutine]; else delete maj.entourageIds;
     if (motsCles) maj.motsCles = motsCles.split(",").map(m => m.trim()).filter(Boolean); else delete maj.motsCles;
+    if (globalMinutes) { maj.dureeGlobale = Math.max(1, Math.round(parseFloat(globalMinutes) * 60)); maj.alertesGlobales = globalAlertes; }
+    else { delete maj.dureeGlobale; delete maj.alertesGlobales; }
 
     const perso = chargerRoutinesPerso();
     const pos = perso.findIndex(x => x.id === maj.id);
@@ -3158,11 +3588,13 @@ function creerNouvelleRoutine() {
     nom,
     emoji: emojiChoisiRoutine,
     lieu: lieuChoisiRoutine,
+    styleMinuteur: styleMinuteurChoisi,
     felicitation: "Bravo " + profilActif().prenom + ", tu as fini : " + nom + " !",
     taches,
   };
   if (entourageChoisiRoutine.length) nouvelle.entourageIds = [...entourageChoisiRoutine];
   if (motsCles) nouvelle.motsCles = motsCles.split(",").map(m => m.trim()).filter(Boolean);
+  if (globalMinutes) { nouvelle.dureeGlobale = Math.max(1, Math.round(parseFloat(globalMinutes) * 60)); nouvelle.alertesGlobales = globalAlertes; }
 
   const perso = chargerRoutinesPerso();
   perso.push(nouvelle);
@@ -4171,6 +4603,11 @@ document.getElementById("btn-pause-dents").onclick = toggleDentsPause;
 document.getElementById("btn-retour-histoire").onclick = quitterHistoire;
 document.getElementById("btn-voix-histoire").onclick = () => dire(document.getElementById("histoire-texte").textContent);
 document.getElementById("btn-fini-histoire").onclick = finHistoire;
+document.getElementById("btn-minuteur-widget-aide").onclick = demanderAideMinuteurTache;
+document.getElementById("btn-minuteur-routine-aide").onclick = demanderAideMinuteurRoutine;
+document.getElementById("btn-minuteur-verif-non").onclick = () => repondreVerificationMinuteur(false);
+document.getElementById("btn-minuteur-verif-oui").onclick = () => repondreVerificationMinuteur(true);
+document.getElementById("btn-minuteur-bloque-code").onclick = debloquerMinuteurAvecCode;
 document.getElementById("btn-voix-coffre").onclick = () => dire(document.getElementById("coffre-texte").textContent);
 document.getElementById("btn-voix-trajet").onclick = () => dire(document.getElementById("trajet-texte").textContent);
 document.getElementById("btn-voix-arrivee").onclick = () => dire(document.getElementById("arrivee-texte").textContent);
@@ -4220,7 +4657,13 @@ document.getElementById("nr-emoji-trigger").onclick = () =>
   ouvrirSelecteurEmoji(EMOJI_ROUTINE, emojiChoisiRoutine, (e) => { emojiChoisiRoutine = e; construireDeclencheurEmoji("nr-emoji-trigger", e); });
 document.getElementById("nr-lieu-chambre").onclick = () => choisirLieuRoutine("chambre");
 document.getElementById("nr-lieu-salon").onclick = () => choisirLieuRoutine("salon");
+document.getElementById("nr-style-jauge").onclick = () => choisirStyleMinuteur("jauge");
+document.getElementById("nr-style-cadran").onclick = () => choisirStyleMinuteur("cadran");
 document.getElementById("btn-creer-routine").onclick = creerNouvelleRoutine;
+for (let i = 1; i <= 5; i++) {
+  document.getElementById("nr-t" + i + "-minuteur-toggle").onclick = () => toggleChampsMinuteurRoutine(i);
+}
+document.getElementById("nr-global-minuteur-toggle").onclick = toggleChampsMinuteurGlobal;
 document.getElementById("btn-retour-parent-nouvelle-routine").onclick = () => { routineEnEditionId = null; construireRoutinesCatalogue(); afficherEcran("screen-parent-routines-catalogue"); };
 
 document.getElementById("btn-nouvelle-personne").onclick = ouvrirNouvellePersonne;
@@ -4315,6 +4758,15 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   });
 }
+
+// Vérification du minuteur actif (cf. tickMinuteurGlobal() plus haut) —
+// tourne en continu dès le chargement, pas seulement pendant une routine,
+// pour que la vérification/l'alerte puisse interrompre n'importe quel
+// écran. Premier appel immédiat (pas seulement dans 1s) pour éviter
+// qu'un minuteur déjà écoulé pendant que l'app était fermée laisse
+// passer un instant sur le mauvais écran au rechargement.
+tickMinuteurGlobal();
+setInterval(tickMinuteurGlobal, 1000);
 
 // point d'entrée : menu de la journée (le réveil, écran 01 du handoff,
 // reste sauté pour ce prototype). Filet de sécurité : si quoi que ce
