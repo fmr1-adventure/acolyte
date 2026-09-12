@@ -47,7 +47,7 @@ rien activer, y compris après avoir changé de port d'une session de test
 à l'autre (cf. `modeDebugActif()` dans `app.js`). Ailleurs (ex. une URL
 de prévisualisation non-localhost), ouvrir l'app avec `?debug=1` dans
 l'URL une fois — retenu ensuite sur ce navigateur/appareil
-(`dayrise_debug` dans `localStorage`, partagé par appareil, pas par
+(`acolyte_debug` dans `localStorage`, partagé par appareil, pas par
 enfant ; `?debug=0` désactive). Jamais activé sur les tablettes réelles,
 qui ne chargent que l'URL GitHub Pages publiée, jamais un localhost.
 Fait apparaître un bouton 🧪 (à côté de ⚙️/↺) qui ouvre un panneau
@@ -198,7 +198,7 @@ Séquence :
    - **Changer le code parent** — deux saisies identiques de suite avant
      d'enregistrer, réutilise le même pavé numérique que la vérification
      (généralisé, cf. "Points d'entrée" plus bas). Partagé par
-     **appareil**, pas par enfant (`dayrise_code_parent`, cf. "Profils").
+     **appareil**, pas par enfant (`acolyte_code_parent`, cf. "Profils").
    - **Planning du jour** — lien direct vers le mode édition de "Ma
      journée" existant, sans redemander le code.
    - **Activités** — liste toutes les activités (`toutesLesAventures()`),
@@ -228,7 +228,7 @@ Séquence :
      comporte identiquement aux trois routines de départ.
    - **Cet appareil** — indique quel profil (`tousLesProfils()`) cet
      appareil affiche, et permet de le changer
-     (`changerProfilAppareil()`, écrit `dayrise_enfant` puis recharge la
+     (`changerProfilAppareil()`, écrit `acolyte_enfant` puis recharge la
      page) ou d'en créer un nouveau ("+ Nouvel enfant", réutilise l'écran
      de première configuration). Pas un sélecteur destiné à l'enfant :
      sert à configurer un appareil une bonne fois pour toutes, ou à en
@@ -298,7 +298,7 @@ depuis l'app : au tout premier lancement sur un appareil (écran de
 première configuration — prénom, avatar choisi parmi
 `AVATARS_DISPONIBLES`, code parent) ou plus tard depuis l'espace parent
 ("Cet appareil" → "+ Nouvel enfant"). Un profil créé ainsi est persisté
-dans `profils_perso` (`localStorage`, clé `dayrise_profils_perso`) — même
+dans `profils_perso` (`localStorage`, clé `acolyte_profils_perso`) — même
 principe que `routines_perso`/`aventures_perso`/`entourage_perso` plus
 bas : `tousLesProfils()` fusionne `PROFILS` et `profils_perso` (un profil
 perso masque une éventuelle entrée en dur du même id), et c'est cette
@@ -321,8 +321,8 @@ PAS couvert" plus haut). `profilActifId()`/`profilActif()` déterminent
 une bonne fois pour toutes quel enfant un appareil donné affiche : query
 param `?enfant=<id>` (une fois dans l'URL, pour un profil déjà créé —
 même mécanisme que `?debug=1`, cf. plus haut), retenu ensuite dans
-`localStorage` (`dayrise_enfant`) **sur cet appareil**. Si rien ne
-résout (aucun profil créé, ou `dayrise_enfant` ne correspond à aucun
+`localStorage` (`acolyte_enfant`) **sur cet appareil**. Si rien ne
+résout (aucun profil créé, ou `acolyte_enfant` ne correspond à aucun
 profil connu) : `profilActifId()` renvoie `null`, et `demarrer()` affiche
 l'écran de première configuration plutôt que le parcours normal — cf.
 tout en bas de `app.js`. Un parent peut aussi changer le profil d'un
@@ -333,8 +333,8 @@ la même clé puis recharge la page.
 propre à l'enfant actif avec `profilActif().prefixe` — cf. "État et
 persistance" ci-dessous pour la liste. Deux clés restent volontairement
 **partagées par appareil**, pas préfixées par enfant, car ce sont les
-mêmes parents des deux côtés : le code parent (`dayrise_code_parent`) et
-le mode debug (`dayrise_debug`).
+mêmes parents des deux côtés : le code parent (`acolyte_code_parent`) et
+le mode debug (`acolyte_debug`).
 
 ### Avatars
 
@@ -402,7 +402,7 @@ chaque journée y est archivée (`archiverJournee()`) au moment où
 `{ jour, etoiles, routinesValidees: [...ids], journeeFaite }`. Consultable
 en lecture seule depuis l'espace parent (`construireHistorique()`).
 
-Le **code parent** est dans `dayrise_code_parent` (une chaîne de 4
+Le **code parent** est dans `acolyte_code_parent` (une chaîne de 4
 chiffres, **partagée par appareil, pas par enfant** — cf. "Profils"),
 choisie à la première configuration de l'appareil — `codeParentActuel()`
 retombe sur `"1234"` tant qu'aucun code n'a encore été enregistré (ne
@@ -410,7 +410,7 @@ devrait normalement pas arriver en usage réel, la première configuration
 en demandant toujours un). Modifiable depuis l'espace parent
 (`demarrerChangementCode()`/`sauverCodeParent()`).
 
-Les **profils** créés depuis l'app sont dans `dayrise_profils_perso` (cf.
+Les **profils** créés depuis l'app sont dans `acolyte_profils_perso` (cf.
 "Profils" plus haut) — partagée par appareil comme le code parent,
 jamais remise à zéro.
 
@@ -530,7 +530,7 @@ le mécanisme principal.
   fonctionnement hors-ligne. **Si tu ajoutes un asset référencé par
   `index.html`/`styles.css`/un nouvel avatar** (nouvelle image, nouvelle
   scène...), ajoute-le ici aussi, sinon il ne sera pas disponible
-  hors-ligne. Incrémenter `CACHE_NAME` (ex. `dayrise-v15`) force le
+  hors-ligne. Incrémenter `CACHE_NAME` (ex. `acolyte-v15`) force le
   renouvellement du cache d'un appareil déjà installé au prochain
   chargement en ligne.
 - `construireClavier(conteneur, onTouche)` / `majCasesCode(conteneurCases, saisi)`

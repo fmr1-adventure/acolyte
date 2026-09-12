@@ -20,7 +20,7 @@
  * profil) : ce fichier ne sait pas à l'avance lequel, et le coût
  * (quelques petits PNG) est négligeable pour un usage à la maison.
  */
-const CACHE_NAME = "dayrise-v14";
+const CACHE_NAME = "acolyte-v14";
 const A_METTRE_EN_CACHE = [
   "./",
   "./index.html",

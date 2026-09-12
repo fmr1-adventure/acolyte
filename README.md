@@ -1,4 +1,4 @@
-# Dayrise — jeu pixel art de routines pour enfants (TSA/TDAH)
+# Acolyte — jeu pixel art de routines pour enfants (TSA/TDAH)
 
 ## Contexte du projet
 
