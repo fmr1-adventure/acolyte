@@ -180,72 +180,83 @@ function cle(nomBase) { return profilActif().prefixe + "_" + nomBase; }
 // gabarit de routines amorcé à la création (cf. `routinesDemarrage()`
 // plus bas) — un parent peut ensuite ajouter les deux jeux de vêtements à
 // une même routine si besoin, cf. l'espace parent.
-const AVATARS_DISPONIBLES = [
-  {
-    id: "avatar-a",
-    silhouette: "pantalon",
-    dodo: "assets/avatar/avatar-a-dodo.png",
-    sprites: {
-      base: "assets/avatar/avatar-a-base.png",
-      calques: [
-        { calque: "calque-calecon",     fichier: "assets/avatar/avatar-a-calecon.png" },
-        { calque: "calque-haut",        fichier: "assets/avatar/avatar-a-haut.png" },
-        { calque: "calque-pantalon",    fichier: "assets/avatar/avatar-a-pantalon.png" },
-        { calque: "calque-chaussettes", fichier: "assets/avatar/avatar-a-chaussettes.png" },
-        { calque: "calque-chaussures",  fichier: "assets/avatar/avatar-a-chaussures.png" },
-        { calque: "calque-manteau",     fichier: "assets/avatar/avatar-a-manteau.png" },
-      ],
-    },
-  },
-  {
-    id: "avatar-b",
-    silhouette: "pantalon",
-    dodo: "assets/avatar/avatar-b-dodo.png",
-    sprites: {
-      base: "assets/avatar/avatar-b-base.png",
-      calques: [
-        { calque: "calque-calecon",     fichier: "assets/avatar/avatar-b-calecon.png" },
-        { calque: "calque-haut",        fichier: "assets/avatar/avatar-b-haut.png" },
-        { calque: "calque-pantalon",    fichier: "assets/avatar/avatar-b-pantalon.png" },
-        { calque: "calque-chaussettes", fichier: "assets/avatar/avatar-b-chaussettes.png" },
-        { calque: "calque-chaussures",  fichier: "assets/avatar/avatar-b-chaussures.png" },
-        { calque: "calque-manteau",     fichier: "assets/avatar/avatar-b-manteau.png" },
-      ],
-    },
-  },
-  {
-    id: "avatar-c",
-    silhouette: "robe",
-    dodo: "assets/avatar/avatar-c-dodo.png",
-    sprites: {
-      base: "assets/avatar/avatar-c-base.png",
-      calques: [
-        { calque: "calque-culotte",     fichier: "assets/avatar/avatar-c-culotte.png" },
-        { calque: "calque-haut",        fichier: "assets/avatar/avatar-c-haut.png" },
-        { calque: "calque-robe",        fichier: "assets/avatar/avatar-c-robe.png" },
-        { calque: "calque-chaussettes", fichier: "assets/avatar/avatar-c-chaussettes.png" },
-        { calque: "calque-chaussures",  fichier: "assets/avatar/avatar-c-chaussures.png" },
-        { calque: "calque-manteau",     fichier: "assets/avatar/avatar-c-manteau.png" },
-      ],
-    },
-  },
-  {
-    id: "avatar-d",
-    silhouette: "robe",
-    dodo: "assets/avatar/avatar-d-dodo.png",
-    sprites: {
-      base: "assets/avatar/avatar-d-base.png",
-      calques: [
-        { calque: "calque-culotte",     fichier: "assets/avatar/avatar-d-culotte.png" },
-        { calque: "calque-haut",        fichier: "assets/avatar/avatar-d-haut.png" },
-        { calque: "calque-robe",        fichier: "assets/avatar/avatar-d-robe.png" },
-        { calque: "calque-chaussettes", fichier: "assets/avatar/avatar-d-chaussettes.png" },
-        { calque: "calque-chaussures",  fichier: "assets/avatar/avatar-d-chaussures.png" },
-        { calque: "calque-manteau",     fichier: "assets/avatar/avatar-d-manteau.png" },
-      ],
-    },
-  },
+// Avatar personnalisable — remplace l'ancien choix figé à 4 avatars par
+// des traits combinables (genre, coupe, peau, cheveux, yeux), rendus à
+// l'avance par scripts/generate_sprites_detailed_preview.py (320
+// combinaisons corps/visage : 4 peaux × 5 couleurs de cheveux × 4 coupes
+// × 4 couleurs d'yeux, chacune avec sa version "dodo" assortie) plutôt
+// que composées en direct dans le navigateur — cf. app/assets/avatar/perso/,
+// nommés "<coupe>-<peau>-<cheveux>-<yeux>-{base,dodo}.png". Les vêtements
+// ne font pas partie de ce choix (non demandé) : ils restent les 2 jeux
+// de calques déjà existants, un par silhouette, cf. CALQUES_PAR_SILHOUETTE.
+//
+// `p2`/`n4`/`y1`/"court-net" = les valeurs exactes de l'ancien "avatar-a"
+// (lui-même la reprise générique de l'avatar réel de Léon) : gardées
+// comme valeurs par défaut à l'ouverture de l'écran plutôt qu'un choix
+// arbitraire.
+const PEAUX = [
+  { id: "p1", couleur: "#f5d6be" },
+  { id: "p2", couleur: "#deb28c" },
+  { id: "p3", couleur: "#b4825a" },
+  { id: "p4", couleur: "#78523a" },
 ];
+const CHEVEUX_COULEURS = [
+  { id: "n1", couleur: "#e0ba5a" },
+  { id: "n2", couleur: "#a84c30" },
+  { id: "n3", couleur: "#785438" },
+  { id: "n4", couleur: "#4a362a" },
+  { id: "n5", couleur: "#1c1816" },
+];
+const YEUX_COULEURS = [
+  { id: "y1", couleur: "#221e28" },
+  { id: "y2", couleur: "#785430" },
+  { id: "y3", couleur: "#3c6ea5" },
+  { id: "y4", couleur: "#46825a" },
+];
+// Coupes propres à chaque genre (jamais mélangées dans le menu) — le
+// genre choisi fixe aussi `silhouette` (cf. silhouettePourGenre()), donc
+// le vêtement du bas de "S'habiller" (routinesDemarrage()).
+const COUPES_PAR_GENRE = {
+  garcon: [
+    { id: "court-net", nom: "Coupe courte" },
+    { id: "court-ebouriffe", nom: "Coupe ébouriffée" },
+  ],
+  fille: [
+    { id: "carre", nom: "Carré" },
+    { id: "couettes", nom: "Couettes" },
+  ],
+};
+const CALQUES_PAR_SILHOUETTE = {
+  pantalon: [
+    { calque: "calque-calecon",     fichier: "assets/avatar/avatar-a-calecon.png" },
+    { calque: "calque-haut",        fichier: "assets/avatar/avatar-a-haut.png" },
+    { calque: "calque-pantalon",    fichier: "assets/avatar/avatar-a-pantalon.png" },
+    { calque: "calque-chaussettes", fichier: "assets/avatar/avatar-a-chaussettes.png" },
+    { calque: "calque-chaussures",  fichier: "assets/avatar/avatar-a-chaussures.png" },
+    { calque: "calque-manteau",     fichier: "assets/avatar/avatar-a-manteau.png" },
+  ],
+  robe: [
+    { calque: "calque-culotte",     fichier: "assets/avatar/avatar-c-culotte.png" },
+    { calque: "calque-haut",        fichier: "assets/avatar/avatar-c-haut.png" },
+    { calque: "calque-robe",        fichier: "assets/avatar/avatar-c-robe.png" },
+    { calque: "calque-chaussettes", fichier: "assets/avatar/avatar-c-chaussettes.png" },
+    { calque: "calque-chaussures",  fichier: "assets/avatar/avatar-c-chaussures.png" },
+    { calque: "calque-manteau",     fichier: "assets/avatar/avatar-c-manteau.png" },
+  ],
+};
+function silhouettePourGenre(genre) { return genre === "fille" ? "robe" : "pantalon"; }
+// Résout la combinaison de traits en cours (`configInitiale` ou un profil
+// déjà créé) vers les fichiers réels — seul point qui connaît la
+// convention de nommage des fichiers générés.
+function spritesPourTraits(traits) {
+  const silhouette = silhouettePourGenre(traits.genre);
+  const prefixe = `assets/avatar/perso/${traits.coupe}-${traits.peau}-${traits.cheveux}-${traits.yeux}`;
+  return {
+    silhouette,
+    dodo: `${prefixe}-dodo.png`,
+    sprites: { base: `${prefixe}-base.png`, calques: CALQUES_PAR_SILHOUETTE[silhouette] },
+  };
+}
 
 // ---------------------------------------------------------------------
 // Première configuration — écran affiché quand cet appareil n'a encore
@@ -255,7 +266,7 @@ const AVATARS_DISPONIBLES = [
 // code parent juste après (réutilise le pavé numérique existant, cf.
 // `demarrerCodeInitial()`) — la création réelle du profil n'a lieu
 // qu'une fois le code confirmé deux fois, cf. `finaliserPremiereConfiguration()`.
-let configInitiale = { prenom: "", avatarId: null };
+let configInitiale = { prenom: "", genre: "garcon", coupe: "court-net", peau: "p2", cheveux: "n4", yeux: "y1" };
 // true seulement quand cet écran est rouvert depuis un appareil déjà
 // configuré (bouton retour utile) ; false au tout premier lancement
 // (aucun profil, donc aucun écran où revenir — bouton retour caché).
@@ -263,25 +274,70 @@ let premiereConfigEstAjout = false;
 
 function ouvrirPremiereConfiguration(estAjout) {
   premiereConfigEstAjout = !!estAjout;
-  configInitiale = { prenom: "", avatarId: AVATARS_DISPONIBLES[0].id };
+  configInitiale = { prenom: "", genre: "garcon", coupe: "court-net", peau: "p2", cheveux: "n4", yeux: "y1" };
   document.getElementById("pc-prenom").value = "";
   document.getElementById("pc-erreur").textContent = "";
   document.getElementById("btn-retour-premiere-configuration").classList.toggle("hidden", !premiereConfigEstAjout);
-  construireGrilleAvatarsInitiale();
+  document.getElementById("pc-genre-garcon").classList.add("choisi");
+  document.getElementById("pc-genre-fille").classList.remove("choisi");
+  construireChoixApparenceInitiale();
   afficherEcran("screen-premiere-configuration");
 }
 
-function construireGrilleAvatarsInitiale() {
-  const grille = document.getElementById("pc-avatars-grille");
-  grille.innerHTML = "";
-  AVATARS_DISPONIBLES.forEach(a => {
-    const carte = document.createElement("button");
-    carte.type = "button";
-    carte.className = "pc-avatar-carte" + (a.id === configInitiale.avatarId ? " choisi" : "");
-    carte.setAttribute("aria-label", "Choisir cet avatar");
-    carte.innerHTML = `<img src="${a.sprites.base}" alt="">`;
-    carte.onclick = () => { configInitiale.avatarId = a.id; construireGrilleAvatarsInitiale(); };
-    grille.appendChild(carte);
+// Genre : change aussi le menu de coupes proposé juste en dessous (2
+// propres à chaque genre, jamais les 4 mélangées) — si la coupe choisie
+// jusque-là n'existe pas pour le nouveau genre, on retombe sur la
+// première de sa liste plutôt que de garder un id invalide.
+function choisirGenreInitial(genre) {
+  configInitiale.genre = genre;
+  document.getElementById("pc-genre-garcon").classList.toggle("choisi", genre === "garcon");
+  document.getElementById("pc-genre-fille").classList.toggle("choisi", genre === "fille");
+  if (!COUPES_PAR_GENRE[genre].some(c => c.id === configInitiale.coupe)) {
+    configInitiale.coupe = COUPES_PAR_GENRE[genre][0].id;
+  }
+  construireChoixApparenceInitiale();
+}
+
+function choisirTraitInitial(trait, valeur) {
+  configInitiale[trait] = valeur;
+  construireChoixApparenceInitiale();
+}
+
+// Un menu à choix (boutons/pastilles) par trait plutôt qu'une grille
+// d'avatars déjà composés à parcourir — à 320 combinaisons, une galerie
+// de photos à faire défiler n'aurait plus de sens (demande explicite).
+// L'aperçu (#pc-avatar-apercu-img) reste le seul retour visuel de la
+// combinaison choisie, mis à jour à chaque changement.
+function construireChoixApparenceInitiale() {
+  const coupeConteneur = document.getElementById("pc-coupe-choix");
+  coupeConteneur.innerHTML = "";
+  COUPES_PAR_GENRE[configInitiale.genre].forEach(c => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "nr-lieu-btn" + (c.id === configInitiale.coupe ? " choisi" : "");
+    b.textContent = c.nom;
+    b.onclick = () => choisirTraitInitial("coupe", c.id);
+    coupeConteneur.appendChild(b);
+  });
+
+  construireSwatchesInitiale("pc-peau-choix", PEAUX, "peau");
+  construireSwatchesInitiale("pc-cheveux-choix", CHEVEUX_COULEURS, "cheveux");
+  construireSwatchesInitiale("pc-yeux-choix", YEUX_COULEURS, "yeux");
+
+  document.getElementById("pc-avatar-apercu-img").src = spritesPourTraits(configInitiale).sprites.base;
+}
+
+function construireSwatchesInitiale(idConteneur, options, trait) {
+  const conteneur = document.getElementById(idConteneur);
+  conteneur.innerHTML = "";
+  options.forEach(o => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pc-swatch" + (o.id === configInitiale[trait] ? " choisi" : "");
+    b.style.background = o.couleur;
+    b.setAttribute("aria-label", trait + " " + o.id);
+    b.onclick = () => choisirTraitInitial(trait, o.id);
+    conteneur.appendChild(b);
   });
 }
 
@@ -289,10 +345,6 @@ function validerPremiereConfiguration() {
   const prenom = document.getElementById("pc-prenom").value.trim();
   if (!prenom) {
     document.getElementById("pc-erreur").textContent = "Donne un prénom avant de continuer.";
-    return;
-  }
-  if (!configInitiale.avatarId) {
-    document.getElementById("pc-erreur").textContent = "Choisis un avatar avant de continuer.";
     return;
   }
   configInitiale.prenom = prenom;
@@ -324,16 +376,16 @@ function demarrerCodeInitial() {
 // pointer dessus avant d'amorcer routines_perso, puisque
 // `sauverRoutinesPerso()` passe par `cle()` -> `profilActif()`.
 function finaliserPremiereConfiguration() {
-  const avatar = AVATARS_DISPONIBLES.find(a => a.id === configInitiale.avatarId) || AVATARS_DISPONIBLES[0];
+  const { silhouette, dodo, sprites } = spritesPourTraits(configInitiale);
   const id = "enfant-" + Date.now();
-  const profil = { id, prefixe: id, prenom: configInitiale.prenom, dodo: avatar.dodo, sprites: avatar.sprites };
+  const profil = { id, prefixe: id, prenom: configInitiale.prenom, dodo, sprites };
 
   const perso = chargerProfilsPerso();
   perso.push(profil);
   sauverProfilsPerso(perso);
   try { localStorage.setItem("acolyte_enfant", id); } catch (e) {}
 
-  sauverRoutinesPerso(routinesDemarrage(profil.prenom, avatar.silhouette).map(r =>
+  sauverRoutinesPerso(routinesDemarrage(profil.prenom, silhouette).map(r =>
     (r.id === "shabiller" || r.id === "partir") ? Object.assign({ chainee: true }, r) : r
   ));
 
@@ -4689,6 +4741,8 @@ document.getElementById("btn-nouvel-enfant").onclick = ouvrirNouveauProfilDepuis
 // Nouvel enfant".
 document.getElementById("btn-retour-premiere-configuration").onclick = () => { construireParentAppareil(); afficherEcran("screen-parent-appareil"); };
 document.getElementById("btn-continuer-premiere-configuration").onclick = validerPremiereConfiguration;
+document.getElementById("pc-genre-garcon").onclick = () => choisirGenreInitial("garcon");
+document.getElementById("pc-genre-fille").onclick = () => choisirGenreInitial("fille");
 
 // Le bouton "Terminé !" du coffre ne va pas toujours au même endroit
 // (fin de journée vs retour d'aventure) : `coffreRetour` est fixé par

@@ -295,8 +295,8 @@ configurer depuis l'app (avec dans ce cas des accesseurs
 `routines()`/`aventuresPropres()` vers des catalogues dédiés — cf.
 commentaire au-dessus de `PROFILS`). En usage normal, un profil est créé
 depuis l'app : au tout premier lancement sur un appareil (écran de
-première configuration — prénom, avatar choisi parmi
-`AVATARS_DISPONIBLES`, code parent) ou plus tard depuis l'espace parent
+première configuration — prénom, genre, puis peau/coupe/couleur de
+cheveux/couleur d'yeux, code parent) ou plus tard depuis l'espace parent
 ("Cet appareil" → "+ Nouvel enfant"). Un profil créé ainsi est persisté
 dans `profils_perso` (`localStorage`, clé `acolyte_profils_perso`) — même
 principe que `routines_perso`/`aventures_perso`/`entourage_perso` plus
@@ -305,9 +305,10 @@ perso masque une éventuelle entrée en dur du même id), et c'est cette
 fonction qu'il faut utiliser partout où le code cherche/liste des
 profils — jamais `PROFILS` seul. `id`/`prefixe` sont identiques pour un
 profil créé depuis l'app (un timestamp, ex. `enfant-1788536651477`) ;
-`sprites`/`dodo` sont copiés depuis l'entrée choisie d'`AVATARS_DISPONIBLES`
-au moment de la création (cf. `finaliserPremiereConfiguration()`), pas
-recalculés ensuite. À sa création, un profil est amorcé avec trois
+`sprites`/`dodo` sont calculés depuis les traits choisis
+(`spritesPourTraits()`, cf. "Avatars" plus bas) au moment de la création
+(cf. `finaliserPremiereConfiguration()`), pas recalculés ensuite. À sa
+création, un profil est amorcé avec trois
 routines de départ génériques (`routinesDemarrage(prenom, silhouette)`,
 cf. "Ce qui est couvert" plus haut), directement dans `routines_perso` —
 ce ne sont pas des routines "en dur" spéciales, juste le point de départ,
@@ -338,25 +339,38 @@ le mode debug (`acolyte_debug`).
 
 ### Avatars
 
-`AVATARS_DISPONIBLES` (`app.js`) — 4 avatars complets (base + calques,
-même forme qu'un `sprites` de profil), générés par
-`scripts/generate_sprites_detailed_preview.py` (cf. le dict `CHILDREN` en
-tête de ce script pour les 4 combinaisons peau/cheveux/silhouette) puis
-copiés dans `app/assets/avatar/` sous ces noms. Deux silhouettes (champ
-`silhouette`, "pantalon"/"robe") : pilote uniquement le gabarit de
-routines de départ amorcé à la création d'un profil
-(`routinesDemarrage()`) — un parent peut ensuite ajouter les deux jeux de
-vêtements à une même routine si besoin. Proposés dans une grille à la
-première configuration (`construireGrilleAvatarsInitiale()`) ; le choix
-est définitif pour ce profil (pas de re-sélection depuis l'espace
+Personnalisable par traits combinables (`app.js`) plutôt qu'un choix
+figé entre quelques avatars complets : genre (`garcon`/`fille`,
+détermine `silhouette` — voir plus bas), coupe de cheveux
+(`COUPES_PAR_GENRE`, 2 par genre), couleur de peau (`PEAUX`), couleur de
+cheveux (`CHEVEUX_COULEURS`), couleur d'yeux (`YEUX_COULEURS`). Choisis
+via des menus à l'écran de première configuration
+(`construireChoixApparenceInitiale()`), jamais une galerie à parcourir —
+320 combinaisons (4 peaux × 5 cheveux × 4 coupes × 4 yeux) rendraient ça
+impraticable. `spritesPourTraits()` résout la combinaison choisie
+(`configInitiale`, ou un profil déjà créé) vers les fichiers réels ; le
+choix est définitif pour ce profil (pas de re-sélection depuis l'espace
 parent pour l'instant — recréer un profil si besoin, cf. "Cet appareil").
-Ajouter un 5ᵉ avatar = ajouter une entrée à `CHILDREN` dans le script,
-relancer `python3 scripts/generate_sprites_detailed_preview.py`, copier
-les fichiers `<id>_calque_*.png`/`<id>_dodo.png` obtenus dans
-`app/assets/avatar/` sous `<id>-*.png` (cf. le script pour le détail du
-mapping nom de sortie → nom copié), ajouter l'entrée dans
-`AVATARS_DISPONIBLES`, et penser à ajouter les nouveaux fichiers à
-`A_METTRE_EN_CACHE` dans `sw.js` (cf. "Points d'entrée" plus bas).
+
+Corps/visage (`base`/`dodo`) : un fichier par combinaison, généré à
+l'avance par `scripts/generate_sprites_detailed_preview.py`
+(`generer_avatars_perso()`) directement dans `app/assets/avatar/perso/`,
+nommés `<coupe>-<peau>-<cheveux>-<yeux>-{base,dodo}.png` — ids qui
+doivent rester synchronisés entre le script et les constantes
+`PEAUX`/`CHEVEUX_COULEURS`/`YEUX_COULEURS` d'`app.js` (même ids `p1-4`/
+`n1-5`/`y1-4`). Vêtements : volontairement PAS concernés par ce choix
+(non demandé) — un seul jeu de calques par silhouette
+(`CALQUES_PAR_SILHOUETTE`, "pantalon"→`avatar-a-*`, "robe"→`avatar-c-*`),
+partagé par toutes les combinaisons de cette silhouette ; `silhouette`
+pilote aussi le gabarit de routines de départ amorcé à la création d'un
+profil (`routinesDemarrage()`).
+
+Ajouter une couleur/coupe = ajouter une entrée aux constantes
+correspondantes des DEUX côtés (script Python ET `app.js`, mêmes ids),
+relancer `python3 scripts/generate_sprites_detailed_preview.py` (régénère
+tout `perso/`, pas seulement les nouvelles combinaisons). Un profil déjà
+créé garde ses fichiers existants (chemin déjà résolu et stocké dans
+`sprites`/`dodo`, jamais recalculé) — rien à migrer.
 
 ## État et persistance
 

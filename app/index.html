@@ -477,8 +477,33 @@
         <input type="text" id="pc-prenom" placeholder="Ex : Sacha" maxlength="30">
       </label>
       <div class="champ-parent">
-        <span>Avatar</span>
-        <div id="pc-avatars-grille" class="pc-avatars-grille"></div>
+        <span>Garçon ou fille ?</span>
+        <div class="nr-lieu-choix">
+          <button type="button" class="nr-lieu-btn choisi" id="pc-genre-garcon">Garçon</button>
+          <button type="button" class="nr-lieu-btn" id="pc-genre-fille">Fille</button>
+        </div>
+      </div>
+      <!-- Aperçu de la combinaison en cours (jamais le moyen de choisir —
+           cf. #pc-coupe-choix/#pc-peau-choix/etc. plus bas, de simples
+           menus, pas une galerie de portraits à parcourir). -->
+      <div id="pc-avatar-apercu">
+        <img id="pc-avatar-apercu-img" src="" alt="">
+      </div>
+      <div class="champ-parent">
+        <span>Coupe de cheveux</span>
+        <div id="pc-coupe-choix" class="nr-lieu-choix"></div>
+      </div>
+      <div class="champ-parent">
+        <span>Couleur de peau</span>
+        <div id="pc-peau-choix" class="pc-swatches"></div>
+      </div>
+      <div class="champ-parent">
+        <span>Couleur de cheveux</span>
+        <div id="pc-cheveux-choix" class="pc-swatches"></div>
+      </div>
+      <div class="champ-parent">
+        <span>Couleur des yeux</span>
+        <div id="pc-yeux-choix" class="pc-swatches"></div>
       </div>
       <div id="pc-erreur" class="texte-erreur"></div>
     </div>

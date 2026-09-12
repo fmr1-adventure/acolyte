@@ -774,15 +774,27 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 /* Grille de choix d'avatar (première configuration / "+ Nouvel enfant"),
    même esprit que .etoile-note-btn (bouton "éteint" tant que non choisi) —
    la vignette (sprite de base) porte le choix, pas un texte à côté. */
-.pc-avatars-grille { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.pc-avatar-carte {
+/* Aperçu de la combinaison de traits en cours (genre/coupe/peau/cheveux/
+   yeux, cf. construireChoixApparenceInitiale() dans app.js) — jamais
+   cliquable, un simple retour visuel pendant que les vrais choix se font
+   via les menus (.nr-lieu-choix pour la coupe, .pc-swatches ci-dessous
+   pour les couleurs) plutôt qu'en parcourant des portraits. */
+#pc-avatar-apercu {
+  display: flex; justify-content: center; padding: 8px 0;
   background: var(--surface); border: 2px solid var(--surface-high);
-  padding: 6px; display: flex; align-items: center; justify-content: center;
-  aspect-ratio: 1; opacity: .55;
 }
-.pc-avatar-carte img { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
-.pc-avatar-carte.choisi { opacity: 1; border-color: var(--accent); background: rgba(240,149,47,.14); }
-.pc-avatar-carte:active { transform: translate(1px, 1px); }
+#pc-avatar-apercu-img { width: 96px; height: auto; image-rendering: pixelated; }
+/* Couleur de peau/cheveux/yeux : la pastille de couleur porte le choix
+   (même esprit que .pc-avatar-carte avant elle), pas un aperçu du
+   personnage entier — inutile de recomposer un portrait par couleur
+   quand la teinte seule suffit à choisir. */
+.pc-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.pc-swatch {
+  width: 40px; height: 40px; border: 3px solid var(--surface-high);
+  padding: 0;
+}
+.pc-swatch.choisi { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(240,149,47,.35) inset; }
+.pc-swatch:active { transform: translate(1px, 1px); }
 .champ-parent { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 700; color: var(--text-soft); }
 .champ-parent input[type="text"] {
   font: inherit; font-size: 17px; font-weight: 600; color: var(--text);

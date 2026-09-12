@@ -43,7 +43,9 @@ Aucun prénom, avatar ou contenu de famille n'est intégré à l'application
 : tout se configure directement dedans, sans jamais toucher au code. Au
 tout premier lancement sur un appareil (ou en ajoutant un enfant
 supplémentaire depuis l'espace parent), un court parcours demande le
-prénom de l'enfant, un avatar à choisir parmi plusieurs, puis un code
+prénom de l'enfant, si c'est un garçon ou une fille, puis son avatar —
+coupe de cheveux, couleur de peau, de cheveux et d'yeux, chacun avec un
+aperçu qui se met à jour au fur et à mesure des choix — et enfin un code
 parent à définir (deux fois, comme un nouveau mot de passe) — trois
 routines de départ (s'habiller, se préparer à partir, aller se coucher)
 sont aussitôt disponibles, avec un texte déjà personnalisé au prénom

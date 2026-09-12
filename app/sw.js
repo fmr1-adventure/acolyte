@@ -14,51 +14,36 @@
  * forcer un rafraîchissement) : `activate` supprime les caches d'un nom
  * différent.
  *
- * Les 4 jeux d'avatar proposés à la première configuration (cf.
- * AVATARS_DISPONIBLES dans app.js) sont tous mis en cache ici, même si un
- * appareil donné n'en affiche jamais qu'un seul (celui choisi pour son
- * profil) : ce fichier ne sait pas à l'avance lequel, et le coût
- * (quelques petits PNG) est négligeable pour un usage à la maison.
+ * Avatar personnalisable (cf. PEAUX/CHEVEUX_COULEURS/COUPES_PAR_GENRE/
+ * YEUX_COULEURS dans app.js) : 320 combinaisons possibles pour le corps/
+ * visage (assets/avatar/perso/), bien trop pour toutes les précharger
+ * comme au temps des 4 avatars fixes. Seuls les 2 jeux de vêtements
+ * partagés (silhouette pantalon/robe, réutilisés par toutes les
+ * combinaisons) sont précachés ici ; le corps/visage choisi par la
+ * famille est mis en cache la première fois qu'il s'affiche (install
+ * initiale, en ligne) grâce à la stratégie stale-while-revalidate
+ * ci-dessous — jamais un problème en usage réel, seulement le tout
+ * premier écran de configuration doit être en ligne.
  */
-const CACHE_NAME = "acolyte-v14";
+const CACHE_NAME = "acolyte-v15";
 const A_METTRE_EN_CACHE = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.json",
-  "./assets/avatar/avatar-a-base.png",
   "./assets/avatar/avatar-a-calecon.png",
   "./assets/avatar/avatar-a-haut.png",
   "./assets/avatar/avatar-a-pantalon.png",
   "./assets/avatar/avatar-a-chaussettes.png",
   "./assets/avatar/avatar-a-chaussures.png",
   "./assets/avatar/avatar-a-manteau.png",
-  "./assets/avatar/avatar-a-dodo.png",
-  "./assets/avatar/avatar-b-base.png",
-  "./assets/avatar/avatar-b-calecon.png",
-  "./assets/avatar/avatar-b-haut.png",
-  "./assets/avatar/avatar-b-pantalon.png",
-  "./assets/avatar/avatar-b-chaussettes.png",
-  "./assets/avatar/avatar-b-chaussures.png",
-  "./assets/avatar/avatar-b-manteau.png",
-  "./assets/avatar/avatar-b-dodo.png",
-  "./assets/avatar/avatar-c-base.png",
   "./assets/avatar/avatar-c-culotte.png",
   "./assets/avatar/avatar-c-haut.png",
   "./assets/avatar/avatar-c-robe.png",
   "./assets/avatar/avatar-c-chaussettes.png",
   "./assets/avatar/avatar-c-chaussures.png",
   "./assets/avatar/avatar-c-manteau.png",
-  "./assets/avatar/avatar-c-dodo.png",
-  "./assets/avatar/avatar-d-base.png",
-  "./assets/avatar/avatar-d-culotte.png",
-  "./assets/avatar/avatar-d-haut.png",
-  "./assets/avatar/avatar-d-robe.png",
-  "./assets/avatar/avatar-d-chaussettes.png",
-  "./assets/avatar/avatar-d-chaussures.png",
-  "./assets/avatar/avatar-d-manteau.png",
-  "./assets/avatar/avatar-d-dodo.png",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
   "./assets/scenes/fenetre-voiture.jpg",
