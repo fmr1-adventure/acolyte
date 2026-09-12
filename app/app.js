@@ -44,7 +44,7 @@
 // `?debug=1` à chaque fois que le port change d'une session de test à
 // l'autre) ; ailleurs (ex. une URL de prévisualisation non-localhost),
 // activable une fois via `?debug=1` dans l'URL, retenu ensuite sur CET
-// appareil/navigateur via `dayrise_debug` (localStorage) — partagé par
+// appareil/navigateur via `acolyte_debug` (localStorage) — partagé par
 // appareil, pas par enfant (un appareil de test reste en debug quel que
 // soit le profil affiché dessus, cf. `resoudreProfilActif()` plus bas).
 // N'affecte jamais les tablettes réelles des enfants : elles ne
@@ -58,8 +58,8 @@
   try {
     const params = new URLSearchParams(location.search);
     if (params.has("debug")) {
-      if (params.get("debug") === "0") localStorage.removeItem("dayrise_debug");
-      else localStorage.setItem("dayrise_debug", "1");
+      if (params.get("debug") === "0") localStorage.removeItem("acolyte_debug");
+      else localStorage.setItem("acolyte_debug", "1");
     }
   } catch (e) {}
 })();
@@ -68,7 +68,7 @@ function modeDebugActif() {
   // `leon_debug` : ancienne clé (avant le support multi-profil), lue en
   // secours pour ne pas redemander `?debug=1` sur un appareil qui l'avait
   // déjà activé — jamais réécrite.
-  try { return localStorage.getItem("dayrise_debug") === "1" || localStorage.getItem("leon_debug") === "1"; } catch (e) { return false; }
+  try { return localStorage.getItem("acolyte_debug") === "1" || localStorage.getItem("leon_debug") === "1"; } catch (e) { return false; }
 }
 
 // `dateDebugForcee` (Date, null = heure réelle) simule le moment présent
@@ -87,18 +87,18 @@ function dateActuelle() {
   return dateDebugForcee || new Date();
 }
 
-// Code parent : persisté à part (`dayrise_code_parent`), modifiable depuis
+// Code parent : persisté à part (`acolyte_code_parent`), modifiable depuis
 // l'espace parent (cf. demarrerChangementCode()) — "1234" tant qu'aucun
 // nouveau code n'a été enregistré. Partagé par APPAREIL, pas par enfant
 // (cf. resoudreProfilActif() plus bas) : ce sont les mêmes parents des
 // deux côtés, pas une raison d'avoir deux codes à retenir.
 function codeParentActuel() {
   try {
-    return localStorage.getItem("dayrise_code_parent") || "1234";
+    return localStorage.getItem("acolyte_code_parent") || "1234";
   } catch (e) { return "1234"; }
 }
 function sauverCodeParent(code) {
-  try { localStorage.setItem("dayrise_code_parent", code); } catch (e) {}
+  try { localStorage.setItem("acolyte_code_parent", code); } catch (e) {}
 }
 
 // ---------------------------------------------------------------------
@@ -129,10 +129,10 @@ const PROFILS = {};
 // `toutesLesAventures()`, qui traitent un profil sans accesseur comme un
 // catalogue de base vide).
 function chargerProfilsPerso() {
-  try { return JSON.parse(localStorage.getItem("dayrise_profils_perso") || "[]"); } catch (e) { return []; }
+  try { return JSON.parse(localStorage.getItem("acolyte_profils_perso") || "[]"); } catch (e) { return []; }
 }
 function sauverProfilsPerso(liste) {
-  try { localStorage.setItem("dayrise_profils_perso", JSON.stringify(liste)); } catch (e) {}
+  try { localStorage.setItem("acolyte_profils_perso", JSON.stringify(liste)); } catch (e) {}
 }
 // Même principe de masquage par id que toutesLesRoutines() : un profil
 // perso remplace une éventuelle entrée PROFILS du même id plutôt que de
@@ -150,7 +150,7 @@ function tousLesProfils() {
   try {
     const params = new URLSearchParams(location.search);
     if (params.has("enfant") && tousLesProfils()[params.get("enfant")]) {
-      localStorage.setItem("dayrise_enfant", params.get("enfant"));
+      localStorage.setItem("acolyte_enfant", params.get("enfant"));
     }
   } catch (e) {}
 })();
@@ -159,7 +159,7 @@ function tousLesProfils() {
 // d'appeler `chargerEtat()`/`profilActif()` (qui supposent un profil réel).
 function profilActifId() {
   try {
-    const stocke = localStorage.getItem("dayrise_enfant");
+    const stocke = localStorage.getItem("acolyte_enfant");
     if (stocke && tousLesProfils()[stocke]) return stocke;
   } catch (e) {}
   return null;
@@ -320,7 +320,7 @@ function demarrerCodeInitial() {
 // Code confirmé deux fois (cf. validerCode(), branche "initial2") : crée
 // réellement le profil — jusqu'ici rien n'était encore écrit à part le
 // prénom/avatar en mémoire (`configInitiale`). Ordre important : le
-// profil doit exister dans `profils_perso` ET `dayrise_enfant` doit déjà
+// profil doit exister dans `profils_perso` ET `acolyte_enfant` doit déjà
 // pointer dessus avant d'amorcer routines_perso, puisque
 // `sauverRoutinesPerso()` passe par `cle()` -> `profilActif()`.
 function finaliserPremiereConfiguration() {
@@ -331,7 +331,7 @@ function finaliserPremiereConfiguration() {
   const perso = chargerProfilsPerso();
   perso.push(profil);
   sauverProfilsPerso(perso);
-  try { localStorage.setItem("dayrise_enfant", id); } catch (e) {}
+  try { localStorage.setItem("acolyte_enfant", id); } catch (e) {}
 
   sauverRoutinesPerso(routinesDemarrage(profil.prenom, avatar.silhouette).map(r =>
     (r.id === "shabiller" || r.id === "partir") ? Object.assign({ chainee: true }, r) : r
@@ -947,7 +947,7 @@ function construireCalquesAvatar(idConteneur) {
 // session (cf. resoudreProfilActif()) — changer d'appareil, pas d'onglet.
 function appliquerProfilAuDom() {
   const profil = profilActif();
-  document.title = "Dayrise — " + profil.prenom;
+  document.title = "Acolyte — " + profil.prenom;
   ["prenom-menu", "prenom-routine", "arrivee-prenom-enfant"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = profil.prenom;
@@ -2553,7 +2553,7 @@ function ouvrirNouveauProfilDepuisAppareil() {
 // rechargement est donc plus sûr qu'essayer de tout re-synchroniser à la
 // main depuis ce seul écran.
 function changerProfilAppareil(id) {
-  try { localStorage.setItem("dayrise_enfant", id); } catch (e) {}
+  try { localStorage.setItem("acolyte_enfant", id); } catch (e) {}
   location.reload();
 }
 

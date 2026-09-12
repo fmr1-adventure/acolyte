@@ -1,4 +1,4 @@
-# Dayrise — Fonctionnalités
+# Acolyte — Fonctionnalités
 
 *Document vivant, tenu à jour au fil des sessions de développement à
 chaque fonctionnalité livrée. Objectif : donner une vue d'ensemble claire
@@ -10,7 +10,7 @@ l'avancement au jour le jour (chantiers en cours, pas encore fait), voir
 
 ## En une phrase
 
-Dayrise est une application pour tablette qui aide un enfant à accomplir
+Acolyte est une application pour tablette qui aide un enfant à accomplir
 ses routines du quotidien — se réveiller, s'habiller, se préparer, se
 coucher... — en autonomie, sous la forme d'un petit jeu doux en pixel
 art, sans avoir besoin de savoir lire.

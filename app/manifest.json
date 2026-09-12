@@ -1,6 +1,6 @@
 {
-  "name": "Dayrise",
-  "short_name": "Dayrise",
+  "name": "Acolyte",
+  "short_name": "Acolyte",
   "description": "Routines du jour en autonomie, en pixel art",
   "start_url": "./index.html",
   "scope": "./",
