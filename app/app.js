@@ -2431,20 +2431,31 @@ function assurerMinuteurPourRoutine(routine) {
 
 // Affiche/masque le widget de tâche (#minuteur-widget, dans screen-routine)
 // selon la tâche courante — appelée depuis synchroniserRoutineEcran() à
-// chaque rendu. `btn-minuteur-widget-fini` n'apparaît que pour une tâche
-// SANS zone (rien d'autre pour la valider) ; la jauge/chrono/SOS
-// n'apparaissent que pendant un vrai décompte (pas verification1/bloque,
-// gérés par leurs propres écrans plein écran).
+// chaque rendu. Le widget doit apparaître si l'UN OU L'AUTRE est vrai :
+// un minuteur est réglé (jauge/chrono/SOS, seulement pendant un vrai
+// décompte — pas verification1/bloque, gérés par leurs propres écrans
+// plein écran) OU la tâche n'a pas de zone à glisser (`btn-minuteur-widget-fini`,
+// seule façon de la valider dans ce cas). Les deux sont indépendants
+// (cf. creerNouvelleRoutine()) : une tâche sans zone ET sans minuteur
+// doit quand même afficher le bouton "J'ai fini" — sinon elle n'est
+// validable d'aucune façon (bug réel signalé par Léon : case "Glisser
+// pour valider" décochée sans minuteur réglé, tâche bloquée des deux
+// côtés).
 function synchroniserMinuteurWidget(prochaine, routine) {
   const widget = document.getElementById("minuteur-widget");
-  if (!prochaine || !prochaine.minuteurDuree) { widget.classList.add("hidden"); return; }
-  const minuteur = assurerMinuteurPourTache(prochaine, routine);
-  widget.classList.remove("hidden");
-  const enDecompte = minuteur.etape === "decompte" || minuteur.etape === "decompte2";
-  document.getElementById("minuteur-widget-decompte").classList.toggle("hidden", !enDecompte);
-  if (enDecompte) dessinerMinuteurWidget(minuteur);
   const btnFini = document.getElementById("btn-minuteur-widget-fini");
-  btnFini.classList.toggle("hidden", !!prochaine.zone);
+  const aMinuteur = !!(prochaine && prochaine.minuteurDuree);
+  const sansGeste = !!(prochaine && !prochaine.zone);
+  if (!prochaine || (!aMinuteur && !sansGeste)) { widget.classList.add("hidden"); return; }
+  widget.classList.remove("hidden");
+  let enDecompte = false;
+  if (aMinuteur) {
+    const minuteur = assurerMinuteurPourTache(prochaine, routine);
+    enDecompte = minuteur.etape === "decompte" || minuteur.etape === "decompte2";
+    if (enDecompte) dessinerMinuteurWidget(minuteur);
+  }
+  document.getElementById("minuteur-widget-decompte").classList.toggle("hidden", !enDecompte);
+  btnFini.classList.toggle("hidden", !sansGeste);
   btnFini.onclick = () => marquerTache(prochaine.id, true);
 }
 
@@ -3571,20 +3582,21 @@ function creerNouvelleRoutine() {
     // cf. routinesDemarrage() plus haut).
     const origTache = original && original.taches[i - 1];
     const tache = Object.assign({}, origTache, { texte, emoji, id: (origTache && origTache.id) || ("t" + i) });
-    // Minuteur : indépendant de la case "Corps" — une tâche à glisser-
-    // déposer (ex. "Mets ton caleçon") peut très bien avoir un minuteur
-    // affiché à côté (cf. synchroniserMinuteurWidget()) sans que ça
-    // change comment elle se valide. Seule une tâche SANS zone (case
-    // décochée, ex. "Fais tes devoirs") s'appuie sur le bouton "J'ai
-    // fini" du widget pour se faire valider, faute de cible à glisser.
+    // Minuteur : indépendant de la case "Glisser pour valider" — une
+    // tâche à glisser-déposer (ex. "Mets ton caleçon") peut très bien
+    // avoir un minuteur affiché à côté (cf. synchroniserMinuteurWidget())
+    // sans que ça change comment elle se valide. Seule une tâche SANS
+    // zone (case décochée, ex. "Fais tes devoirs") s'appuie sur le
+    // bouton "J'ai fini" du widget pour se faire valider, minuteur réglé
+    // ou non (corrigé : ce bouton restait caché sans minuteur avant).
     if (minuteurMinutes) {
       tache.minuteurDuree = Math.max(1, Math.round(parseFloat(minuteurMinutes) * 60));
       tache.minuteurAlertes = minuteurAlertes;
     } else {
       delete tache.minuteurDuree; delete tache.minuteurAlertes;
     }
-    // Case "Corps" (une seule cible pour tout l'habillage, #zone-corps,
-    // cf. index.html/styles.css) : jamais pour "dents"/"histoire"
+    // Case "Glisser pour valider" (une seule cible pour tout l'habillage,
+    // #zone-corps, cf. index.html/styles.css) : jamais pour "dents"/"histoire"
     // (miniJeu déjà présent sur l'originale, préservé tel quel par
     // Object.assign() ci-dessus) ni pour une tâche structurellement à
     // part (`avatarGlissable`/"enlève tes vêtements", `pileGlissable`/
@@ -4192,9 +4204,12 @@ function allerFinDeJournee() {
 // renseigner `#coffre-texte`/`#coffre-recompense-texte`, puis renvoyer
 // `{ texteVoix, symbolesConfettis, emojiRevele }` — `emojiRevele` (ex.
 // "⭐") remplace le 🎁 au moment de l'ouverture, pour que ce soit
-// l'étoile elle-même qui apparaisse, pas un cadeau générique. Sans
-// `avantOuverture` (fin de journée, aventures) : comportement inchangé,
-// ouverture immédiate, 🎁 reste 🎁.
+// l'étoile (ou la pièce, cf. `terminerAventure`) elle-même qui
+// apparaisse, pas un cadeau générique. Sans `avantOuverture` (fin de
+// journée seulement, désormais) : comportement inchangé, ouverture
+// immédiate, 🎁 reste 🎁 — pas de parent qui vient de taper un code
+// juste avant dans ce cas, contrairement à une routine ou une aventure
+// (cf. TODO.md, point resté ouvert : faut-il aligner aussi celle-là ?).
 let coffreRetour = null;
 let coffreAvantOuverture = null;
 function ouvrirCoffre(texteVoix, symbolesConfettis, retour, avantOuverture) {
@@ -4486,18 +4501,23 @@ function allerValidationArrivee() {
 
 // Fin d'une aventure (une fois l'arrivée à la maison confirmée). Sans
 // récompense propre (une visite chez une praticienne, typiquement) :
-// retour direct au menu. Avec récompense (`recompensePieces` > 0) : la
-// pièce sort du coffre, même écran/même geste que la récompense de fin de
-// journée (cf. `ouvrirCoffre`).
+// retour direct au menu. Avec récompense (`recompensePieces` > 0) :
+// même principe "parent déverrouille, enfant ouvre" que
+// `ouvrirCoffreRoutine()` — le code parent qu'on vient de taper pour
+// confirmer l'arrivée tient lieu de déverrouillage, mais la pièce n'est
+// donnée (`ajouterPieces()`) que quand l'enfant tape lui-même le coffre
+// (cf. `avantOuverture` dans `ouvrirCoffre()`/`ouvrirCadenasCoffre()`).
 function terminerAventure(a) {
   aventureActuelleId = null;
   if (a.recompensePieces > 0) {
-    const total = ajouterPieces(a.recompensePieces);
-    const prenom = profilActif().prenom;
-    document.getElementById("coffre-texte").textContent = "Bravo " + prenom + ", tu as fait : " + a.lieu + " !";
-    document.getElementById("coffre-recompense-texte").textContent =
-      "+ " + a.recompensePieces + " 🪙 (" + total + " au total)";
-    ouvrirCoffre("Bravo " + prenom + ", tu as gagné une pièce !", ["🪙", "✨", "🎉", "🪙", "✨"], () => construireMenu());
+    ouvrirCoffre(null, null, () => construireMenu(), () => {
+      const total = ajouterPieces(a.recompensePieces);
+      const prenom = profilActif().prenom;
+      document.getElementById("coffre-texte").textContent = "Bravo " + prenom + ", tu as fait : " + a.lieu + " !";
+      document.getElementById("coffre-recompense-texte").textContent =
+        "+ " + a.recompensePieces + " 🪙 (" + total + " au total)";
+      return { texteVoix: "Bravo " + prenom + ", tu as gagné une pièce !", symbolesConfettis: ["🪙", "✨", "🎉", "🪙", "✨"], emojiRevele: "🪙" };
+    });
     return;
   }
   construireMenu();

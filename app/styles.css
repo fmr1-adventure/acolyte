@@ -42,7 +42,14 @@ html, body {
   margin: 0; padding: 0; min-height: 100%; width: 100%; overflow-x: hidden;
   background: var(--bg); color: var(--text);
   font-family: "Atkinson Hyperlegible", "Segoe UI", Roboto, Arial, sans-serif;
-  -webkit-user-select: none; user-select: none; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none;
+  /* PAS `contain`/`none` : sur au moins un moteur Chromium testé, les
+     deux bloquent purement et simplement tout geste de scroll (molette
+     et tactile), pas juste le rebond/pull-to-refresh visé à l'origine —
+     confirmé en direct (retour Léon "le scroll ne marche pas", cf.
+     TODO.md), `auto` est la seule valeur qui laisse vraiment défiler une
+     page qui déborde. */
+  overscroll-behavior: auto;
 }
 /* Taille de base fluide : optimisée tablette (viewport ~600-900px en
    portrait sur une 11"), tout en restant raisonnable sur un écran plus
@@ -583,21 +590,24 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 #coffre-recompense { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 10px; }
 #coffre-recompense-texte { font-size: 22px; font-weight: 800; color: var(--accent-edge); }
 
-/* Bouton de validation des formulaires parent les plus longs — fixé au
-   viewport (position: fixed, pas juste "après le contenu") : ces écrans
-   défilent au niveau de la page entière plutôt que dans une zone
-   scrollable dédiée (cf. .screen, position: relative une fois actif),
-   donc un contenu qui grossit (ex. minuteur par tâche, cf.
-   .tache-parent-minuteur) repoussait un bouton simplement "en bas du
-   flux" hors champ, sans qu'il soit évident qu'il suffisait de défiler
-   pour le retrouver (retour de terrain). `position: sticky` ne suffit
-   pas ici (il faudrait déjà avoir défilé jusqu'à lui) : `fixed` le rend
-   visible dès l'ouverture de l'écran, quelle que soit la longueur du
-   formulaire — les mêmes bornes que #app (max-width 620px, centré) pour
-   rester aligné avec le reste du contenu. Le padding-bottom correspondant
-   sur les .._contenu (plus bas) évite que le dernier champ se retrouve
-   caché derrière.  */
-#btn-creer-routine, #btn-creer-aventure, #btn-creer-personne, #btn-continuer-premiere-configuration {
+/* Bouton d'action principal des formulaires/listes parent les plus
+   longs — fixé au viewport (position: fixed, pas juste "après le
+   contenu") : ces écrans défilent au niveau de la page entière plutôt
+   que dans une zone scrollable dédiée (cf. .screen, position: relative
+   une fois actif), donc un contenu qui grossit (ex. minuteur par
+   tâche, cf. .tache-parent-minuteur, ou simplement une longue liste
+   d'activités/routines/entourage) repoussait un bouton simplement "en
+   bas du flux" hors champ, sans qu'il soit évident qu'il suffisait de
+   défiler pour le retrouver (retour de terrain, formulaires ; même
+   souci relevé sur les catalogues "+ Nouveau X", cf. TODO.md). `position:
+   sticky` ne suffit pas ici (il faudrait déjà avoir défilé jusqu'à lui) :
+   `fixed` le rend visible dès l'ouverture de l'écran, quelle que soit la
+   longueur du contenu — les mêmes bornes que #app (max-width 620px,
+   centré) pour rester aligné avec le reste du contenu. Le padding-bottom
+   correspondant sur les .._contenu/.._liste (plus bas) évite que le
+   dernier champ/la dernière carte se retrouve caché derrière. */
+#btn-creer-routine, #btn-creer-aventure, #btn-creer-personne, #btn-continuer-premiere-configuration,
+#btn-nouvelle-activite, #btn-nouvelle-routine, #btn-nouvelle-personne {
   position: fixed; left: 18px; right: 18px; bottom: 18px; max-width: 584px; margin: 0 auto; z-index: 5;
 }
 .btn-continuer {
@@ -760,8 +770,17 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 }
 
 /* ---------- Espace parent ---------- */
-#parent-contenu, #parent-routines-liste, #parent-historique-liste, #parent-seances-liste, #parent-activites-liste, #parent-routines-catalogue-liste, #parent-entourage-liste, #parent-planning-journees-liste {
+#parent-contenu, #parent-routines-liste, #parent-historique-liste, #parent-seances-liste, #parent-planning-journees-liste {
   display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px;
+}
+/* Ces 3 catalogues ont un bouton "+ Nouveau X" fixé en bas d'écran
+   (#btn-nouvelle-activite/-routine/-personne, cf. règle position:fixed
+   plus haut) plutôt qu'à la suite de la liste — padding-bottom agrandi
+   (même valeur que les formulaires .._contenu plus bas) pour que la
+   dernière carte ne se retrouve pas cachée derrière, ce dont les listes
+   ci-dessus (pas de bouton fixe) n'ont pas besoin. */
+#parent-activites-liste, #parent-routines-catalogue-liste, #parent-entourage-liste {
+  display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px;
 }
 .carte-parent-soustitre { font-size: 13px; font-weight: 500; color: var(--text-faint); margin-top: 3px; }
 /* option pas encore construite : même style "verrouillee" que le menu,
