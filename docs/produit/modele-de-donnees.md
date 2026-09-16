@@ -46,7 +46,7 @@ l'arrivée, le `programme` (3 lignes annoncées à l'arrivée), une
 `personne` optionnelle (pour une sortie chez quelqu'un) et une `date`
 optionnelle (filtre pour savoir si elle apparaît dans les sorties du jour
 — une aventure sans date, comme une visite récurrente chez une
-praticienne, n'apparaît jamais toute seule, cf. TODO.md).
+praticienne, n'apparaît jamais toute seule).
 
 Créer une activité (espace parent) ne l'ajoute qu'au **catalogue** —
 jamais à un planning précis, ni aujourd'hui ni un jour futur. La placer
@@ -105,7 +105,7 @@ note obligatoire). Les deux champs cohabitent sans jamais se substituer
 l'un à l'autre.
 
 Consommateur futur envisagé : l'écran dédié à la tâche "histoire" du soir
-(cf. `TODO.md`, section "Pas encore designé") — "qui lit l'histoire, papa
+— "qui lit l'histoire, papa
 ou maman ?" pourrait piocher dans ce même catalogue plutôt que d'inventer
 son propre choix binaire.
 
@@ -119,5 +119,5 @@ son propre choix binaire.
 - Modélisation des "missions" (sorties/activités) par rapport aux
   routines — même entité, ou distincte ?
 - Barème précis étoiles → récompense de fin de journée.
-- D'autres routines à venir (dents, petit-déjeuner — déjà notées comme
-  mini-jeux à part dans `TODO.md`).
+- D'autres routines à venir (petit-déjeuner, envisagé comme un mini-jeu
+  à part, sur le modèle du brossage des dents qui en est déjà un).

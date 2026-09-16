@@ -1,12 +1,16 @@
 # Acolyte — jeu pixel art de routines pour enfants (TSA/TDAH)
 
+**Essayer l'app :** https://kristenify.github.io/acolyte/ — à ouvrir de
+préférence sur une tablette. Tout ce qui y est saisi (prénom, avatar,
+routines...) reste sur l'appareil, rien n'est envoyé à un serveur.
+
 ## Contexte du projet
 
 Application pour aider un ou plusieurs enfants — TSA et/ou TDAH à
 l'origine du projet, mais pas seulement — à accomplir leurs routines
-quotidiennes en autonomie, du réveil au retour à la maison. Le planning
-visuel de la journée et un jeu de vie en pixel art sont fusionnés en un
-seul objet : la journée est la carte, les lieux sont les niveaux, les
+quotidiennes en autonomie, du réveil au coucher. Le planning visuel de
+la journée et un jeu de vie en pixel art sont fusionnés en un seul
+objet : la journée est la carte, les lieux sont les niveaux, les
 routines sont des phases d'action (on doit faire quelque chose), les
 trajets/attentes sont des phases sans pression (on n'a rien à faire).
 Chaque enfant a son propre prénom, son propre avatar et ses propres
@@ -14,96 +18,125 @@ routines, configurés directement dans l'app (aucune information de
 famille n'est codée en dur) — voir "Adapter à ta famille" plus bas.
 
 **Appareil cible :** une tablette Android déjà possédée par la famille.
-App web autonome, sans build, installée localement (Chrome → "Ajouter à
-l'écran d'accueil"), fonctionnant **hors-ligne**.
+App web autonome, sans build, installée depuis le navigateur (Chrome,
+Firefox... → "Ajouter à l'écran d'accueil"), fonctionnant **hors-ligne**.
 
-**Contrainte structurante :** les enfants ne savent pas lire. Chaque
-écran doit être jouable à l'oreille et à l'image — texte jamais porteur
-d'information seule. Les réglages sensoriels (contraste, densité,
-mouvement, débit vocal) sont propres à chaque enfant.
+**Contrainte structurante :** les enfants ne savent pas forcément lire.
+Chaque écran doit être jouable à l'oreille et à l'image — le texte n'est
+jamais porteur d'information seul.
+
+## Ce que fait l'app
+
+Vue d'ensemble non technique, tenue à jour :
+[`docs/produit/fonctionnalites.md`](docs/produit/fonctionnalites.md).
+Détail technique : [`app/README.md`](app/README.md). En bref :
+
+- **Première configuration** sur chaque appareil : prénom, garçon ou
+  fille, avatar personnalisé (coupe, couleur de peau, de cheveux et
+  d'yeux), code parent. Trois routines de départ sont créées
+  ("S'habiller", "Se préparer à partir", "Aller se coucher").
+- **Réveil** : écran endormi avant l'heure, puis petit rituel (bonjour,
+  sommeil, humeur).
+- **Routines** : une suite de tâches, une à la fois, validées en glissant
+  une icône vers l'avatar qui s'habille au fur et à mesure. Mini-jeu pour
+  le brossage des dents, écran dédié pour l'histoire du soir. Le coucher
+  se débloque à heure fixe.
+- **Minuteur visuel** (optionnel) sur une tâche ou une routine entière,
+  en jauge ou en cadran, avec un bouton 🆘 « Besoin d'aide » et une
+  alerte au parent si l'enfant reste bloqué.
+- **Validation par un parent** (code, relecture/correction), puis
+  l'enfant ouvre lui-même un coffre qui lui donne son étoile.
+  Récompense de fin de journée et pièces à collectionner.
+- **Sorties** (école, courses, séance chez une praticienne...) : trajet
+  puis arrivée, avec un déroulé à part pour les séances (la praticienne
+  démarre la séance et laisse une note réservée aux parents).
+- **« Ma journée »** : planning chronologique des routines, sorties et
+  repas, modifiable par un parent, ajout rapide par phrase tapée ou
+  dictée.
+- **Espace parent** (code) : relancer une routine, historique des
+  journées, notes des séances, planning, création/modification des
+  routines et activités, entourage, profils de l'appareil.
 
 ## D'où vient ce projet (historique)
 
-1. Premières explorations (boutons électroniques, liseuse Kindle
-   recyclée) écartées — voir `docs/legacy/` pour le tout premier
-   prototype (prénoms fictifs), qui documentait ces décisions.
+1. Premières explorations (boutons électroniques, liseuse recyclée)
+   écartées — voir `docs/legacy/` pour le tout premier prototype
+   (prénoms fictifs), qui documentait ces décisions.
 2. **Handoff de design complet** reçu et versionné dans
    [`docs/design-handoff/`](docs/design-handoff/README.md) : bible
-   d'univers "Dayrise", 12 maquettes d'écran, calibrage sensoriel,
-   tokens de couleur/typo, modèle de données. C'est la référence
-   d'intention actuelle — **à lire avant toute décision de design ou de
-   flux**.
-3. Le projet a ensuite été testé en usage réel avec les deux premiers
-   enfants pour qui il a été conçu (prototype conservé en archive dans
-   `docs/legacy/`).
-4. Depuis ce test réel, le parcours et le modèle de données évoluent
-   au-delà du handoff initial (routines/tâches, missions, système de
-   récompense) — ces décisions produit propres au projet sont
-   versionnées au fil de l'eau dans
-   [`docs/produit/`](docs/produit/concept.md), distinctes du handoff reçu
-   (figé). Le prototype (`app/`) a été refondu en conséquence (menu de
-   routines, validation parent avec correction, jauge de journée,
-   première configuration par un parent — voir [`TODO.md`](TODO.md)) ;
-   les missions restent à faire.
+   d'univers, 12 maquettes d'écran, calibrage sensoriel, tokens de
+   couleur/typo, modèle de données. Il porte l'ancien nom de travail du
+   projet, "Dayrise". C'est la référence d'intention — **à lire avant
+   toute décision de design ou de flux**.
+3. Le prototype a ensuite été utilisé au quotidien par les deux premiers
+   enfants pour qui il a été conçu. Leurs retours ont fait évoluer le
+   parcours et le modèle de données au-delà du handoff initial ; ces
+   décisions produit propres au projet sont versionnées dans
+   [`docs/produit/`](docs/produit/concept.md), distinctes du handoff
+   (figé).
+4. Le projet a été rendu générique pour pouvoir être partagé : plus
+   aucun prénom, avatar ou contenu de famille dans le code, tout se
+   configure dans l'app.
 
 ## Où en est le projet
 
-Deux chantiers séparés, volontairement non synchronisés pour l'instant :
+### Prototype fonctionnel (`app/`) — priorité actuelle
 
-### 1. Prototype fonctionnel (`app/`) — priorité actuelle
+Tout le parcours décrit plus haut est jouable et utilisé en conditions
+réelles. L'avatar utilise de vrais sprites pixel art (calques révélés au
+fil des tâches) ; les autres décors restent simples (dégradés, formes
+CSS, emoji, quelques scènes illustrées pour le trajet et l'histoire du
+soir).
 
-Un parcours jouable, un ou plusieurs enfants chacun sur son propre
-appareil (pas un sélecteur de profil partagé) : menu de la journée
-listant des **routines** indépendantes ("S'habiller", "Se préparer à
-partir" — relation mère-fille Routine ↔ Tâches, cf. `docs/produit/`),
-chacune en glisser-déposer, suivie d'une validation parent (code +
-relecture/correction) qui accorde une étoile et remplit une jauge de
-journée. Récompense automatique une fois toutes les routines validées.
-L'avatar utilise déjà un vrai sprite (calques révélés progressivement,
-cohérents entre le menu et l'écran de routine, propre à chaque enfant —
-choisi parmi plusieurs avatars à la configuration) ; le reste du décor
-est encore en formes CSS + emoji. Trajet et arrivée chez une praticienne
-sont codés et branchés au parcours (ajoutée comme n'importe quelle
-activité depuis l'espace parent), mais réutilisent encore l'écran
-générique de n'importe quelle sortie — un enchaînement propre à une
-visite chez une praticienne reste à concevoir (voir [`TODO.md`](TODO.md)).
-Voir [`app/README.md`](app/README.md) pour le détail de ce qui est
-couvert.
+### Exploration de direction artistique (`scripts/`, `assets/`)
 
-### 2. Exploration de direction artistique (`scripts/`, `assets/`)
-
-En parallèle, exploration de ce à quoi pourraient ressembler des sprites
-et décors plus détaillés :
+En parallèle, exploration de sprites et décors plus détaillés :
 - génération procédurale (Python/Pillow) — voir `scripts/generate_*.py`
-  (c'est ce générateur qui alimente l'avatar du prototype, via
-  `app/assets/avatar/`)
-- intégration d'assets réels sous licence libre (packs Bitglow,
-  pièces vue du dessus) — voir `scripts/extract_sprites.py`
-  et `scripts/compose_room_*.py`, et `assets/external/*/license.txt`
-  pour les termes de licence de chaque pack.
+  (c'est ce générateur qui produit les sprites de l'avatar utilisés par
+  l'app, dans `app/assets/avatar/`)
+- intégration d'assets sous licence libre (packs Bitglow, pièces vue du
+  dessus) — voir `scripts/extract_sprites.py` et
+  `scripts/compose_room_from_assets.py`. Les packs eux-mêmes ne sont pas
+  versionnés (licence qui interdit leur redistribution), à télécharger
+  dans `assets/external/` pour lancer ces scripts.
 
-Le décor (pièces) de ces deux chantiers n'est pas encore relié au
-prototype — seul l'avatar l'est. Voir [`TODO.md`](TODO.md) pour la suite.
+Les décors de pièces issus de cette exploration ne sont pas encore
+reliés à l'app — seul l'avatar l'est.
+
+### Prochaines pistes
+
+- Calibrage sensoriel par enfant (contraste, densité, mouvement, débit
+  vocal).
+- Vrais décors de pièces dans l'app.
+- Récompense de fin de journée différenciée selon les étoiles gagnées.
+- Notes libres dans le planning ("un parent emmène un autre enfant à
+  l'école"), mode de transport par sortie (voiture, vélo, à pied).
+- Annoncer à l'enfant ce qui vient après ("On fait... / après on
+  fait...").
 
 ## Structure du dépôt
 
 ```
-routine-et-planning/
+acolyte/
 ├── README.md                     ce fichier
-├── TODO.md                       liste vivante : fait / prochaines étapes / mis de côté
-├── app/                          prototype fonctionnel (voir app/README.md)
+├── .github/workflows/deploy.yml  publication de app/ sur GitHub Pages à chaque push sur main
+├── app/                          l'application (voir app/README.md)
 │   ├── index.html
 │   ├── styles.css
 │   ├── app.js
-│   └── assets/avatar/            sprites de l'avatar (alimentés par scripts/generate_*.py)
+│   ├── sw.js                     service worker : fonctionnement hors-ligne
+│   ├── manifest.json             installation sur l'écran d'accueil
+│   └── assets/
+│       ├── avatar/               sprites de l'avatar (dont perso/ : toutes les combinaisons coupe/peau/cheveux/yeux)
+│       ├── icons/                icônes de l'app
+│       └── scenes/               images de scène (trajet, histoire du soir)
 ├── docs/
-│   ├── design-handoff/           référence de design "Dayrise" reçue (figée, à lire avant toute décision de flux/UI)
-│   ├── produit/                  décisions produit propres au projet, prises depuis (concept, parcours, modèle de données) + fonctionnalites.md (vue d'ensemble pour en parler, tenue à jour)
-│   └── legacy/                   tout premier prototype (Léo/Nina), conservé pour mémoire
+│   ├── design-handoff/           référence de design reçue (figée, à lire avant toute décision de flux/UI)
+│   ├── produit/                  décisions produit (concept, parcours, modèle de données) + fonctionnalites.md (vue d'ensemble tenue à jour)
+│   └── legacy/                   tout premier prototype (prénoms fictifs), conservé pour mémoire
 ├── scripts/                      génération procédurale + extraction de sprites (Python/Pillow)
 └── assets/
-    ├── external/                 packs tiers sous licence libre (Bitglow) + license.txt de chacun
-    └── generated/                sorties des scripts (sprites, aperçus de pièces) — pas de travail manuel dedans
+    └── generated/                sorties des scripts (sprites, aperçus) — pas de travail manuel dedans
 ```
 
 ## Gestion des branches
@@ -112,35 +145,24 @@ Une fois l'app installée sur les tablettes de vos enfants, ils l'utilisent
 tous les jours : le dépôt distingue donc une branche stable de ce qu'ils
 ont réellement sous les mains d'une branche de travail.
 
-- **`main`** — version stable, celle qui correspond à ce qui est
-  installé sur les tablettes. On n'y touche pas directement.
+- **`main`** — version stable, celle qui est publiée et installée sur
+  les tablettes. On n'y touche pas directement.
 - **`dev`** — branche de développement, où se fait tout le travail en
-  cours. C'est elle qui avance au fil des sessions.
+  cours.
 
 Workflow :
 
 1. Le travail se fait sur `dev` (ou une branche dédiée créée depuis
    `dev` pour un chantier précis, fusionnée dans `dev` une fois prête).
 2. Une fois un changement testé et jugé prêt, fusionner `dev` dans
-   `main` :
-   ```bash
-   git checkout main
-   git merge dev
-   ```
-3. C'est seulement à ce moment-là que les tablettes doivent être mises
-   à jour vers ce que contient `main` — pas à chaque session de travail
-   sur `dev`.
-4. Pousser `main` (`git push origin main`) déclenche automatiquement la
-   publication de `app/` sur GitHub Pages (cf. "Déploiement" ci-dessous)
-   — c'est ce qui rend le changement réellement disponible pour les
-   tablettes.
+   `main` (de préférence via une pull request, pour relire avant).
+3. Pousser `main` déclenche automatiquement la publication de `app/` sur
+   GitHub Pages (cf. "Déploiement" ci-dessous) — c'est ce qui rend le
+   changement réellement disponible pour les tablettes.
 
 ## Déploiement
 
-- **Dépôt** : le tien, une fois ce projet forké/cloné (public — pense à
-  exclure `assets/external/` si tu réutilises des packs sous licence non
-  redistribuable, cf. `.gitignore` : pas utilisé par l'app déployée de
-  toute façon).
+- **Dépôt** : le tien, une fois ce projet forké.
 - **App en ligne** : active GitHub Pages sur ton dépôt (Settings → Pages
   → Source : GitHub Actions) — `.github/workflows/deploy.yml` publie
   automatiquement `app/` à chaque push sur `main`, sur l'URL
@@ -150,10 +172,15 @@ Workflow :
   service worker (`app/sw.js`) met ensuite l'app en cache : elle
   continue de fonctionner **hors-ligne**, sans dépendre d'aucun serveur
   (ni GitHub, ni la machine utilisée pour développer) — voir
-  `app/README.md` pour le détail technique. Le premier lancement demande
-  le prénom de l'enfant, un avatar et un code parent (cf. "Adapter à ta
-  famille" ci-dessous) — rien à configurer dans le code pour un usage
-  courant.
+  `app/README.md` pour le détail technique. La première configuration
+  doit se faire avec une connexion internet.
+- **Mises à jour** : la tablette récupère la nouvelle version en tâche
+  de fond quand elle est connectée ; elle s'affiche à une ouverture
+  suivante de l'app (pas forcément la toute prochaine).
+- **Les données restent attachées à l'adresse** : pièces, historique et
+  réglages sont stockés par le navigateur pour cette URL précise. Changer
+  d'adresse (renommer le dépôt, changer de compte) ou de navigateur
+  repart d'une app vide.
 
 ## Adapter à ta famille
 
@@ -164,27 +191,28 @@ enfants :
 1. **Fork** ce dépôt sur ton compte GitHub (bouton "Fork" en haut de la
    page du dépôt).
 2. **Active GitHub Pages** sur ton fork (Settings → Pages → Source :
-   GitHub Actions) — le premier push déclenche `deploy.yml` et publie
-   `app/` sur ton URL `https://<ton-compte>.github.io/<ton-dépôt>/`.
+   GitHub Actions) — le premier push sur `main` déclenche `deploy.yml` et
+   publie `app/` sur ton URL `https://<ton-compte>.github.io/<ton-dépôt>/`.
 3. Sur la tablette de chaque enfant, ouvre cette URL une fois, puis
    "Ajouter à l'écran d'accueil" (cf. "Déploiement" ci-dessus).
-4. **Premier lancement** : l'app demande le prénom de l'enfant, un
-   avatar (à choisir parmi plusieurs), puis un code parent à 4 chiffres
-   (à définir deux fois, comme un nouveau mot de passe) — ça crée le
-   profil de cet appareil, avec trois routines de départ génériques
-   ("S'habiller", "Se préparer à partir", "Aller se coucher") aussitôt
-   modifiables. Chaque enfant a son propre appareil : répète cette étape
-   sur chaque tablette.
-5. Depuis l'espace parent (icône ⚙️ discrète en haut à gauche, code
-   demandé), personnalise ensuite : les tâches de chaque routine, les
-   activités/sorties (dont une visite chez une praticienne, si besoin —
-   "+ Nouvelle activité"), l'entourage ("+ Nouvelle personne"), le
-   planning du jour, ou ajoute un 2ᵉ enfant sur le même appareil ("Cet
-   appareil" → "+ Nouvel enfant") si jamais deux enfants partagent
-   exceptionnellement une tablette.
+4. **Premier lancement** : l'app demande le prénom de l'enfant, s'il
+   s'agit d'un garçon ou d'une fille, puis de composer son avatar (coupe
+   de cheveux, couleur de peau, de cheveux et d'yeux), et enfin un code
+   parent à 4 chiffres (à saisir deux fois). Ça crée le profil de cet
+   appareil, avec trois routines de départ aussitôt modifiables. Chaque
+   enfant a son propre appareil : répète cette étape sur chaque
+   tablette.
+5. Depuis l'espace parent (icône ⚙️ discrète en haut, code demandé),
+   personnalise ensuite : les tâches de chaque routine (et leur
+   minuteur éventuel), les activités/sorties (dont une visite chez une
+   praticienne, si besoin — "+ Nouvelle activité"), l'entourage
+   ("+ Nouvelle personne"), le planning du jour, ou ajoute un 2ᵉ enfant
+   sur le même appareil ("Cet appareil" → "+ Nouvel enfant") si jamais
+   deux enfants partagent exceptionnellement une tablette.
 
 Rien de tout ça ne touche au code : tout est stocké sur l'appareil
 (`localStorage`), jamais envoyé à un serveur ni au dépôt Git — voir
 `app/README.md` ("État et persistance") pour le détail technique. Éditer
-`app.js` reste utile pour des changements plus profonds (nouvel avatar,
-nouveau type d'écran...) mais n'est plus nécessaire pour l'usage courant.
+`app.js` reste utile pour des changements plus profonds (nouveaux
+vêtements, nouveau type d'écran...) mais n'est pas nécessaire pour
+l'usage courant.
