@@ -46,7 +46,7 @@ html, body {
   /* PAS `contain`/`none` : sur au moins un moteur Chromium testé, les
      deux bloquent purement et simplement tout geste de scroll (molette
      et tactile), pas juste le rebond/pull-to-refresh visé à l'origine —
-     confirmé en direct (retour Léon "le scroll ne marche pas", cf.
+     confirmé en direct (retour d'usage "le scroll ne marche pas", cf.
      TODO.md), `auto` est la seule valeur qui laisse vraiment défiler une
      page qui déborde. */
   overscroll-behavior: auto;
