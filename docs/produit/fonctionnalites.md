@@ -5,8 +5,8 @@ chaque fonctionnalité livrée. Objectif : donner une vue d'ensemble claire
 de ce que fait l'application, utilisable pour en parler (famille,
 professionnels, futurs collaborateurs...) sans avoir à lire le code. Pour
 le détail technique, voir [`app/README.md`](../../app/README.md) ; pour
-l'avancement au jour le jour (chantiers en cours, pas encore fait), voir
-[`TODO.md`](../../TODO.md) à la racine.*
+les pistes à venir, voir la section « Prochaines pistes » du
+[`README`](../../README.md) à la racine.*
 
 ## En une phrase
 
@@ -28,10 +28,11 @@ façonnent chaque écran :
 - **Pas besoin de savoir lire** — tout est jouable à l'oreille (voix
   automatique à chaque étape, rejouable) et à l'image (pictogrammes,
   sprites, couleurs), jamais au texte seul.
-- **L'enfant garde la main** — aucune étape n'est minutée de façon
-  anxiogène, aucune navigation n'est imposée de force ; quand quelque
-  chose est verrouillé, l'app l'explique calmement plutôt que de
-  bloquer sans raison.
+- **L'enfant garde la main** — aucune étape n'est minutée par défaut
+  (un minuteur ne s'affiche que si un parent l'a choisi, et l'enfant
+  peut toujours demander de l'aide), aucune navigation n'est imposée de
+  force ; quand quelque chose est verrouillé, l'app l'explique calmement
+  plutôt que de bloquer sans raison.
 - **Sur la tablette familiale, hors-ligne** — installée comme une
   vraie application (icône sur l'écran d'accueil), elle continue de
   fonctionner sans connexion internet une fois ouverte une première
@@ -83,8 +84,9 @@ enfants utilisent l'app, ils ont les mêmes routines de départ, dans le
 même ordre — mais pas forcément les mêmes tâches à l'intérieur : selon
 l'avatar choisi à la configuration, un enfant met une culotte, un haut et
 une robe là où un autre met un caleçon, un t-shirt et un pantalon,
-chacun avec l'avatar qui lui correspond. Deux tâches ont un
-traitement particulier :
+chacun avec l'avatar qui lui correspond. Une tâche sans geste à faire
+sur l'avatar (ex. « Fais tes devoirs ») se valide simplement avec un
+bouton « J'ai fini ». Deux tâches ont un traitement particulier :
 
 - **Le brossage des dents** est un mini-jeu avec un minuteur qui
   avance tout seul, sans rien à taper pendant le geste — les mains
@@ -96,6 +98,23 @@ traitement particulier :
 La routine du coucher se débloque à une heure fixe, indépendamment des
 autres routines : un enfant qui n'a rien fait d'autre de la journée
 peut toujours aller se coucher normalement.
+
+### Le minuteur visuel
+
+Un parent peut ajouter un minuteur à une tâche (ex. 10 minutes pour
+les devoirs) ou à une routine entière. Il s'affiche directement sur
+l'écran de la routine, à côté de la consigne, sans empêcher de faire
+glisser les icônes — au choix sous forme de jauge qui se vide ou de
+cadran qui rétrécit, pour voir le temps passer plutôt que lire des
+chiffres. Un bouton 🆘 « Besoin d'aide » reste toujours visible.
+
+Si le temps est écoulé et que la tâche n'est pas finie, l'app demande
+d'abord « As-tu besoin d'aide ? ». Si l'enfant répond non, un
+deuxième temps plus court lui est laissé ; s'il est à nouveau écoulé
+(ou si l'enfant a demandé de l'aide), l'écran attend un parent, qui
+débloque avec son code — et le minuteur repart pour une nouvelle
+chance. Ces alertes peuvent être désactivées : le minuteur devient
+alors un simple repère visuel qui s'arrête à zéro.
 
 ### La validation par un parent
 
@@ -122,7 +141,9 @@ praticienne, l'école) se joue en deux temps : le trajet (avec sa propre
 petite scène) puis l'arrivée, avant de rentrer à la maison — chaque
 étape confirmée par un parent. Une sortie peut rapporter des pièces,
 une monnaie à part des étoiles, qui ne repart jamais à zéro d'un jour
-sur l'autre.
+sur l'autre. Comme pour les routines, la pièce sort d'un coffre :
+le parent le déverrouille en confirmant le retour, et c'est l'enfant
+qui l'ouvre.
 
 Quand deux sorties se suivent directement dans le planning du jour (ex.
 deux visites chez une praticienne à la suite, sans repas ni routine
@@ -173,10 +194,13 @@ synchroniser séparément) :
   praticiennes, les plus récentes d'abord, sans avoir à les chercher
   jour par jour dans l'historique.
 - **Changer le code parent.**
-- **Modifier le planning du jour.**
+- **Préparer le planning** du jour et des 7 prochains jours, dans une
+  même liste.
 - **Créer et modifier des activités et des routines sur mesure**, sans
   toucher au code — y compris les routines de départ (S'habiller...),
-  pas seulement celles créées après coup. L'icône se choisit dans un
+  pas seulement celles créées après coup. Pour chaque tâche : une icône
+  à glisser vers l'avatar ou un simple bouton « J'ai fini », et un
+  minuteur optionnel. L'icône se choisit dans un
   large choix d'emoji qu'on retrouve en tapant un mot (« vélo », « chat »,
   « pizza »...), plutôt que dans une petite liste figée.
 - **Mon entourage** — un petit carnet des personnes autour de l'enfant,
@@ -197,8 +221,9 @@ donnée envoyée à un serveur : tout reste sur la tablette.
 
 ## Et ensuite
 
-Toujours en développement actif. Pistes en cours : concevoir
-l'enchaînement d'écrans propre aux sorties chez une praticienne (au-delà
-du trajet/arrivée génériques actuels), rendre le contenu (routines,
-sorties) paramétrable par un parent sans limite, affiner la direction
-artistique des décors — détail à jour dans [`TODO.md`](../../TODO.md).
+Toujours en développement actif. Pistes : des réglages sensoriels
+propres à chaque enfant (contraste, mouvement, débit de la voix), de
+vrais décors de pièces, une récompense de fin de journée qui varie
+selon les étoiles gagnées, des notes libres dans le planning, le mode de
+transport d'une sortie (voiture, vélo, à pied), et annoncer à l'enfant
+ce qui vient après (« On fait... / après on fait... »).
