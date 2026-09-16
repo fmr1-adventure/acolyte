@@ -7,8 +7,8 @@ navigateur bloque le chargement de `styles.css`/`app.js` en `file://`.
 
 **Concept validé par un test réel.** Utilisé au quotidien par les deux
 premiers enfants pour qui il a été conçu pendant que le reste de l'app se
-construit — voir `TODO.md` à la racine et `docs/produit/` pour le modèle
-qui a guidé cette version.
+construit — voir `docs/produit/` pour le modèle qui a guidé cette
+version.
 
 **Déploiement/installation sur la tablette d'un enfant** : l'app est
 publiée sur GitHub Pages (URL stable, HTTPS, indépendante de toute
@@ -100,7 +100,15 @@ cf. "Profils") puis librement modifiables comme n'importe quelle routine :
 
 Séquence :
 
-1. **Menu de la journée** — liste des routines. Seule la première non
+1. **Nuit et réveil** — une fois "Aller se coucher" validée, l'app
+   s'endort jusqu'au prochain `HEURE_REVEIL` (horodatage dans
+   `cle("reveil")`, clé à part de `cle("journee")` pour survivre au
+   passage de minuit) : `screen-dodo` montre l'avatar endormi, un bypass
+   parent permet de l'ouvrir. Après l'heure, un tap lance le rituel
+   `screen-reveil-bonjour` → `screen-reveil-dormi` → `screen-reveil-humeur`
+   (`ouvrirReveil()`/`finReveil()`), dont les réponses sont gardées dans
+   `etat.reveil` puis archivées dans l'historique.
+2. **Menu de la journée** — liste des routines. Seule la première non
    validée est cliquable ; les suivantes sont grisées/verrouillées (🔒)
    tant que **toutes** les précédentes ne sont pas validées (pas
    seulement l'immédiatement précédente — sinon relancer une routine du
@@ -114,10 +122,10 @@ Séquence :
    journée (une étoile par routine validée), et une horloge (jour +
    heure, `#horloge`/`majHorloge()`, purement informative). Un bouton
    voiture 🚗 distinct ("Partir à l'aventure") ouvre `screen-missions`
-   (actuellement vide, pas encore de mission) **seulement si** "Se
+   (les sorties du jour, cf. "Aventures" plus bas) **seulement si** "Se
    préparer à partir" est validée — sinon il ramène directement dans
    cette routine (`allerVersDepart()`).
-2. **Écran de routine** (générique, alimenté par la routine choisie) —
+3. **Écran de routine** (générique, alimenté par la routine choisie) —
    liste récapitulative complète toujours visible (l'enfant mesure ce
    qu'il reste à faire), ordre imposé (une seule tâche actionnable à la
    fois). Aucune ligne n'est tapable : seule l'icône de l'étape en cours,
@@ -125,18 +133,36 @@ Séquence :
    reste affiché à côté pendant le geste (lecture globale). Les tâches
    faites redescendent en bas de la liste. Un bouton retour discret (←,
    `btn-retour-routine`) ramène au menu sans rien perdre — pour un tap
-   accidentel sur la mauvaise routine.
-3. **Fin de routine** — félicitations spécifiques à la routine (texte +
+   accidentel sur la mauvaise routine. Une tâche sans `zone` (case
+   "Glisser pour valider" décochée dans le formulaire parent) n'a rien à
+   glisser : elle se valide avec le bouton "J'ai fini ✅"
+   (`synchroniserMinuteurWidget()`), qu'elle ait un minuteur ou non.
+   **Minuteur** optionnel, par tâche (`tache.minuteurDuree`, en secondes)
+   et/ou pour toute la routine (`routine.dureeGlobale`), affiché en
+   widget à côté de la consigne sans gêner le glisser-déposer, style
+   `routine.styleMinuteur` (`"jauge"` ou `"cadran"`). Fin prévue stockée
+   en horodatage dans `cle("minuteurs_actifs")` (survit à une fermeture
+   de l'app). Escalade si les alertes sont actives
+   (`tache.minuteurAlertes`/`routine.alertesGlobales`, vraies par
+   défaut) : temps écoulé → `screen-minuteur-verification` ("As-tu besoin
+   d'aide ?") → "Non" → 2ᵉ décompte plus court (60 s minimum) → temps
+   écoulé → `screen-minuteur-bloque`, débloqué par le code parent
+   (`debloquerMinuteurAvecCode()`), qui relance la durée d'origine. Le
+   bouton 🆘 "Besoin d'aide" mène directement au blocage, à tout moment.
+   Boucle de surveillance : `tickMinuteurGlobal()`.
+4. **Fin de routine** — félicitations spécifiques à la routine (texte +
    voix, personnalisées avec le prénom de l'enfant), puis message pour
    aller chercher un parent.
-4. **Validation parent** — code à 4 chiffres (choisi à la première
+5. **Validation parent** — code à 4 chiffres (choisi à la première
    configuration, cf. "Profils" plus bas) puis écran de
    **relecture/correction** : toutes les tâches redeviennent cliquables
    pour que le parent décoche ce qui n'a pas été réellement fait avant de
-   valider. À la validation : étoile gagnée, retour au menu.
-5. **Récompense de fin de journée** — automatique une fois toutes les
+   valider. La validation déverrouille le coffre de la routine
+   (`screen-coffre`) : c'est l'enfant qui tape dessus pour l'ouvrir et
+   faire sortir l'étoile (`ouvrirCoffreRoutine()`).
+6. **Récompense de fin de journée** — automatique une fois toutes les
    routines validées : confettis, total d'étoiles.
-6. **Aventures** (`AVENTURES_COMMUNES` dans `app.js` — un catalogue de
+7. **Aventures** (`AVENTURES_COMMUNES` dans `app.js` — un catalogue de
    départ commun, un exemple générique ; un profil n'a par ailleurs
    aucune aventure propre en dur, cf. "Profils" plus bas) — depuis le
    menu, "Partir à l'aventure" ouvre `screen-missions`, qui liste les
@@ -155,34 +181,50 @@ Séquence :
      → "C'est parti", qui déclenche un **trajet retour** vers la maison
      (texte différent, fenêtre + silhouette retournées en CSS,
      `sensTrajet`) plutôt que la récompense directement.
+   - **Séance chez une praticienne** (aventure avec un champ
+     `personne`, cf. `terminerVisite()`) : "C'est parti" demande d'abord
+     le code, tapé par la praticienne (`demarrerSeanceCode()`), puis
+     affiche `screen-seance` pendant qu'elle garde l'appareil. "Terminer
+     la séance" redemande le code et ouvre `screen-seance-note` : note
+     de 1 à 5 étoiles obligatoire, appréciation écrite optionnelle,
+     gardées dans `etat.seances` (jamais affichées à l'enfant, consultables
+     dans l'espace parent), puis trajet retour.
    - Une fois l'arrivée à la maison confirmée par un parent : la
      récompense. Une aventure peut rapporter des **pièces**
      (`recompensePieces`) au lieu d'une étoile de routine : monnaie
      séparée, stockée à part (`cle("pieces")`), jamais remise à zéro au
      changement de jour, affichée en permanence à côté de la jauge de
-     journée dès qu'elle est non nulle. Sort du même coffre que la
-     récompense de fin de journée (texte + confettis adaptés). Voir
+     journée dès qu'elle est non nulle. Sort d'un coffre que l'enfant
+     ouvre lui-même, comme pour une routine : le code parent tapé pour
+     confirmer le retour fait office de déverrouillage. Voir
      `docs/produit/concept.md` et `modele-de-donnees.md` pour la
      philosophie (pourquoi pas une étoile). Une visite chez une
      praticienne est une aventure comme une autre, ajoutée depuis
      l'espace parent ("+ Nouvelle activité") avec un champ `personne` —
      cf. plus bas, "Espace parent".
-7. **"Ma journée"** (`construireJournee()`, bouton secondaire sur le
+8. **"Ma journée"** (`construireJournee()`, bouton secondaire sur le
    menu) — le planning du jour (`etat.planning`) affiché **dans l'ordre
    chronologique** (routines, aventure(s) du jour, repas — `REPAS` —
-   mélangés en une seule liste, pas d'horaire pour l'instant). Calculé
+   mélangés en une seule liste). Chaque item peut porter une `heure`
+   optionnelle ; dès qu'il y en a, un repère "maintenant" suit l'horloge
+   (purement visuel, ne débloque rien). Calculé
    par défaut à chaque nouvelle journée (`PLANNING_DEFAUT` +
    insertion des aventures du jour via leur champ `apres`), puis
    **éditable** via un mode protégé par le code parent (bouton ✏️ →
    code → ▲/▼/✕ sur chaque ligne + un catalogue "Ajouter à la journée").
    Sortir du mode édition ne redemande pas le code ; revenir au menu si.
-8. **"Mes récompenses"** (`construireRecompenses()`, en tapant sur les
+   En mode édition, un parent peut aussi taper ou dicter une phrase
+   ("vélo 15h, goûter 17h") : `analyserTexteLibre()` extrait les heures
+   et rapproche le reste des catalogues existants par mots-clés
+   (reconnaissance locale, sans IA, dictée via `SpeechRecognition` quand
+   le navigateur la propose) ; chaque proposition est à confirmer.
+9. **"Mes récompenses"** (`construireRecompenses()`, en tapant sur les
    étoiles/pièces du menu) — étoiles du jour et total de pièces
    présentés comme des objets à collectionner (rotation continue,
    brillent au toucher). La pièce affiche un petit portrait de l'enfant
    teinté façon profil gravé sur une pièce d'or (`.piece-visage`),
    recadré depuis le sprite avatar existant — pas de nouvel asset dédié.
-9. **Espace parent** (`ouvrirEspaceParent()`, bouton ⚙️ discret en haut à
+10. **Espace parent** (`ouvrirEspaceParent()`, bouton ⚙️ discret en haut à
    gauche, sur tous les écrans — symétrique du reset, mais un simple tap
    suffit : rien ici n'est destructif) — hub protégé par le code parent,
    **directement lié à l'espace enfant** (même `app.js`, même état,
@@ -194,13 +236,20 @@ Séquence :
      décochables, bouton "Mettre à jour" au lieu de "Valider". Si la
      routine était validée, son étoile est retirée (regagnée à la
      revalidation par l'enfant) et `journeeFaite` repasse à `false`.
-   - **Historique des journées** — lecture seule de `cle("historique")`.
+   - **Historique des journées** — lecture seule de `cle("historique")`
+     (`construireHistorique()`), avec les réponses du réveil.
+   - **Notes des séances** — toutes les notes laissées par les
+     praticiennes, les plus récentes d'abord (`construireParentSeances()`).
    - **Changer le code parent** — deux saisies identiques de suite avant
      d'enregistrer, réutilise le même pavé numérique que la vérification
      (généralisé, cf. "Points d'entrée" plus bas). Partagé par
      **appareil**, pas par enfant (`acolyte_code_parent`, cf. "Profils").
-   - **Planning du jour** — lien direct vers le mode édition de "Ma
-     journée" existant, sans redemander le code.
+   - **Planning des journées** — une seule liste : aujourd'hui puis les
+     `JOURS_PLANNING_FUTUR` (7) prochains jours
+     (`construireParentPlanningJournees()`). Chaque ligne ouvre le même
+     écran d'édition que "Ma journée", sans redemander le code. Un jour
+     futur modifié est gardé dans `cle("planning_futur")` et devient le
+     planning du jour quand ce jour arrive.
    - **Activités** — liste toutes les activités (`toutesLesAventures()`),
      chacune tapable pour l'ajouter/retirer du planning du jour
      (`basculerActivitePlanning()`) — donc de "Partir à l'aventure".
@@ -213,19 +262,27 @@ Séquence :
      catalogue commun (`AVENTURES_COMMUNES`) via `toutesLesAventures()`
      partout où le code cherche une aventure — pas de distinction entre
      les sources ailleurs dans l'app.
-   - **Routines** — liste toutes les routines (`toutesLesRoutines()`)
-     avec leur état du jour, en **lecture seule** (contrairement aux
-     activités, pas de bascule planning : une routine fait partie du
-     parcours tous les jours dès qu'elle existe, pas d'interrupteur jour
-     par jour). Bouton "+ Nouvelle routine" → formulaire (nom, icône,
-     lieu chambre/salon, jusqu'à 5 tâches — texte + emoji + zone parmi
-     les 6 `.zone-cible`). Pas de `calque` proposé (demanderait un sprite
-     existant) : chaque tâche a son propre emoji, sans effet persistant
-     sur l'avatar. Persistée à part (`cle("routines_perso")`), fusionnée
+   - **Routines** — liste toutes les routines (`toutesLesRoutines()`,
+     `construireRoutinesCatalogue()`) avec leur état du jour ; taper une
+     routine l'ouvre en modification (pas de bascule planning : une
+     routine fait partie du parcours tous les jours dès qu'elle existe).
+     Bouton "+ Nouvelle routine" → formulaire (`creerNouvelleRoutine()`) :
+     nom, icône, lieu, jusqu'à 5 tâches — texte, emoji, case "Glisser
+     pour valider" (cible unique `#zone-corps` ; décochée = bouton "J'ai
+     fini"), minuteur optionnel par tâche — plus un minuteur global et
+     son style. Pas de `calque` proposé (demanderait un sprite existant) :
+     une tâche créée ici n'a pas d'effet persistant sur l'avatar ; en
+     modification, les champs absents du formulaire (`calque`, `retire`,
+     `avatarGlissable`...) sont conservés. Persistée à part (`cle("routines_perso")`), fusionnée
      avec le socle du profil actif via `toutesLesRoutines()`, utilisée
      partout où `app.js` cherchait un catalogue de routines directement
      (menu, avatar, jauge, planning...) pour qu'une routine créée se
      comporte identiquement aux trois routines de départ.
+   - **Mon entourage** — carnet de personnes (nom, emoji, rôle), vide
+     au départ (`ENTOURAGE_COMMUNES` est vide), persisté dans
+     `cle("entourage_perso")` et fusionné via `toutesLesPersonnes()`.
+     Une routine ou une activité peut y piocher des personnes
+     (`entourageIds`), affichées sur "Ma journée".
    - **Cet appareil** — indique quel profil (`tousLesProfils()`) cet
      appareil affiche, et permet de le changer
      (`changerProfilAppareil()`, écrit `acolyte_enfant` puis recharge la
@@ -252,30 +309,26 @@ pour qu'un enfant ne puisse pas effacer sa journée par accident.
   l'app (cf. "Espace parent" plus haut) ; c'est seulement l'ORDRE/le
   chaînage entre elles qui reste à coder en dur.
 - **Dépense des pièces** : le total s'accumule et s'affiche, mais aucune
-  boutique/mécanique de dépense n'est encore conçue (cf. `TODO.md`,
-  section "Pas encore désigné").
+  boutique/mécanique de dépense n'est encore conçue.
 - **Barème de récompense de fin de journée** : le total d'étoiles
   s'affiche, mais rien ne varie encore selon la quantité.
-- **Dents et petit-déjeuner** ne sont plus des étapes drag-and-drop ici :
-  ce seront des mini-jeux dédiés construits plus tard (brossage devant un
-  miroir dans la salle de bain avec ses propres animations ; préparation
-  de la table dans la cuisine).
+- **Petit-déjeuner** : pas de routine dédiée, envisagé comme un mini-jeu
+  à part (préparation de la table dans la cuisine), sur le modèle du
+  brossage des dents (`screen-dents`) qui en est déjà un.
 - **Visites chez une praticienne** : ajoutées comme une aventure depuis
   l'espace parent (mêmes écrans génériques `screen-trajet`/`screen-arrivee`
   que les autres aventures), avec un champ `personne` qui déclenche le
   flux dédié (cf. `terminerVisite()`) — mais sans `date`, une aventure
   n'apparaît jamais toute seule dans les sorties du jour : à programmer
   explicitement le jour voulu.
-- Écran de réveil (01) — sauté pour ce prototype, l'app démarre
-  directement sur le menu de la journée.
 - **Sélecteur de profil dans l'app** — volontairement absent côté enfant,
   et pas prévu : chaque enfant a son propre appareil (cf. "Profils" plus
   bas), pas un même appareil partagé entre plusieurs enfants (un parent
   peut techniquement configurer plusieurs profils sur un même appareil
   depuis "Cet appareil", mais c'est pensé comme un outil de test/
-  réattribution, pas un sélecteur pour l'enfant). Le créateur d'avatar
-  reste non couvert (avatar choisi parmi un jeu fixe de looks à la
-  création du profil, pas personnalisable trait par trait par l'enfant).
+  réattribution, pas un sélecteur pour l'enfant). L'avatar se compose
+  trait par trait à la création du profil (cf. "Avatars"), mais ne se
+  modifie pas ensuite.
 - Décor de pièce : la scène reste un simple dégradé CSS (teinte
   différente par routine via `lieu`), pas de vrai décor illustré, y
   compris pour la "chambre" (aucune photo de chambre par profil créé
@@ -284,7 +337,8 @@ pour qu'un enfant ne puisse pas effacer sa journée par accident.
   l'alimente, dans `app/assets/avatar/`).
 - Écran parent (06), calibrage sensoriel (07, au-delà du contour
   doux/appuyé déjà propre à chaque avatar — cf. "Profils"), écran
-  praticienne (11, cf. `TODO.md`), renfort en cas de dépassement (12).
+  praticienne complet du handoff (11, au-delà du déroulé de séance
+  actuel), renfort en cas de dépassement (12).
 
 ## Profils
 
@@ -385,7 +439,10 @@ zéro automatiquement si la date stockée diffère d'aujourd'hui. Forme :
               partir:    { fait: [...idsDeTâches], valide: bool } },
   etoiles: 0,
   journeeFaite: bool,
-  planning: [ { type: "routine"|"aventure"|"repas", id: "..." }, ... ]
+  reveilFait: bool,
+  reveil: { bienDormi: bool|null, humeur: "..."|null },
+  seances: [ ...notes de séance du jour ],
+  planning: [ { type: "routine"|"aventure"|"repas", id: "...", heure?: "HH:MM" }, ... ]
 }
 ```
 
@@ -413,8 +470,17 @@ L'**historique** des journées passées est dans une troisième clé,
 chaque journée y est archivée (`archiverJournee()`) au moment où
 `chargerEtat()` détecte un changement de date, juste avant que
 `cle("journee")` ne soit écrasée par la nouvelle journée. Entrée :
-`{ jour, etoiles, routinesValidees: [...ids], journeeFaite }`. Consultable
-en lecture seule depuis l'espace parent (`construireHistorique()`).
+`{ jour, etoiles, routinesValidees: [...ids], journeeFaite, reveil, seances }`.
+Consultable en lecture seule depuis l'espace parent
+(`construireHistorique()`, `construireParentSeances()`).
+
+Autres clés par enfant, toutes jamais remises à zéro au changement de
+jour : `cle("planning_futur")` (plannings préparés à l'avance, map
+`{ "AAAA-M-J": [items] }`, consommée le jour venu par
+`consommerPlanningFuturPourAujourdhui()`), `cle("entourage_perso")`
+(personnes de "Mon entourage"), `cle("minuteurs_actifs")` (minuteurs en
+cours, vidée au changement de jour) et `cle("reveil")` (heure jusqu'à
+laquelle l'app reste endormie).
 
 Le **code parent** est dans `acolyte_code_parent` (une chaîne de 4
 chiffres, **partagée par appareil, pas par enfant** — cf. "Profils"),
@@ -480,9 +546,10 @@ le mécanisme principal.
   une routine créée par un parent depuis l'app, cf.
   `cle("routines_perso")`/`toutesLesRoutines()` plus haut — même format,
   sans `chainee`. Une routine apparaît automatiquement au menu.
-- `REPAS` (`app.js`) — tableau plat `{ id, nom, emoji }`, commun à tous
-  les profils (les repas ne dépendent pas du profil), purement informatif
-  pour l'écran "Ma journée" (pas de tâches, pas d'horaire).
+- `REPAS` (`app.js`) — tableau plat `{ id, nom, emoji }` (+ `heureDefaut`
+  optionnelle), commun à tous les profils (les repas ne dépendent pas du
+  profil), purement informatif pour l'écran "Ma journée" (pas de
+  tâches).
 - `AVENTURES_COMMUNES` (`app.js`) — catalogue de départ commun à tous les
   profils (l'école, à titre d'exemple). Chaque aventure a `lieu`, `emoji`,
   `texteTrajet`, `texteArrivee`, `texteTrajetRetour` (trajet du retour

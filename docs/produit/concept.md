@@ -58,8 +58,7 @@ aventure est une **pièce**.
   étoiles) : elle reste acquise jusqu'à être dépensée.
 - Elle se dépense à un moment choisi par l'enfant, pour **une activité
   de son choix** — le "quand" et le "quoi" précis restent à définir
-  (pas de boutique conçue pour l'instant, cf. `TODO.md`, section "Pas
-  encore désigné").
+  (pas de boutique conçue pour l'instant).
 - Elle peut aussi être **échangée dans la vraie vie**, donnée aux
   parents en dehors de l'app.
 - Elle sort du **même coffre** que la récompense de fin de journée
