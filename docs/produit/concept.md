@@ -126,8 +126,8 @@ que "Ma journée" puisse répondre, en un coup d'œil, pas seulement "quoi"
 mais aussi "avec qui". Rien d'obligatoire : une entrée sans personne
 rattachée s'affiche exactement comme avant.
 
-**Distinct des praticiennes** (Pauline, Elsa, Arianne) déjà présentes dans
-les aventures codées en dur : celles-ci déclenchent un vrai déroulé à part
+**Distinct des praticiennes** déjà présentes dans les aventures propres à
+la famille (ajoutées depuis l'espace parent) : celles-ci déclenchent un vrai déroulé à part
 (la praticienne prend l'appareil, code de fin de séance, note obligatoire
 — cf. plus bas, "Les sorties"). L'entourage de cette section n'a aucun
 effet sur le déroulé : c'est une simple étiquette visuelle. Les deux
@@ -135,8 +135,8 @@ notions se ressemblent en surface mais ne doivent jamais se confondre.
 
 ## Espace parent : lié à l'espace enfant, pas un outil séparé
 
-Les réglages destinés aux parents (Alexandra notamment) vivent dans la
-**même application** que ce que voit Léon — même `app.js`, même
+Les réglages destinés aux parents vivent dans la
+**même application** que ce que voit l'enfant — même `app.js`, même
 `localStorage` — et pas dans un outil séparé (site d'admin, autre app).
 **Un changement fait dans l'espace parent a un effet immédiat sur
 l'espace enfant**, parce que c'est littéralement le même état qui est lu
@@ -194,7 +194,8 @@ façon écran de niveau d'un jeu où le héros part à l'aventure. Options
 envisagées :
 
 - **Une voiture** (retenue, implémentée) — cohérent avec "Se préparer à
-  partir" et le thème course de la chambre de Léon.
+  partir" et un thème course exploré pour la chambre d'un des enfants
+  (cf. `docs/legacy/`).
 - Une porte.
 - Un chemin/route à suivre.
 

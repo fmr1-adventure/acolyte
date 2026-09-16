@@ -2,11 +2,11 @@
 
 ## Vue d'ensemble
 
-Application mobile / tablette qui aide deux enfants (Colette, 5 ans, et Léon, 8 ans — tous deux TSA et TDAH) à accomplir leurs routines quotidiennes en autonomie. Le planning visuel de la journée et un jeu de vie en pixel art sont fusionnés en un seul objet : la journée est la carte, les lieux sont les niveaux, les routines sont les phases d'action, les trajets sont des phases d'attente.
+Application mobile / tablette qui aide deux enfants (Iris, 5 ans, et Théo, 8 ans — tous deux TSA et TDAH) à accomplir leurs routines quotidiennes en autonomie. Le planning visuel de la journée et un jeu de vie en pixel art sont fusionnés en un seul objet : la journée est la carte, les lieux sont les niveaux, les routines sont les phases d'action, les trajets sont des phases d'attente.
 
 Contrainte structurante : **les enfants ne savent pas lire**. Chaque écran enfant doit être jouable à l'oreille et à l'image. Le texte écrit existe mais n'est jamais porteur d'information seule.
 
-Deuxième contrainte : **les réglages sensoriels sont propres à chaque enfant**. Léon a besoin de contrastes forts, Colette de contrastes doux. Ce n'est pas un thème clair/sombre, c'est un calibrage à quatre curseurs posé à la création du profil.
+Deuxième contrainte : **les réglages sensoriels sont propres à chaque enfant**. Théo a besoin de contrastes forts, Iris de contrastes doux. Ce n'est pas un thème clair/sombre, c'est un calibrage à quatre curseurs posé à la création du profil.
 
 ## À propos des fichiers de design
 
@@ -20,7 +20,7 @@ Le HTML n'utilise que des styles inline et aucune image : les scènes en pixel a
 
 **Mixte, à lire écran par écran :**
 
-- **Haute fidélité (hifi)** — les 12 maquettes de téléphone (390 × 800 pt) et le croquis de la chambre de Léon : couleurs, tailles de police, épaisseurs de bordure et espacements sont ceux à reproduire. Les valeurs exactes sont dans « Tokens ».
+- **Haute fidélité (hifi)** — les 12 maquettes de téléphone (390 × 800 pt) et le croquis de la chambre de Théo : couleurs, tailles de police, épaisseurs de bordure et espacements sont ceux à reproduire. Les valeurs exactes sont dans « Tokens ».
 - **Basse fidélité (lofi)** — tout ce qui est marqué `[ ... ]` en majuscules dans les maquettes : ce sont les emplacements des sprites pixel art (chambre, avatar, coffre, intérieur de voiture, cabinet). La composition, les dimensions et la lumière sont fixées ; le dessin reste à produire.
 - **Documentation, pas UI** — les cartes de la « bible » (boucle, personnages, règles audio, calibrage) sont du texte de cadrage à lire, pas des écrans à coder.
 
@@ -37,7 +37,7 @@ L'écran Parents n'est pas un onglet : il s'ouvre par un code à 4 chiffres et s
 
 ---
 
-### 00 — La chambre de Léon (croquis de décor, pas un écran)
+### 00 — La chambre de Théo (croquis de décor, pas un écran)
 
 **But :** plan à donner à l'artiste pixel. Vue de face, canvas **1280 × 880**, tout aligné sur une grille de **16 px**.
 
@@ -76,14 +76,14 @@ Géométrie (coordonnées absolues dans le canvas) :
 
 ---
 
-### 01 — Le réveil (Colette)
+### 01 — Le réveil (Iris)
 
 **But :** point d'entrée quotidien. L'enfant voit sa chambre et entend ce qu'il y a à faire.
 
 **Layout** (colonne, de haut en bas) :
 1. Barre d'état, padding `14px 18px 8px`, texte `Silkscreen 11px` `#8A6F75` : heure · prénom · état du son.
 2. Scène de chambre, hauteur **290**, marge latérale 14, bordure 2 px `#221F1A`, fond en lames horizontales de 8 px `#E9D3D6` / `#E2CBCF`, plus une nappe de lumière `linear-gradient(105deg, rgba(255,240,220,.6), transparent 55%)`. Le chat en bas à droite, 34 × 34, animation `bob` 4 s.
-3. **Bouton voix**, 76 × 76, fond `#F7B8CB`, bordure 3 px, ombre portée `4px 4px 0 #D9A3B4`, contenant 4 barres verticales de 5 px qui ondulent (`wave`, 1 s, décalages 0 / .15 / .3 / .45 s). À côté : titre 24 px gras (« Bonjour Colette. ») + ligne 16 px `#6B5257` (« Appuie pour réécouter. »).
+3. **Bouton voix**, 76 × 76, fond `#F7B8CB`, bordure 3 px, ombre portée `4px 4px 0 #D9A3B4`, contenant 4 barres verticales de 5 px qui ondulent (`wave`, 1 s, décalages 0 / .15 / .3 / .45 s). À côté : titre 24 px gras (« Bonjour Iris. ») + ligne 16 px `#6B5257` (« Appuie pour réécouter. »).
 4. Barre de progression segmentée : hauteur 16, bordure 2 px, `gap: 3px`, un segment par tâche — rempli `#C88AA0`, vide `#EDDCDF`. Légende `Silkscreen 10px` en dessous.
 5. Grille de tâches, `repeat(3, 1fr)`, `gap: 12px`. Trois états :
    - **fait** : fond `#C88AA0`, picto en creux, mot en `#FAF0F0`
@@ -92,7 +92,7 @@ Géométrie (coordonnées absolues dans le canvas) :
    Chaque case = picto 44 × 44 + mot 13 px gras dessous.
 6. Barre d'onglets.
 
-**Audio :** au chargement, lecture unique de « Bonjour Colette. On va se brosser les dents. » Le bouton rose rejoue la même phrase à l'identique, autant de fois que voulu.
+**Audio :** au chargement, lecture unique de « Bonjour Iris. On va se brosser les dents. » Le bouton rose rejoue la même phrase à l'identique, autant de fois que voulu.
 
 ---
 
@@ -106,7 +106,7 @@ Géométrie (coordonnées absolues dans le canvas) :
 
 **Comportement :** les étapes se **dévoilent** dans l'ordre, elles ne se listent pas. Seule l'étape en cours est actionnable. Sauter une étape est possible et **silencieux** : aucun message, aucune pénalité. Chaque vêtement est annoncé à voix haute ; le sprite gagne une couche à chaque validation.
 
-Léon : mêmes règles, 6 étapes au lieu de 5.
+Théo : mêmes règles, 6 étapes au lieu de 5.
 
 ---
 
@@ -128,7 +128,7 @@ En pied de liste, une carte noire `#221F1A` : la présence de Biscuit, en texte 
 
 **But :** validation adulte de fin de routine.
 
-**Layout :** scène avec le coffre fermé au centre (130 × 100, `#C89A6B`, ombre `5px 5px 0 #A87E54`, serrure 34 × 30 `#E0C08B`, mention `FERMÉ`) → bouton voix + « Tu as tout fait, Colette. » / « Va chercher un grand pour ouvrir le coffre. » → **pavé de code** : 4 cases carrées (remplies = carré noir 14 × 14 ; case active = bordure 3 px + ombre) et un clavier `repeat(5, 1fr)`, cases de 44 pt mini → note en bas, bordure pointillée : le coffre attend, sans compte à rebours.
+**Layout :** scène avec le coffre fermé au centre (130 × 100, `#C89A6B`, ombre `5px 5px 0 #A87E54`, serrure 34 × 30 `#E0C08B`, mention `FERMÉ`) → bouton voix + « Tu as tout fait, Iris. » / « Va chercher un grand pour ouvrir le coffre. » → **pavé de code** : 4 cases carrées (remplies = carré noir 14 × 14 ; case active = bordure 3 px + ombre) et un clavier `repeat(5, 1fr)`, cases de 44 pt mini → note en bas, bordure pointillée : le coffre attend, sans compte à rebours.
 
 **Comportement :** code à 4 chiffres, défini par le parent. Sans code, l'écran **reste là indéfiniment** : rien ne clignote, rien ne presse, rien n'expire. Code faux = les cases se vident, sans son d'erreur ni message. Prévoir un délai croissant après 5 essais (protection enfant, pas sécurité).
 
@@ -136,7 +136,7 @@ En pied de liste, une carte noire `#221F1A` : la présence de Biscuit, en texte 
 
 ---
 
-### 05 — Léon, deuxième peau
+### 05 — Théo, deuxième peau
 
 **But :** montrer que c'est le **même écran 01 avec un autre calibrage**, pas un autre écran.
 
@@ -194,7 +194,7 @@ Chaque ligne : vignette 44 × 44, nom du lieu 16 px gras, sous-titre 13 px (rout
 
 **But :** rendre le déplacement lisible sans rien demander.
 
-**Layout :** scène intérieur de voiture, hauteur 330, avec paysage qui défile lentement → bouton voix + « On roule vers chez Pauline. » / « Tu n'as rien à faire. Tu peux regarder dehors. » → carte `LE TRAJET` avec une barre qui **se remplit toute seule** (aucun chiffre, aucune minute) → carte pointillée signalant la présence de l'autre enfant → note de bas d'écran rappelant que c'est une phase d'attente.
+**Layout :** scène intérieur de voiture, hauteur 330, avec paysage qui défile lentement → bouton voix + « On roule vers chez Camille. » / « Tu n'as rien à faire. Tu peux regarder dehors. » → carte `LE TRAJET` avec une barre qui **se remplit toute seule** (aucun chiffre, aucune minute) → carte pointillée signalant la présence de l'autre enfant → note de bas d'écran rappelant que c'est une phase d'attente.
 
 **Comportement :** aucun chrono, aucun bouton, aucune étoile à gagner. L'écran peut rester allumé ou s'éteindre sans conséquence. **C'est ici que le monde partagé se voit** : les deux avatars dans la même voiture, sans interaction ni compétition.
 
@@ -204,7 +204,7 @@ Chaque ligne : vignette 44 × 44, nom du lieu 16 px gras, sous-titre 13 px (rout
 
 **But :** rendre le rendez-vous prévisible avant d'entrer.
 
-**Layout :** scène du cabinet avec **deux sprites** posés au sol (l'enfant 66 × 96, la praticienne 66 × 110, prénoms en `Silkscreen 8px`) → bouton voix + « Pauline est là. » / « Orthophoniste. Une demi-heure, comme mardi dernier. » → carte `CE QUI VA SE PASSER`, **toujours les trois mêmes lignes** (on entre et on s'assoit / on travaille avec Pauline / on repart) → bouton `C'est parti` en orange → note : pendant la séance, l'app se met en veille, rien ne vibre, rien à toucher.
+**Layout :** scène du cabinet avec **deux sprites** posés au sol (l'enfant 66 × 96, la praticienne 66 × 110, prénoms en `Silkscreen 8px`) → bouton voix + « Camille est là. » / « Orthophoniste. Une demi-heure, comme mardi dernier. » → carte `CE QUI VA SE PASSER`, **toujours les trois mêmes lignes** (on entre et on s'assoit / on travaille avec Camille / on repart) → bouton `C'est parti` en orange → note : pendant la séance, l'app se met en veille, rien ne vibre, rien à toucher.
 
 **Représentation des praticiennes : avatar de métier + prénom.** Pas de photo, pas de portrait ressemblant. Cela évite de collecter un accord et une image par soignante (RGPD) et reste identifiable par l'enfant. Un avatar dédié peut être ajouté au cas par cas, avec accord écrit.
 
@@ -214,7 +214,7 @@ Chaque ligne : vignette 44 × 44, nom du lieu 16 px gras, sous-titre 13 px (rout
 
 **But :** clôturer l'activité et alimenter l'expérience.
 
-**Layout :** en-tête `ÉCRAN PRATICIENNE` → contexte de séance → **note sur 5** en 5 cases carrées, la sélectionnée en `#7FA6A1` bordure 3 px + ombre → champ de commentaire libre facultatif → carte noire `CE QUE LÉON VA VOIR` montrant uniquement `+ 30 expérience` → bouton `VALIDER LA SÉANCE` en `#7FA6A1`.
+**Layout :** en-tête `ÉCRAN PRATICIENNE` → contexte de séance → **note sur 5** en 5 cases carrées, la sélectionnée en `#7FA6A1` bordure 3 px + ombre → champ de commentaire libre facultatif → carte noire `CE QUE THÉO VA VOIR` montrant uniquement `+ 30 expérience` → bouton `VALIDER LA SÉANCE` en `#7FA6A1`.
 
 **Règle non négociable :** la note module l'expérience gagnée mais **n'est jamais montrée à l'enfant**. Une note basse donne moins d'expérience, **jamais zéro**, et jamais de message négatif. L'enfant voit un gain, pas une évaluation. Sans cette séparation, un rendez-vous de soin devient un examen noté — et un enfant TSA retiendra le chiffre bien plus que le gain.
 
@@ -242,7 +242,7 @@ Chaque ligne : vignette 44 × 44, nom du lieu 16 px gras, sous-titre 13 px (rout
 ### Chrono
 
 - Compte le **temps écoulé**, ne décompte pas un temps restant.
-- Visible en minutes chez Léon, masqué chez Colette — c'est un réglage de profil.
+- Visible en minutes chez Théo, masqué chez Iris — c'est un réglage de profil.
 - **Aucune couleur ne change au dépassement, aucun son ne se déclenche.** Le dépassement ouvre l'écran 12.
 
 ### Validation adulte
@@ -282,14 +282,14 @@ Reste à concevoir : l'animation de succès de fin de routine et l'attente de l'
 ```
 Profile
   id, prénom, âge
-  skin            : 'colette' | 'leon'          // palette + décor
+  skin            : 'iris' | 'leon'          // palette + décor
   calibration     : { contrast: 'soft'|'medium'|'high',
                       density: 1|3|'all',
                       motion: 'none'|'subtle'|'lively',
                       voice: { rate: 'slow'|'normal', autoplay: bool },
                       timer: { visible: bool } }
   wallet          : { stars: int, xp: int, items: [ItemId] }
-  visibleCurrencies : [ 'stars' | 'xp' | 'items' ]   // Colette : ['stars'] seulement
+  visibleCurrencies : [ 'stars' | 'xp' | 'items' ]   // Iris : ['stars'] seulement
   wardrobe        : [GarmentId]
   roomState       : { placedItems: [...], trackPosition: int }
 
@@ -359,25 +359,25 @@ Local d'abord, hors ligne par défaut. Aucune donnée d'enfant ni de praticienne
 | `currency.xp` | `#7FA6A1` |
 | `currency.items` | `#B98BA4` |
 
-### Couleurs — peau Colette (contraste doux)
+### Couleurs — peau Iris (contraste doux)
 
 | Nom | Hex |
 |---|---|
-| `colette.bg` | `#F3E7E7` |
-| `colette.surface` | `#FAF0F0` |
-| `colette.surface.raised` | `#FFFBF6` |
-| `colette.scene.a` / `.b` | `#E9D3D6` / `#E2CBCF` |
-| `colette.scene.alt.a` / `.b` | `#EDDCDF` / `#E6D4D8` |
-| `colette.accent` | `#C88AA0` |
-| `colette.accent.voice` | `#F7B8CB` |
-| `colette.accent.shadow` | `#D9A3B4` |
-| `colette.text` | `#6B5257` |
-| `colette.text.faint` | `#8A6F75` |
-| `colette.tabbar` | `#E4CFD3` |
-| `colette.border.soft` | `#A88A90` |
-| `colette.dashed` | `#B79AA0` |
+| `iris.bg` | `#F3E7E7` |
+| `iris.surface` | `#FAF0F0` |
+| `iris.surface.raised` | `#FFFBF6` |
+| `iris.scene.a` / `.b` | `#E9D3D6` / `#E2CBCF` |
+| `iris.scene.alt.a` / `.b` | `#EDDCDF` / `#E6D4D8` |
+| `iris.accent` | `#C88AA0` |
+| `iris.accent.voice` | `#F7B8CB` |
+| `iris.accent.shadow` | `#D9A3B4` |
+| `iris.text` | `#6B5257` |
+| `iris.text.faint` | `#8A6F75` |
+| `iris.tabbar` | `#E4CFD3` |
+| `iris.border.soft` | `#A88A90` |
+| `iris.dashed` | `#B79AA0` |
 
-### Couleurs — peau Léon (contraste élevé)
+### Couleurs — peau Théo (contraste élevé)
 
 | Nom | Hex |
 |---|---|
@@ -433,7 +433,7 @@ Local d'abord, hors ligne par défaut. Aucune donnée d'enfant ni de praticienne
 
 **Pixel art à produire** (le poste de travail principal du projet) :
 
-- 2 chambres (Colette, Léon) — le croquis 00 fixe la composition de celle de Léon
+- 2 chambres (Iris, Théo) — le croquis 00 fixe la composition de celle de Théo
 - 4 lieux communs : salle de bain, cuisine, salon, entrée
 - 2 lieux de transition : intérieur de voiture, cabinet
 - 2 avatars d'enfant, avec couches de vêtements superposables (~40 pièces de garde-robe à terme, 14 au départ)
@@ -449,7 +449,7 @@ Deux voies : commander à un artiste pixel sur la base de ce document, ou achete
 
 ## Fichiers
 
-- `Dayrise Universe.dc.html` — le document de design complet : bible d'univers, croquis de la chambre de Léon, calibrage sensoriel avec les trois rendus de contraste, et les 12 maquettes d'écran. Ouvrable directement dans un navigateur.
+- `Dayrise Universe.dc.html` — le document de design complet : bible d'univers, croquis de la chambre de Théo, calibrage sensoriel avec les trois rendus de contraste, et les 12 maquettes d'écran. Ouvrable directement dans un navigateur.
 - `support.js` — runtime du format de design. Nécessaire pour ouvrir le HTML, **sans aucun intérêt pour l'implémentation**.
 
 ## Ce qui n'est pas encore conçu

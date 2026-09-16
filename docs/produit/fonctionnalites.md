@@ -1,4 +1,4 @@
-# Dayrise — Fonctionnalités
+# Acolyte — Fonctionnalités
 
 *Document vivant, tenu à jour au fil des sessions de développement à
 chaque fonctionnalité livrée. Objectif : donner une vue d'ensemble claire
@@ -10,19 +10,20 @@ l'avancement au jour le jour (chantiers en cours, pas encore fait), voir
 
 ## En une phrase
 
-Dayrise est une application pour tablette qui aide un enfant à accomplir
+Acolyte est une application pour tablette qui aide un enfant à accomplir
 ses routines du quotidien — se réveiller, s'habiller, se préparer, se
 coucher... — en autonomie, sous la forme d'un petit jeu doux en pixel
 art, sans avoir besoin de savoir lire.
 
 ## Pour qui, et pourquoi
 
-Conçue au départ pour Léon (8 ans), et désormais également pour sa sœur
-Colette (5 ans) : tous deux TSA et TDAH. Chaque enfant a son propre
-appareil (ce n'est pas un sélecteur de profil dans une même app
-partagée) ; les deux affichent la même application, chacun avec son
-prénom, son avatar et ses routines. Trois contraintes façonnent chaque
-écran :
+Conçue au départ pour deux enfants TSA et TDAH, mais pas réservée à eux :
+n'importe quelle famille peut configurer l'app pour son ou ses propres
+enfants (cf. "Première configuration" ci-dessous). Chaque enfant a son
+propre appareil (ce n'est pas un sélecteur de profil dans une même app
+partagée) ; s'il y en a plusieurs, tous affichent la même application,
+chacun avec son prénom, son avatar et ses routines. Trois contraintes
+façonnent chaque écran :
 
 - **Pas besoin de savoir lire** — tout est jouable à l'oreille (voix
   automatique à chaque étape, rejouable) et à l'image (pictogrammes,
@@ -36,6 +37,21 @@ prénom, son avatar et ses routines. Trois contraintes façonnent chaque
   fonctionner sans connexion internet une fois ouverte une première
   fois.
 
+## Première configuration
+
+Aucun prénom, avatar ou contenu de famille n'est intégré à l'application
+: tout se configure directement dedans, sans jamais toucher au code. Au
+tout premier lancement sur un appareil (ou en ajoutant un enfant
+supplémentaire depuis l'espace parent), un court parcours demande le
+prénom de l'enfant, si c'est un garçon ou une fille, puis son avatar —
+coupe de cheveux, couleur de peau, de cheveux et d'yeux, chacun avec un
+aperçu qui se met à jour au fur et à mesure des choix — et enfin un code
+parent à définir (deux fois, comme un nouveau mot de passe) — trois
+routines de départ (s'habiller, se préparer à partir, aller se coucher)
+sont aussitôt disponibles, avec un texte déjà personnalisé au prénom
+choisi, et librement modifiables ensuite depuis l'espace parent. Rien
+n'est envoyé où que ce soit : tout reste sur l'appareil.
+
 ## Le parcours d'une journée
 
 ### Le réveil
@@ -47,7 +63,7 @@ sa couette — un fond sombre et volontairement sans décor, pour ne pas
 l'ouvrir en cas de besoin exceptionnel. Une fois l'heure passée, un
 simple tap sur cet écran
 lance un petit rituel avant d'arriver dans sa chambre : « Bonjour
-Léon » (réponse « Bonjour toi »), « As-tu bien dormi ? » (oui/non),
+[prénom] » (réponse « Bonjour toi »), « As-tu bien dormi ? » (oui/non),
 puis « Comment te sens-tu ? » avec un choix d'images (malade,
 fatigué, en pleine forme, normal, triste, content).
 
@@ -62,13 +78,12 @@ une jauge d'étoiles donnent une vue d'ensemble en un coup d'œil.
 
 Chaque routine (s'habiller, se préparer à partir, aller se coucher...)
 est une suite de petites tâches à accomplir une par une, en glissant
-une icône vers l'enfant — jamais plusieurs choses à la fois. Léon et
-Colette ont les mêmes routines, dans le même ordre — mais pas
-forcément les mêmes tâches à l'intérieur : Colette met une culotte, un
-haut et une robe là où Léon met un caleçon, un t-shirt et un pantalon,
-chacun avec l'avatar qui lui ressemble. « S'habiller » et « Aller se
-coucher » se jouent devant la chambre de l'enfant, un décor illustré ;
-« Se préparer à partir » n'a pas encore le sien. Deux tâches ont un
+une icône vers l'enfant — jamais plusieurs choses à la fois. Si plusieurs
+enfants utilisent l'app, ils ont les mêmes routines de départ, dans le
+même ordre — mais pas forcément les mêmes tâches à l'intérieur : selon
+l'avatar choisi à la configuration, un enfant met une culotte, un haut et
+une robe là où un autre met un caleçon, un t-shirt et un pantalon,
+chacun avec l'avatar qui lui correspond. Deux tâches ont un
 traitement particulier :
 
 - **Le brossage des dents** est un mini-jeu avec un minuteur qui
@@ -109,15 +124,13 @@ petite scène) puis l'arrivée, avant de rentrer à la maison — chaque
 une monnaie à part des étoiles, qui ne repart jamais à zéro d'un jour
 sur l'autre.
 
-Quand deux sorties se suivent directement dans le planning du jour
-(ex. Pauline puis Elsa, sans repas ni routine entre les deux), le
-trajet qui suit la première ne raconte pas un retour à la maison qui
-n'a pas lieu : il annonce directement la sortie suivante (« On roule
-vers chez Elsa »).
+Quand deux sorties se suivent directement dans le planning du jour (ex.
+deux visites chez une praticienne à la suite, sans repas ni routine
+entre les deux), le trajet qui suit la première ne raconte pas un retour
+à la maison qui n'a pas lieu : il annonce directement la sortie suivante.
 
-Certaines sorties sont propres à un enfant — Léon voit Elsa
-(psychomotricienne) et Pauline (orthophoniste), Colette voit Arianne
-(psychomotricienne) — d'autres sont communes aux deux, comme l'école.
+Certaines sorties peuvent être propres à un enfant (une praticienne qu'il
+est seul à voir), d'autres communes à plusieurs — comme l'école.
 
 Une séance chez une praticienne suit un déroulé à part, une fois sur
 place : c'est elle, avec le code, qui démarre la séance et garde
@@ -162,20 +175,19 @@ synchroniser séparément) :
 - **Changer le code parent.**
 - **Modifier le planning du jour.**
 - **Créer et modifier des activités et des routines sur mesure**, sans
-  toucher au code — y compris celles déjà prévues dans l'application
-  (Pauline, Elsa, S'habiller...), pas seulement celles créées par un
-  parent. L'icône se choisit dans un large choix d'emoji qu'on retrouve
-  en tapant un mot (« vélo », « chat », « pizza »...), plutôt que dans
-  une petite liste figée.
+  toucher au code — y compris les routines de départ (S'habiller...),
+  pas seulement celles créées après coup. L'icône se choisit dans un
+  large choix d'emoji qu'on retrouve en tapant un mot (« vélo », « chat »,
+  « pizza »...), plutôt que dans une petite liste figée.
 - **Mon entourage** — un petit carnet des personnes autour de l'enfant,
-  déjà pré-rempli avec la famille proche et les praticiennes connues
-  (Papa, Mama, les grands-parents, Elsa, Pauline, Arianne...), complété
-  et modifié au besoin (nom, icône, rôle) — y compris les personnes déjà
-  pré-remplies. Sert à associer en option des personnes à une activité ou
-  une routine sur mesure et à voir « avec qui » directement sur « Ma
-  journée ».
-- **Cet appareil** — indique quel enfant cet appareil affiche (Léon ou
-  Colette), pour configurer un appareil une bonne fois pour toutes.
+  vide au départ, à remplir au fil des besoins (famille proche,
+  praticiennes...) avec un nom, une icône et un rôle. Sert à associer en
+  option des personnes à une activité ou une routine sur mesure et à voir
+  « avec qui » directement sur « Ma journée ».
+- **Cet appareil** — indique quel profil cet appareil affiche, pour le
+  configurer une bonne fois pour toutes, ou pour ajouter un enfant
+  supplémentaire (« + Nouvel enfant », cf. "Première configuration"
+  ci-dessus).
 
 ## En bref, côté technique
 

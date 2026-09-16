@@ -1,23 +1,25 @@
 """
 Générateur de l'avatar (paper-doll) — c'est CE script qui a produit les
-sprites réellement déployés dans app/assets/avatar/ (leon-*.png, copiés
-depuis sa sortie leon_calque_*.png ; malgré le nom du fichier, ce n'est
-plus "juste" une exploration de preview pour Léon). Colette a sa propre
-déclinaison de palette/contour ci-dessous (CHILDREN["colette"]) mais ses
-fichiers n'étaient pas encore copiés dans app/assets/avatar/ — cf.
-app/README.md pour l'état courant de qui est réellement branché.
+sprites réellement déployés dans app/assets/avatar/ (avatar-*-*.png,
+copiés depuis sa sortie <name>_calque_*.png ; malgré le nom du fichier, ce
+n'est plus "juste" une exploration de preview). Chaque entrée de CHILDREN
+ci-dessous est l'un des avatars proposés à la première configuration (cf.
+AVATARS_DISPONIBLES dans app/app.js) — prénom/apparence choisis par le
+parent à la création d'un profil, jamais fixés ici.
 
 Dans l'esprit du handoff `docs/design-handoff/` :
   - grille de sprite alignée sur 32 px, personnage en pied
   - contour foncé réservé aux personnages (jamais sur le décor)
-  - deux déclinaisons de contraste : Colette (doux) / Léon (élevé, contour
-    plus épais) — cf. "réglages sensoriels propres à chaque enfant"
+  - deux déclinaisons de contraste (doux / élevé, contour plus épais) —
+    cf. "réglages sensoriels propres à chaque enfant"
   - paper-doll : le corps de base + des calques de vêtements superposables
     (une image par calque, empilées par app.js selon la tâche faite).
 
-Colette a une robe (draw_robe) en plus du pantalon de Léon : une seule
-pièce évasée (trapèze), pas juste le pantalon recolorié — cf. ROUTINES
-côté profil Colette dans app/app.js, tâche "robe".
+Deux silhouettes : une robe (draw_robe, une seule pièce évasée en
+trapèze, pas juste le pantalon recolorié) pour "avatar-c"/"avatar-d", un
+pantalon pour "avatar-a"/"avatar-b" — cf. `silhouette` sur chaque entrée
+d'AVATARS_DISPONIBLES dans app/app.js, qui pilote le gabarit de routines
+amorcé à la création d'un profil (routinesDemarrage()).
 
 Usage :
     /usr/local/bin/python3 scripts/generate_sprites_detailed_preview.py
@@ -36,8 +38,8 @@ os.makedirs(OUT, exist_ok=True)
 W, H = 36, 56
 SCALE = 8
 
-OUTLINE_SOFT = (74, 68, 55, 255)     # ink.soft — Colette
-OUTLINE_HIGH = (14, 20, 36, 255)     # leon.outline — Léon, contour plus dur
+OUTLINE_SOFT = (74, 68, 55, 255)     # ink.soft — contour doux
+OUTLINE_HIGH = (14, 20, 36, 255)     # ink.high — contour plus dur/épais
 
 EYE = (34, 30, 40, 255)
 SPARKLE = (255, 255, 255, 220)
@@ -209,7 +211,8 @@ def draw_robe(robe, outline_color, thickness):
     # jambes séparées comme draw_pants — sinon ça reste visuellement un
     # pantalon recolorié. Manches courtes plus hautes que celles du haut
     # porté dessous (draw_shirt) : un peu de "haut" dépasse à l'épaule,
-    # comme pull/shirt se distinguent déjà chez Léon (cf. draw_pull).
+    # comme pull/shirt se distinguent déjà sur la silhouette pantalon
+    # (cf. draw_pull).
     hi = lighten(robe, 0.25)
     shadow = darken(robe, 0.75)
     ourlet = darken(robe, 0.62)
@@ -307,40 +310,77 @@ def composite(*layers):
 # Deux déclinaisons enfant (palette + épaisseur de contour du handoff)
 # ---------------------------------------------------------------------------
 CHILDREN = {
-    "colette": {
-        "skin": (244, 201, 160, 255),
-        "hair": (176, 88, 53, 255),
+    "avatar-a": {
+        "skin": (222, 178, 140, 255),
+        "hair": (74, 54, 42, 255),
         "messy": False,
-        "pyjama": (247, 210, 221, 255),
-        "calecon": (200, 138, 160, 255),
-        "shirt": (200, 138, 160, 255),
-        "pull": (168, 100, 130, 255),
-        "pants": (146, 168, 190, 255),
-        "robe": (214, 122, 148, 255),
-        "sock": (250, 240, 240, 255),
-        "sock_stripe": (200, 138, 160, 255),
-        "shoe": (255, 255, 255, 255),
-        "sole": (168, 138, 144, 255),
-        "coat": (247, 184, 203, 255),
-        "coat_trim": (250, 240, 240, 255),
+        "pyjama": (100, 149, 168, 255),
+        "calecon": (140, 168, 150, 255),
+        "shirt": (58, 130, 138, 255),
+        "pull": (46, 90, 96, 255),
+        "pants": (52, 62, 88, 255),
+        "sock": (238, 238, 230, 255),
+        "sock_stripe": (58, 130, 138, 255),
+        "shoe": (238, 238, 230, 255),
+        "sole": (60, 50, 44, 255),
+        "coat": (46, 90, 96, 255),
+        "coat_trim": (52, 62, 88, 255),
         "outline": OUTLINE_SOFT,
         "thickness": 1,
     },
-    "leon": {
-        "skin": (216, 163, 122, 255),
-        "hair": (43, 35, 33, 255),
+    "avatar-b": {
+        "skin": (190, 132, 92, 255),
+        "hair": (168, 76, 48, 255),
         "messy": True,
-        "pyjama": (76, 96, 158, 255),
-        "calecon": (91, 168, 105, 255),
-        "shirt": (240, 149, 47, 255),
-        "pull": (154, 68, 58, 255),
-        "pants": (30, 39, 64, 255),
-        "sock": (232, 237, 247, 255),
-        "sock_stripe": (240, 149, 47, 255),
-        "shoe": (232, 237, 247, 255),
-        "sole": (14, 20, 36, 255),
-        "coat": (201, 118, 34, 255),
-        "coat_trim": (30, 39, 64, 255),
+        "pyjama": (150, 108, 168, 255),
+        "calecon": (120, 150, 110, 255),
+        "shirt": (142, 96, 168, 255),
+        "pull": (94, 60, 116, 255),
+        "pants": (52, 92, 60, 255),
+        "sock": (232, 230, 240, 255),
+        "sock_stripe": (142, 96, 168, 255),
+        "shoe": (232, 230, 240, 255),
+        "sole": (20, 20, 28, 255),
+        "coat": (94, 60, 116, 255),
+        "coat_trim": (52, 92, 60, 255),
+        "outline": OUTLINE_HIGH,
+        "thickness": 2,
+    },
+    "avatar-c": {
+        "skin": (120, 82, 58, 255),
+        "hair": (24, 22, 22, 255),
+        "messy": False,
+        "pyjama": (214, 178, 90, 255),
+        "calecon": (198, 168, 120, 255),
+        "shirt": (214, 178, 90, 255),
+        "pull": (168, 132, 58, 255),
+        "pants": (198, 168, 120, 255),
+        "robe": (198, 150, 60, 255),
+        "sock": (245, 240, 225, 255),
+        "sock_stripe": (198, 150, 60, 255),
+        "shoe": (245, 240, 225, 255),
+        "sole": (90, 70, 40, 255),
+        "coat": (168, 132, 58, 255),
+        "coat_trim": (245, 240, 225, 255),
+        "outline": OUTLINE_SOFT,
+        "thickness": 1,
+    },
+    "avatar-d": {
+        "skin": (238, 200, 168, 255),
+        "hair": (224, 186, 90, 255),
+        "messy": True,
+        "pyjama": (224, 140, 150, 255),
+        "calecon": (200, 150, 160, 255),
+        "shirt": (224, 140, 150, 255),
+        "pull": (168, 96, 106, 255),
+        "pants": (150, 168, 190, 255),
+        "robe": (64, 156, 158, 255),
+        "sock": (250, 245, 245, 255),
+        "sock_stripe": (64, 156, 158, 255),
+        "shoe": (250, 245, 245, 255),
+        "sole": (60, 90, 92, 255),
+        "coat": (168, 96, 106, 255),
+        "coat_trim": (250, 245, 245, 255),
         "outline": OUTLINE_HIGH,
         "thickness": 2,
     },
@@ -404,7 +444,133 @@ def save_dodo(img, name):
     img.resize((DODO_W * SCALE, DODO_H * SCALE), Image.NEAREST).save(f"{OUT}/{name}.png")
 
 
+# ---------------------------------------------------------------------------
+# Avatar personnalisable (première configuration, app.js) — remplace les 4
+# avatars figés de CHILDREN ci-dessus par des traits combinables : peau,
+# couleur de cheveux, coupe (2 par genre), couleur d'yeux. Écrit
+# DIRECTEMENT dans app/assets/avatar/perso/ (pas de détour par OUT + copie
+# manuelle comme pour avatar-a/b/c/d : ici les 320 combinaisons sont
+# TOUTES utilisées telles quelles, rien à curer/sélectionner à la main).
+# Les vêtements ne sont volontairement pas concernés par ce système : la
+# silhouette (garçon -> pantalon, fille -> robe) réutilise directement les
+# calques déjà générés pour "avatar-a"/"avatar-c" ci-dessus (cf.
+# CALQUES_PAR_SILHOUETTE dans app.js) — seuls corps/visage se
+# personnalisent. Les valeurs ci-dessous DOIVENT rester synchronisées
+# avec PEAUX/CHEVEUX_COULEURS/COUPES_PAR_GENRE/YEUX_COULEURS dans app.js
+# (mêmes ids p1-4/n1-5/y1-4/noms de coupe) : ce sont ces ids qui composent
+# le nom de fichier attendu par spritesPourTraits().
+PEAUX_PERSO = [("p1", (245,214,190,255)), ("p2", (222,178,140,255)), ("p3", (180,130,90,255)), ("p4", (120,82,58,255))]
+CHEVEUX_PERSO = [("n1", (224,186,90,255)), ("n2", (168,76,48,255)), ("n3", (120,84,56,255)), ("n4", (74,54,42,255)), ("n5", (28,24,22,255))]
+YEUX_PERSO = [("y1", (34,30,40,255)), ("y2", (120,84,48,255)), ("y3", (60,110,165,255)), ("y4", (70,130,90,255))]
+COUPES_PERSO = ["court-net", "court-ebouriffe", "carre", "couettes"]
+OUT_PERSO = os.path.join(SCRIPT_DIR, "..", "app", "assets", "avatar", "perso")
+# Couette (couverture, écran "dodo") neutre unique — pas un trait proposé
+# au choix (non demandé), donc pas besoin de varier avec le reste.
+COUETTE_PERSO = (100, 130, 150, 255)
+
+
+def draw_tete_perso(d, skin, hair, hair_line, coupe, eye, eyes_closed=False):
+    d.ellipse([10, 8, 27, 23], fill=skin)
+    d.rectangle([9, 15, 11, 18], fill=skin)
+    d.rectangle([26, 15, 28, 18], fill=skin)
+    if coupe == "court-ebouriffe":
+        d.rectangle([9, 7, 28, 13], fill=hair)
+        d.polygon([(11, 7), (13, 3), (15, 7)], fill=hair)
+        d.polygon([(17, 6), (19, 2), (21, 6)], fill=hair)
+        d.polygon([(23, 7), (25, 3), (27, 7)], fill=hair)
+        d.rectangle([7, 11, 10, 15], fill=hair)
+        d.rectangle([27, 11, 30, 15], fill=hair)
+        d.rectangle([12, 8, 16, 9], fill=lighten(hair, 0.3))
+    elif coupe == "court-net":
+        d.rectangle([9, 6, 28, 13], fill=hair)
+        d.rectangle([9, 13, 12, 16], fill=hair)
+        d.rectangle([25, 13, 28, 16], fill=hair)
+        d.line([(17, 6), (17, 11)], fill=hair_line, width=1)
+        d.rectangle([19, 7, 24, 8], fill=lighten(hair, 0.3))
+    elif coupe == "carre":
+        d.rectangle([9, 6, 28, 13], fill=hair)
+        d.rectangle([8, 13, 12, 21], fill=hair)
+        d.rectangle([25, 13, 29, 21], fill=hair)
+        d.line([(17, 6), (17, 11)], fill=hair_line, width=1)
+        d.rectangle([19, 7, 24, 8], fill=lighten(hair, 0.3))
+    elif coupe == "couettes":
+        d.rectangle([9, 6, 28, 13], fill=hair)
+        d.rectangle([9, 13, 12, 15], fill=hair)
+        d.rectangle([25, 13, 28, 15], fill=hair)
+        d.line([(17, 6), (17, 11)], fill=hair_line, width=1)
+        d.rectangle([19, 7, 24, 8], fill=lighten(hair, 0.3))
+        d.ellipse([2, 12, 10, 21], fill=hair)
+        d.ellipse([27, 12, 35, 21], fill=hair)
+        d.ellipse([4, 13, 8, 17], fill=lighten(hair, 0.25))
+        d.ellipse([29, 13, 33, 17], fill=lighten(hair, 0.25))
+    d.rectangle([14, 14, 16, 14], fill=hair_line)
+    d.rectangle([21, 14, 23, 14], fill=hair_line)
+    if eyes_closed:
+        d.line([(13, 17), (17, 16)], fill=(34, 30, 40, 255), width=1)
+        d.line([(20, 16), (24, 17)], fill=(34, 30, 40, 255), width=1)
+    else:
+        d.rectangle([14, 16, 16, 17], fill=eye)
+        d.rectangle([21, 16, 23, 17], fill=eye)
+        d.point((14, 16), fill=SPARKLE)
+        d.point((21, 16), fill=SPARKLE)
+    d.ellipse([11, 18, 13, 19], fill=BLUSH)
+    d.ellipse([24, 18, 26, 19], fill=BLUSH)
+    d.rectangle([18, 19, 19, 19], fill=darken(skin, 0.85))
+
+
+def generer_avatars_perso():
+    os.makedirs(OUT_PERSO, exist_ok=True)
+    total = 0
+    for coupe in COUPES_PERSO:
+        for pid, skin in PEAUX_PERSO:
+            for nid, hair in CHEVEUX_PERSO:
+                for yid, eye in YEUX_PERSO:
+                    hair_line = darken(hair, 0.6)
+                    nom = f"{coupe}-{pid}-{nid}-{yid}"
+
+                    naked = new_canvas()
+                    d = ImageDraw.Draw(naked)
+                    draw_tete_perso(d, skin, hair, hair_line, coupe, eye)
+                    skin_shadow = darken(skin, 0.88)
+                    d.rectangle([17, 22, 20, 24], fill=skin)
+                    d.rounded_rectangle([12, 23, 25, 38], radius=2, fill=skin)
+                    d.rectangle([12, 34, 25, 38], fill=skin_shadow)
+                    d.rounded_rectangle([8, 24, 12, 33], radius=1, fill=skin)
+                    d.rounded_rectangle([25, 24, 29, 33], radius=1, fill=skin)
+                    d.ellipse([6, 33, 12, 37], fill=skin)
+                    d.ellipse([25, 33, 31, 37], fill=skin)
+                    d.rectangle([14, 37, 18, 49], fill=skin)
+                    d.rectangle([19, 37, 23, 49], fill=skin)
+                    d.ellipse([12, 49, 18, 53], fill=skin)
+                    d.ellipse([19, 49, 25, 53], fill=skin)
+                    base = add_outline(naked, OUTLINE_SOFT, 1)
+                    base.resize((W * SCALE, H * SCALE), Image.NEAREST).save(f"{OUT_PERSO}/{nom}-base.png")
+
+                    oreiller = (247, 244, 236, 255)
+                    oreiller_ombre = darken(oreiller, 0.9)
+                    couette_hi = lighten(COUETTE_PERSO, 0.22)
+                    couette_ombre = darken(COUETTE_PERSO, 0.75)
+                    dodo_img = Image.new("RGBA", (DODO_W, DODO_H), (0, 0, 0, 0))
+                    dd = ImageDraw.Draw(dodo_img)
+                    dd.rounded_rectangle([1, 3, 38, 25], radius=4, fill=oreiller)
+                    dd.rounded_rectangle([1, 20, 38, 25], radius=4, fill=oreiller_ombre)
+                    draw_tete_perso(dd, skin, hair, hair_line, coupe, eye, eyes_closed=True)
+                    dd.rounded_rectangle([-4, 19, DODO_W + 4, DODO_H + 4], radius=8, fill=COUETTE_PERSO)
+                    dd.rounded_rectangle([-4, 19, DODO_W + 4, 23], radius=8, fill=couette_hi)
+                    for lx in (10, 20, 30):
+                        dd.line([(lx, 23), (lx, DODO_H - 14)], fill=couette_ombre, width=1)
+                    dd.rounded_rectangle([8, DODO_H - 16, 19, DODO_H - 4], radius=5, fill=COUETTE_PERSO)
+                    dd.rounded_rectangle([21, DODO_H - 16, 32, DODO_H - 4], radius=5, fill=COUETTE_PERSO)
+                    dd.rounded_rectangle([8, DODO_H - 16, 19, DODO_H - 11], radius=5, fill=couette_hi)
+                    dd.rounded_rectangle([21, DODO_H - 16, 32, DODO_H - 11], radius=5, fill=couette_hi)
+                    dodo = add_outline(dodo_img, OUTLINE_SOFT, 1)
+                    dodo.resize((DODO_W * SCALE, DODO_H * SCALE), Image.NEAREST).save(f"{OUT_PERSO}/{nom}-dodo.png")
+                    total += 2
+    print(f"Avatar personnalisable : {total} fichiers dans {os.path.abspath(OUT_PERSO)}")
+
+
 def main():
+    generer_avatars_perso()
     for name, c in CHILDREN.items():
         base = build_avatar(c["skin"], c["hair"], c["messy"], c["pyjama"], c["outline"], c["thickness"])
         save(base, f"{name}_pyjama")

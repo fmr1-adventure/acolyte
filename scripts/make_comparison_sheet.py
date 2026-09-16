@@ -22,17 +22,17 @@ rows = [
     ("Actuel (prototype)", [
         ("pyjama", os.path.join(SPRITES, "av_claire_brun_coiffe.png")),
     ]),
-    ("Colette — piste détaillée", [
-        ("pyjama", os.path.join(PREVIEW, "colette_pyjama.png")),
-        ("habillée", os.path.join(PREVIEW, "colette_habille.png")),
-        ("prête", os.path.join(PREVIEW, "colette_pret.png")),
-        ("manteau", os.path.join(PREVIEW, "colette_manteau.png")),
+    ("Avatar A/B (pantalon) — piste détaillée", [
+        ("pyjama", os.path.join(PREVIEW, "avatar-a_pyjama.png")),
+        ("habillé", os.path.join(PREVIEW, "avatar-a_habille.png")),
+        ("prêt", os.path.join(PREVIEW, "avatar-a_pret.png")),
+        ("manteau", os.path.join(PREVIEW, "avatar-a_manteau.png")),
     ]),
-    ("Léon — piste détaillée", [
-        ("pyjama", os.path.join(PREVIEW, "leon_pyjama.png")),
-        ("habillé", os.path.join(PREVIEW, "leon_habille.png")),
-        ("prêt", os.path.join(PREVIEW, "leon_pret.png")),
-        ("manteau", os.path.join(PREVIEW, "leon_manteau.png")),
+    ("Avatar C/D (robe) — piste détaillée", [
+        ("pyjama", os.path.join(PREVIEW, "avatar-c_pyjama.png")),
+        ("habillée", os.path.join(PREVIEW, "avatar-c_habille_robe.png")),
+        ("prête", os.path.join(PREVIEW, "avatar-c_pret.png")),
+        ("manteau", os.path.join(PREVIEW, "avatar-c_manteau.png")),
     ]),
 ]
 

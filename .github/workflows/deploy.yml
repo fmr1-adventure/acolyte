@@ -1,8 +1,8 @@
 name: Déploiement GitHub Pages
 
 # Publie app/ sur GitHub Pages à chaque push sur main — main est la
-# branche stable (ce qui est réellement installé sur la tablette de
-# Léon, cf. README.md "Gestion des branches"), donc c'est le seul
+# branche stable (ce qui est réellement installé sur les tablettes des
+# enfants, cf. README.md "Gestion des branches"), donc c'est le seul
 # déclencheur : le travail en cours sur dev n'est jamais déployé
 # automatiquement.
 on:

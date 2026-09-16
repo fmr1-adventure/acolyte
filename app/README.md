@@ -1,24 +1,26 @@
-# Prototype de parcours — Léon
+# Prototype de parcours
 
 Prototype **HTML/CSS/JS vanilla, sans build, sans dépendance**. S'ouvre
 directement dans un navigateur (`index.html`) ou via un petit serveur
 statique local (`python3 -m http.server` depuis ce dossier) si le
 navigateur bloque le chargement de `styles.css`/`app.js` en `file://`.
 
-**Concept validé par un test réel avec Léon.** Utilisé au quotidien
-pendant que le reste de l'app se construit — voir `TODO.md` à la racine
-et `docs/produit/` pour le modèle qui a guidé cette version.
+**Concept validé par un test réel.** Utilisé au quotidien par les deux
+premiers enfants pour qui il a été conçu pendant que le reste de l'app se
+construit — voir `TODO.md` à la racine et `docs/produit/` pour le modèle
+qui a guidé cette version.
 
-**Déploiement/installation sur la tablette de Léon** : l'app est publiée
-sur GitHub Pages (URL stable, HTTPS, indépendante de toute machine
-perso — cf. "Gestion des branches" dans le README racine). Ouvrir cette
-URL une fois dans le navigateur de la tablette, puis "Ajouter à l'écran
-d'accueil" : `manifest.json` fournit l'icône, `sw.js` (service worker)
-met l'app en cache pour qu'elle marche ensuite **hors-ligne**, sans
-dépendre d'aucun serveur. Un serveur de dev local (`python3 -m
-http.server`, ou l'équivalent utilisé pendant le développement) reste
-utile pour tester en cours de route, mais n'est jamais ce que la
-tablette de Léon doit charger au quotidien.
+**Déploiement/installation sur la tablette d'un enfant** : l'app est
+publiée sur GitHub Pages (URL stable, HTTPS, indépendante de toute
+machine perso — cf. "Gestion des branches" dans le README racine, et
+"Adapter à ta famille" pour installer ce projet pour tes propres
+enfants). Ouvrir cette URL une fois dans le navigateur de la tablette,
+puis "Ajouter à l'écran d'accueil" : `manifest.json` fournit l'icône,
+`sw.js` (service worker) met l'app en cache pour qu'elle marche ensuite
+**hors-ligne**, sans dépendre d'aucun serveur. Un serveur de dev local
+(`python3 -m http.server`, ou l'équivalent utilisé pendant le
+développement) reste utile pour tester en cours de route, mais n'est
+jamais ce qu'une tablette réelle doit charger au quotidien.
 
 **Piège de test une fois le service worker actif** : après avoir modifié
 `app.js`/`styles.css`/`index.html`, un simple rechargement du navigateur
@@ -30,7 +32,7 @@ avant de retester :
 navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
 caches.keys().then(ns => ns.forEach(n => caches.delete(n)));
 ```
-(bug réel rencontré en testant l'espace parent dans cette session — un
+(bug réel rencontré en testant l'espace parent dans une session — un
 correctif semblait ne rien changer, alors qu'il était simplement masqué
 par le cache).
 
@@ -45,45 +47,51 @@ rien activer, y compris après avoir changé de port d'une session de test
 à l'autre (cf. `modeDebugActif()` dans `app.js`). Ailleurs (ex. une URL
 de prévisualisation non-localhost), ouvrir l'app avec `?debug=1` dans
 l'URL une fois — retenu ensuite sur ce navigateur/appareil
-(`dayrise_debug` dans `localStorage`, partagé par appareil, pas par
-enfant ; `?debug=0` désactive). Jamais activé sur les tablettes de
-Léon/Colette, qui ne chargent que l'URL GitHub Pages publiée, jamais un
-localhost. Fait apparaître un bouton 🧪 (à côté de ⚙️/↺) qui ouvre un
-panneau listant tous les écrans — chacun atteint via sa vraie fonction
-d'entrée (`demarrerRoutine()`, `allerAuTrajet()`...), jamais un
-`afficherEcran()` nu, pour que l'écran obtenu ait toujours les données
-dont il dépend, comme s'il avait été atteint normalement. Le panneau
-inclut aussi un raccourci pour basculer entre les deux profils sans
-recomposer l'URL (`btn-debug-parent-appareil`, cf. "Profils" plus bas).
-Inclut une horloge de test (`dateDebugForcee`, ±1h / retour au temps
-réel — une vraie
-Date, pas juste l'heure du jour : avancer peut faire passer minuit, sinon
-le réveil ne se débloquerait jamais après un coucher simulé) pour les
-deux verrous ci-dessus, et le code parent actuel affiché en clair. L'heure
-simulée ne survit pas à un rechargement (repart du temps réel) —
-volontaire, pour ne jamais laisser une session de test oubliée fausser un
-chargement ultérieur.
+(`acolyte_debug` dans `localStorage`, partagé par appareil, pas par
+enfant ; `?debug=0` désactive). Jamais activé sur les tablettes réelles,
+qui ne chargent que l'URL GitHub Pages publiée, jamais un localhost.
+Fait apparaître un bouton 🧪 (à côté de ⚙️/↺) qui ouvre un panneau
+listant tous les écrans — chacun atteint via sa vraie fonction d'entrée
+(`demarrerRoutine()`, `allerAuTrajet()`...), jamais un `afficherEcran()`
+nu, pour que l'écran obtenu ait toujours les données dont il dépend,
+comme s'il avait été atteint normalement. Le panneau inclut aussi un
+raccourci pour basculer entre les profils déjà configurés sur cet
+appareil sans recomposer l'URL (`btn-debug-parent-appareil`, cf.
+"Profils" plus bas). Inclut une horloge de test (`dateDebugForcee`, ±1h /
+retour au temps réel — une vraie Date, pas juste l'heure du jour :
+avancer peut faire passer minuit, sinon le réveil ne se débloquerait
+jamais après un coucher simulé) pour les deux verrous ci-dessus, et le
+code parent actuel affiché en clair. L'heure simulée ne survit pas à un
+rechargement (repart du temps réel) — volontaire, pour ne jamais laisser
+une session de test oubliée fausser un chargement ultérieur.
+
+## Première configuration (aucune information de famille en dur)
+
+Aucun prénom, avatar, praticien·ne ou activité n'est codé dans `app.js` :
+tout est configuré depuis l'app elle-même, au premier lancement puis
+depuis l'espace parent — voir "Adapter à ta famille" dans le README
+racine pour le parcours côté utilisateur, et "Profils" plus bas pour le
+détail technique.
 
 ## Ce qui est couvert
 
-Deux enfants, Léon et Colette, chacun sur son **propre appareil** — ce
-n'est pas un sélecteur de profil dans une même app partagée, cf.
-"Profils" plus bas. Un seul jour type. Modèle : une **Routine** a une
-liste ordonnée de **Tâches** (relation mère-fille — voir
-`docs/produit/modele-de-donnees.md`). Trois routines pour l'instant,
-dans un catalogue séparé par enfant (`ROUTINES_LEON`/`ROUTINES_COLETTE`
-dans `app.js`) — mêmes `id`/`nom`/ordre pour les deux, mais des tâches
-propres à chacun (vêtements notamment) :
+Un ou plusieurs enfants, chacun sur son **propre appareil** — ce n'est
+pas un sélecteur de profil dans une même app partagée, cf. "Profils" plus
+bas. Un seul jour type. Modèle : une **Routine** a une liste ordonnée de
+**Tâches** (relation mère-fille — voir
+`docs/produit/modele-de-donnees.md`). Trois routines de départ, amorcées
+pour chaque profil à sa création (`routinesDemarrage()` dans `app.js`,
+cf. "Profils") puis librement modifiables comme n'importe quelle routine :
 
-- **"S'habiller"** — pour Léon : caleçon → t-shirt → pantalon →
-  chaussettes (le pull a été retiré, redondant avec le t-shirt) ; pour
-  Colette : culotte → haut → robe → chaussettes (`draw_robe()` dans
+- **"S'habiller"** — dessous → haut → bas → chaussettes, deux gabarits
+  selon la silhouette choisie à la création du profil : caleçon →
+  t-shirt → pantalon → chaussettes, ou culotte → haut → robe →
+  chaussettes (`draw_robe()` dans
   `scripts/generate_sprites_detailed_preview.py` — une vraie silhouette
-  de robe évasée, pas le pantalon de Léon recolorié).
+  de robe évasée, pas un pantalon recolorié).
 - **"Se préparer à partir"** — chaussures seulement pour l'instant,
-  identique pour les deux enfants ; manteau et sac retirés le temps de
-  l'été, gardés en commentaire dans `ROUTINES_LEON`/`ROUTINES_COLETTE`
-  (`app.js`) pour les remettre facilement à la mauvaise saison.
+  identique quelle que soit la silhouette ; manteau et sac faciles à
+  ajouter depuis l'espace parent (modifier la routine) selon la saison.
 - **"Aller se coucher"** — enlève les vêtements (retire plusieurs
   calques d'un coup, `retire: true`) → range/sale → dents → histoire →
   coucher. **Débloquée par l'heure** (`disponibleApresHeure: 18`), pas
@@ -119,25 +127,26 @@ Séquence :
    `btn-retour-routine`) ramène au menu sans rien perdre — pour un tap
    accidentel sur la mauvaise routine.
 3. **Fin de routine** — félicitations spécifiques à la routine (texte +
-   voix), puis message pour aller chercher un parent.
-4. **Validation parent** — code à 4 chiffres (`1234`, en dur pour ce
-   prototype) puis écran de **relecture/correction** : toutes les tâches
-   redeviennent cliquables pour que le parent décoche ce qui n'a pas été
-   réellement fait avant de valider. À la validation : étoile gagnée,
-   retour au menu.
+   voix, personnalisées avec le prénom de l'enfant), puis message pour
+   aller chercher un parent.
+4. **Validation parent** — code à 4 chiffres (choisi à la première
+   configuration, cf. "Profils" plus bas) puis écran de
+   **relecture/correction** : toutes les tâches redeviennent cliquables
+   pour que le parent décoche ce qui n'a pas été réellement fait avant de
+   valider. À la validation : étoile gagnée, retour au menu.
 5. **Récompense de fin de journée** — automatique une fois toutes les
    routines validées : confettis, total d'étoiles.
-6. **Aventures** (`AVENTURES_COMMUNES`/`AVENTURES_LEON`/`AVENTURES_COLETTE`
-   dans `app.js` — communes aux deux enfants, ou propres à l'un d'eux,
-   cf. "Profils" plus bas) — depuis le menu, "Partir à l'aventure" ouvre
-   `screen-missions`, qui liste les aventures programmées pour
-   aujourd'hui (champ `date`, même format que `cleJour()`). Taper une
-   carte lance :
+6. **Aventures** (`AVENTURES_COMMUNES` dans `app.js` — un catalogue de
+   départ commun, un exemple générique ; un profil n'a par ailleurs
+   aucune aventure propre en dur, cf. "Profils" plus bas) — depuis le
+   menu, "Partir à l'aventure" ouvre `screen-missions`, qui liste les
+   aventures programmées pour aujourd'hui (champ `date`, même format que
+   `cleJour()`). Taper une carte lance :
    - **Trajet** — pas de barre de progression/minuteur, juste un temps
      d'attente avec la scène de la fenêtre de voiture
      (`app/assets/scenes/fenetre-voiture.jpg`) et l'enfant de profil en
      silhouette SVG au premier plan (`#silhouette-enfant`, partagée entre
-     les deux profils — à contre-jour, elle n'a pas besoin de les
+     tous les profils — à contre-jour, elle n'a pas besoin de les
      distinguer) → bouton "On est arrivés", qui ouvre l'écran de
      **validation parent** (code à 4 chiffres, pas de correction) plutôt
      que d'avancer tout seul.
@@ -149,13 +158,15 @@ Séquence :
    - Une fois l'arrivée à la maison confirmée par un parent : la
      récompense. Une aventure peut rapporter des **pièces**
      (`recompensePieces`) au lieu d'une étoile de routine : monnaie
-     séparée, stockée à part (`cle("pieces")` — `leon_pieces`/
-     `colette_pieces` selon le profil), jamais remise à zéro au
+     séparée, stockée à part (`cle("pieces")`), jamais remise à zéro au
      changement de jour, affichée en permanence à côté de la jauge de
      journée dès qu'elle est non nulle. Sort du même coffre que la
      récompense de fin de journée (texte + confettis adaptés). Voir
      `docs/produit/concept.md` et `modele-de-donnees.md` pour la
-     philosophie (pourquoi pas une étoile).
+     philosophie (pourquoi pas une étoile). Une visite chez une
+     praticienne est une aventure comme une autre, ajoutée depuis
+     l'espace parent ("+ Nouvelle activité") avec un champ `personne` —
+     cf. plus bas, "Espace parent".
 7. **"Ma journée"** (`construireJournee()`, bouton secondaire sur le
    menu) — le planning du jour (`etat.planning`) affiché **dans l'ordre
    chronologique** (routines, aventure(s) du jour, repas — `REPAS` —
@@ -168,7 +179,7 @@ Séquence :
 8. **"Mes récompenses"** (`construireRecompenses()`, en tapant sur les
    étoiles/pièces du menu) — étoiles du jour et total de pièces
    présentés comme des objets à collectionner (rotation continue,
-   brillent au toucher). La pièce affiche un petit portrait de Léon
+   brillent au toucher). La pièce affiche un petit portrait de l'enfant
    teinté façon profil gravé sur une pièce d'or (`.piece-visage`),
    recadré depuis le sprite avatar existant — pas de nouvel asset dédié.
 9. **Espace parent** (`ouvrirEspaceParent()`, bouton ⚙️ discret en haut à
@@ -176,18 +187,18 @@ Séquence :
    suffit : rien ici n'est destructif) — hub protégé par le code parent,
    **directement lié à l'espace enfant** (même `app.js`, même état,
    aucun outil séparé) :
-   - **Relancer une routine** — pour corriger l'état si Léon a changé
+   - **Relancer une routine** — pour corriger l'état si l'enfant a changé
      entre-temps (ex. redéshabillé après une routine validée). Réutilise
      l'écran de correction déjà existant (`construireCorrection()`,
      `screen-validation`) plutôt que d'en dupliquer un : mêmes tâches
      décochables, bouton "Mettre à jour" au lieu de "Valider". Si la
      routine était validée, son étoile est retirée (regagnée à la
-     revalidation par Léon) et `journeeFaite` repasse à `false`.
+     revalidation par l'enfant) et `journeeFaite` repasse à `false`.
    - **Historique des journées** — lecture seule de `cle("historique")`.
    - **Changer le code parent** — deux saisies identiques de suite avant
      d'enregistrer, réutilise le même pavé numérique que la vérification
      (généralisé, cf. "Points d'entrée" plus bas). Partagé par
-     **appareil**, pas par enfant (`dayrise_code_parent`, cf. "Profils").
+     **appareil**, pas par enfant (`acolyte_code_parent`, cf. "Profils").
    - **Planning du jour** — lien direct vers le mode édition de "Ma
      journée" existant, sans redemander le code.
    - **Activités** — liste toutes les activités (`toutesLesAventures()`),
@@ -198,10 +209,10 @@ Séquence :
      oui/non), ajoutée directement au planning du jour à la création
      (`creerNouvelleAventure()`) — c'est ce qui la rend accessible dans
      "Partir à l'aventure" tout de suite, pas un champ date à renseigner.
-     Persistée à part (`cle("aventures_perso")`), fusionnée avec les
-     catalogues en dur (communs + propres au profil actif) via
-     `toutesLesAventures()` partout où le code cherche une aventure —
-     pas de distinction entre les sources ailleurs dans l'app.
+     Persistée à part (`cle("aventures_perso")`), fusionnée avec le
+     catalogue commun (`AVENTURES_COMMUNES`) via `toutesLesAventures()`
+     partout où le code cherche une aventure — pas de distinction entre
+     les sources ailleurs dans l'app.
    - **Routines** — liste toutes les routines (`toutesLesRoutines()`)
      avec leur état du jour, en **lecture seule** (contrairement aux
      activités, pas de bascule planning : une routine fait partie du
@@ -211,15 +222,17 @@ Séquence :
      les 6 `.zone-cible`). Pas de `calque` proposé (demanderait un sprite
      existant) : chaque tâche a son propre emoji, sans effet persistant
      sur l'avatar. Persistée à part (`cle("routines_perso")`), fusionnée
-     avec le catalogue du profil actif via `toutesLesRoutines()`, utilisée
+     avec le socle du profil actif via `toutesLesRoutines()`, utilisée
      partout où `app.js` cherchait un catalogue de routines directement
      (menu, avatar, jauge, planning...) pour qu'une routine créée se
-     comporte identiquement à une du catalogue en dur.
-   - **Cet appareil** — indique quel profil (`PROFILS`) cet appareil
-     affiche, et permet de le changer (`changerProfilAppareil()`, écrit
-     `dayrise_enfant` puis recharge la page). Pas un sélecteur destiné à
-     l'enfant : sert à configurer un appareil une bonne fois pour toutes,
-     ou à en réattribuer un — cf. "Profils" plus bas.
+     comporte identiquement aux trois routines de départ.
+   - **Cet appareil** — indique quel profil (`tousLesProfils()`) cet
+     appareil affiche, et permet de le changer
+     (`changerProfilAppareil()`, écrit `acolyte_enfant` puis recharge la
+     page) ou d'en créer un nouveau ("+ Nouvel enfant", réutilise l'écran
+     de première configuration). Pas un sélecteur destiné à l'enfant :
+     sert à configurer un appareil une bonne fois pour toutes, ou à en
+     réattribuer un — cf. "Profils" plus bas.
 
 Voix : synthèse vocale native du navigateur (`SpeechSynthesis`, `fr-FR`),
 annoncée automatiquement à chaque nouvelle étape, rejouable via le bouton
@@ -232,11 +245,12 @@ pour qu'un enfant ne puisse pas effacer sa journée par accident.
 
 ## Ce qui n'est volontairement PAS couvert (voir `docs/produit/` et `docs/design-handoff/`)
 
-- **Paramétrage parent** : les catalogues de routines/aventures et
-  l'ordre/verrouillage entre routines (actuellement séquentiel et figé)
-  sont en dur dans `app.js`, pas encore configurables par une UI parent
-  — programmer une nouvelle aventure du catalogue en dur veut dire
-  éditer `app.js`.
+- **Ordre/verrouillage entre routines** : toujours séquentiel et figé
+  (`chainee: true` posé sur les routines de départ, cf. "Profils" plus
+  bas) — pas encore reconfigurable depuis une UI parent. Un parent peut
+  déjà librement créer/modifier des routines et des aventures depuis
+  l'app (cf. "Espace parent" plus haut) ; c'est seulement l'ORDRE/le
+  chaînage entre elles qui reste à coder en dur.
 - **Dépense des pièces** : le total s'accumule et s'affiche, mais aucune
   boutique/mécanique de dépense n'est encore conçue (cf. `TODO.md`,
   section "Pas encore désigné").
@@ -246,65 +260,122 @@ pour qu'un enfant ne puisse pas effacer sa journée par accident.
   ce seront des mini-jeux dédiés construits plus tard (brossage devant un
   miroir dans la salle de bain avec ses propres animations ; préparation
   de la table dans la cuisine).
-- **Chez Pauline/Elsa/Arianne** restent dans les catalogues propres à
-  chaque enfant (mêmes écrans génériques `screen-trajet`/`screen-arrivee`
-  que les autres aventures) mais sans `date` : n'apparaissent jamais
-  toutes seules dans les sorties du jour. À reprogrammer explicitement le
-  jour où on voudra les réintégrer.
+- **Visites chez une praticienne** : ajoutées comme une aventure depuis
+  l'espace parent (mêmes écrans génériques `screen-trajet`/`screen-arrivee`
+  que les autres aventures), avec un champ `personne` qui déclenche le
+  flux dédié (cf. `terminerVisite()`) — mais sans `date`, une aventure
+  n'apparaît jamais toute seule dans les sorties du jour : à programmer
+  explicitement le jour voulu.
 - Écran de réveil (01) — sauté pour ce prototype, l'app démarre
   directement sur le menu de la journée.
-- **Sélecteur de profil dans l'app** — volontairement absent, et pas
-  prévu : chaque enfant a son propre appareil (cf. "Profils" plus bas),
-  pas un même appareil partagé entre les deux. Le créateur d'avatar reste
-  non couvert (avatar fixe par profil, pas personnalisable par l'enfant).
+- **Sélecteur de profil dans l'app** — volontairement absent côté enfant,
+  et pas prévu : chaque enfant a son propre appareil (cf. "Profils" plus
+  bas), pas un même appareil partagé entre plusieurs enfants (un parent
+  peut techniquement configurer plusieurs profils sur un même appareil
+  depuis "Cet appareil", mais c'est pensé comme un outil de test/
+  réattribution, pas un sélecteur pour l'enfant). Le créateur d'avatar
+  reste non couvert (avatar choisi parmi un jeu fixe de looks à la
+  création du profil, pas personnalisable trait par trait par l'enfant).
 - Décor de pièce : la scène reste un simple dégradé CSS (teinte
-  différente par routine via `lieu`), pas de vrai décor illustré.
-  L'avatar, lui, est un vrai sprite (voir `assets/generated/` et
-  `scripts/generate_*.py` pour le générateur qui l'alimente, dans
-  `app/assets/avatar/`).
+  différente par routine via `lieu`), pas de vrai décor illustré, y
+  compris pour la "chambre" (aucune photo de chambre par profil créé
+  depuis l'app). L'avatar, lui, est un vrai sprite (voir
+  `assets/generated/` et `scripts/generate_*.py` pour le générateur qui
+  l'alimente, dans `app/assets/avatar/`).
 - Écran parent (06), calibrage sensoriel (07, au-delà du contour
-  doux/appuyé déjà propre à chaque enfant — cf. "Profils"), écran
+  doux/appuyé déjà propre à chaque avatar — cf. "Profils"), écran
   praticienne (11, cf. `TODO.md`), renfort en cas de dépassement (12).
 
 ## Profils
 
-`PROFILS` (`app.js`) — un objet par enfant (`leon`/`colette`), chacun
-avec `prenom`, `routines()`/`aventuresPropres()` (accesseurs paresseux
-vers `ROUTINES_LEON`/`AVENTURES_LEON` etc., pour pouvoir être définis
-avant ces tableaux dans le fichier) et `sprites` (chemin de la base +
-liste `{ calque, fichier }`, cf. `construireCalquesAvatar()`). Ajouter
-un enfant plus tard = ajouter une entrée ici (+ son catalogue de
-routines/aventures/sprites) ; il apparaît alors automatiquement dans
+Aucun profil n'est codé en dur par défaut : `PROFILS` (`app.js`) est un
+socle vide, prévu pour qu'une entrée puisse y être ajoutée à la main si
+un déploiement veut un jour figer un profil au code plutôt que le
+configurer depuis l'app (avec dans ce cas des accesseurs
+`routines()`/`aventuresPropres()` vers des catalogues dédiés — cf.
+commentaire au-dessus de `PROFILS`). En usage normal, un profil est créé
+depuis l'app : au tout premier lancement sur un appareil (écran de
+première configuration — prénom, genre, puis peau/coupe/couleur de
+cheveux/couleur d'yeux, code parent) ou plus tard depuis l'espace parent
+("Cet appareil" → "+ Nouvel enfant"). Un profil créé ainsi est persisté
+dans `profils_perso` (`localStorage`, clé `acolyte_profils_perso`) — même
+principe que `routines_perso`/`aventures_perso`/`entourage_perso` plus
+bas : `tousLesProfils()` fusionne `PROFILS` et `profils_perso` (un profil
+perso masque une éventuelle entrée en dur du même id), et c'est cette
+fonction qu'il faut utiliser partout où le code cherche/liste des
+profils — jamais `PROFILS` seul. `id`/`prefixe` sont identiques pour un
+profil créé depuis l'app (un timestamp, ex. `enfant-1788536651477`) ;
+`sprites`/`dodo` sont calculés depuis les traits choisis
+(`spritesPourTraits()`, cf. "Avatars" plus bas) au moment de la création
+(cf. `finaliserPremiereConfiguration()`), pas recalculés ensuite. À sa
+création, un profil est amorcé avec trois
+routines de départ génériques (`routinesDemarrage(prenom, silhouette)`,
+cf. "Ce qui est couvert" plus haut), directement dans `routines_perso` —
+ce ne sont pas des routines "en dur" spéciales, juste le point de départ,
+librement modifiable ensuite. Ajouter un enfant plus tard = "Cet
+appareil" → "+ Nouvel enfant" ; il apparaît alors automatiquement dans
 l'écran parent "Cet appareil".
 
 **Chaque enfant a son propre appareil** — ce n'est **pas** un sélecteur
 de profil dans une même app partagée (cf. "Ce qui n'est volontairement
-PAS couvert" plus haut). `resoudreProfilActif()`/`profilActifId()`
-déterminent une bonne fois pour toutes quel enfant un appareil donné
-affiche : query param `?enfant=leon`/`?enfant=colette` une fois dans
-l'URL (même mécanisme que `?debug=1`, cf. plus haut), retenu ensuite
-dans `localStorage` (`dayrise_enfant`) **sur cet appareil**. Par défaut
-(rien n'a jamais été choisi) : `"leon"`, pour que la tablette de Léon,
-déjà en usage réel, continue de fonctionner après cette mise à jour sans
-aucune configuration. Un parent peut aussi changer le profil d'un
+PAS couvert" plus haut). `profilActifId()`/`profilActif()` déterminent
+une bonne fois pour toutes quel enfant un appareil donné affiche : query
+param `?enfant=<id>` (une fois dans l'URL, pour un profil déjà créé —
+même mécanisme que `?debug=1`, cf. plus haut), retenu ensuite dans
+`localStorage` (`acolyte_enfant`) **sur cet appareil**. Si rien ne
+résout (aucun profil créé, ou `acolyte_enfant` ne correspond à aucun
+profil connu) : `profilActifId()` renvoie `null`, et `demarrer()` affiche
+l'écran de première configuration plutôt que le parcours normal — cf.
+tout en bas de `app.js`. Un parent peut aussi changer le profil d'un
 appareil depuis l'espace parent ("Cet appareil", cf. plus haut) — écrit
 la même clé puis recharge la page.
 
 `cle(nomBase)` (ex. `cle("journee")`) préfixe une clé `localStorage`
-propre à l'enfant actif avec `PROFILS[profilActifId()].prefixe` — cf.
-"État et persistance" ci-dessous pour la liste. Léon garde `prefixe:
-"leon"`, donc exactement ses clés `leon_...` d'aujourd'hui : aucune
-migration, aucun risque sur sa tablette réelle. Deux clés restent
-volontairement **partagées par appareil**, pas préfixées par enfant, car
-ce sont les mêmes parents des deux côtés : le code parent
-(`dayrise_code_parent`, avec lecture de secours sur l'ancienne
-`leon_code_parent` si elle existe déjà — jamais réécrite) et le mode
-debug (`dayrise_debug`, idem avec `leon_debug`).
+propre à l'enfant actif avec `profilActif().prefixe` — cf. "État et
+persistance" ci-dessous pour la liste. Deux clés restent volontairement
+**partagées par appareil**, pas préfixées par enfant, car ce sont les
+mêmes parents des deux côtés : le code parent (`acolyte_code_parent`) et
+le mode debug (`acolyte_debug`).
+
+### Avatars
+
+Personnalisable par traits combinables (`app.js`) plutôt qu'un choix
+figé entre quelques avatars complets : genre (`garcon`/`fille`,
+détermine `silhouette` — voir plus bas), coupe de cheveux
+(`COUPES_PAR_GENRE`, 2 par genre), couleur de peau (`PEAUX`), couleur de
+cheveux (`CHEVEUX_COULEURS`), couleur d'yeux (`YEUX_COULEURS`). Choisis
+via des menus à l'écran de première configuration
+(`construireChoixApparenceInitiale()`), jamais une galerie à parcourir —
+320 combinaisons (4 peaux × 5 cheveux × 4 coupes × 4 yeux) rendraient ça
+impraticable. `spritesPourTraits()` résout la combinaison choisie
+(`configInitiale`, ou un profil déjà créé) vers les fichiers réels ; le
+choix est définitif pour ce profil (pas de re-sélection depuis l'espace
+parent pour l'instant — recréer un profil si besoin, cf. "Cet appareil").
+
+Corps/visage (`base`/`dodo`) : un fichier par combinaison, généré à
+l'avance par `scripts/generate_sprites_detailed_preview.py`
+(`generer_avatars_perso()`) directement dans `app/assets/avatar/perso/`,
+nommés `<coupe>-<peau>-<cheveux>-<yeux>-{base,dodo}.png` — ids qui
+doivent rester synchronisés entre le script et les constantes
+`PEAUX`/`CHEVEUX_COULEURS`/`YEUX_COULEURS` d'`app.js` (même ids `p1-4`/
+`n1-5`/`y1-4`). Vêtements : volontairement PAS concernés par ce choix
+(non demandé) — un seul jeu de calques par silhouette
+(`CALQUES_PAR_SILHOUETTE`, "pantalon"→`avatar-a-*`, "robe"→`avatar-c-*`),
+partagé par toutes les combinaisons de cette silhouette ; `silhouette`
+pilote aussi le gabarit de routines de départ amorcé à la création d'un
+profil (`routinesDemarrage()`).
+
+Ajouter une couleur/coupe = ajouter une entrée aux constantes
+correspondantes des DEUX côtés (script Python ET `app.js`, mêmes ids),
+relancer `python3 scripts/generate_sprites_detailed_preview.py` (régénère
+tout `perso/`, pas seulement les nouvelles combinaisons). Un profil déjà
+créé garde ses fichiers existants (chemin déjà résolu et stocké dans
+`sprites`/`dodo`, jamais recalculé) — rien à migrer.
 
 ## État et persistance
 
-`localStorage`, clé `cle("journee")` (`leon_journee` pour Léon,
-`colette_journee` pour Colette — cf. "Profils" ci-dessus), remise à
+`localStorage`, clé `cle("journee")` (ex. `enfant-1788536651477_journee`
+pour un profil créé depuis l'app — cf. "Profils" ci-dessus), remise à
 zéro automatiquement si la date stockée diffère d'aujourd'hui. Forme :
 
 ```
@@ -345,30 +416,34 @@ chaque journée y est archivée (`archiverJournee()`) au moment où
 `{ jour, etoiles, routinesValidees: [...ids], journeeFaite }`. Consultable
 en lecture seule depuis l'espace parent (`construireHistorique()`).
 
-Le **code parent** est dans `dayrise_code_parent` (une chaîne de 4
+Le **code parent** est dans `acolyte_code_parent` (une chaîne de 4
 chiffres, **partagée par appareil, pas par enfant** — cf. "Profils"),
-absente tant qu'il n'a jamais été changé — `codeParentActuel()` retombe
-alors sur `"1234"`. Modifiable depuis l'espace parent
+choisie à la première configuration de l'appareil — `codeParentActuel()`
+retombe sur `"1234"` tant qu'aucun code n'a encore été enregistré (ne
+devrait normalement pas arriver en usage réel, la première configuration
+en demandant toujours un). Modifiable depuis l'espace parent
 (`demarrerChangementCode()`/`sauverCodeParent()`).
 
+Les **profils** créés depuis l'app sont dans `acolyte_profils_perso` (cf.
+"Profils" plus haut) — partagée par appareil comme le code parent,
+jamais remise à zéro.
+
 Les **activités créées par un parent** sont dans `cle("aventures_perso")`
-(tableau d'objets au même format que les entrées des catalogues
-d'aventures), jamais remise à zéro. `toutesLesAventures()` =
-`AVENTURES_COMMUNES` + le catalogue propre au profil actif + ce tableau :
-c'est cette fonction qu'il faut utiliser partout où on cherche/liste des
-aventures (`aventureParId()`, le catalogue "Ajouter à la journée"...),
-jamais un catalogue en dur seul, sous peine d'ignorer les aventures
-communes, celles de l'autre profil ou les activités créées depuis l'app.
+(tableau d'objets au même format que les entrées du catalogue commun),
+jamais remise à zéro. `toutesLesAventures()` = `AVENTURES_COMMUNES` + ce
+tableau : c'est cette fonction qu'il faut utiliser partout où on
+cherche/liste des aventures (`aventureParId()`, le catalogue "Ajouter à
+la journée"...), jamais le catalogue en dur seul, sous peine d'ignorer
+les activités créées depuis l'app.
 
 Les **routines créées par un parent** suivent exactement le même
-principe dans `cle("routines_perso")` (même format que les entrées des
-catalogues de routines), fusionnée via `toutesLesRoutines()` =
-`profilActif().routines()` + ce tableau. **Un catalogue de routines seul
-(`ROUTINES_LEON`/`ROUTINES_COLETTE`) ne doit quasiment jamais être
-utilisé directement dans le code** (menu, avatar, jauge, planning,
+principe dans `cle("routines_perso")` (même format que les trois routines
+de départ), fusionnée via `toutesLesRoutines()` = socle du profil actif
+(vide pour un profil créé depuis l'app, cf. "Profils") + ce tableau.
+**Un socle de routines seul ne doit quasiment jamais être utilisé
+directement dans le code** (menu, avatar, jauge, planning,
 historique...) — toujours `toutesLesRoutines()`, sous peine qu'une
-routine créée depuis l'app se comporte différemment de celles du
-catalogue en dur.
+routine se comporte différemment des trois routines de départ.
 
 **Important si tu changes la forme de `cle("journee")`** :
 `chargerEtat()` appelle `etatRepare()`, qui **complète en place** les
@@ -377,49 +452,45 @@ champs manquants d'un état dont le jour est bon plutôt que de tout jeter
 l'ancien état au lieu de le perdre, cf. ci-dessus). Avant, un
 `etatValide()` tout-ou-rien repartait d'un état neuf au moindre champ
 manquant, y compris quand seule la *forme* avait changé (ex. l'ajout du
-champ `planning`) — **ça a fait perdre une vraie progression de Léon en
-cours de journée**, pas juste un bug théorique. Si tu ajoutes un champ à
-la forme de l'état, ajoute sa réparation dans `etatRepare()` (valeur par
-défaut sensée), pas juste sa vérification. Il y a aussi un filet de
+champ `planning`) — **ça a fait perdre une vraie progression d'un enfant
+en cours de journée**, pas juste un bug théorique. Si tu ajoutes un champ
+à la forme de l'état, ajoute sa réparation dans `etatRepare()` (valeur
+par défaut sensée), pas juste sa vérification. Il y a aussi un filet de
 sécurité au démarrage (`try/catch` dans l'IIFE `demarrer()`) pour le
 seul cas vraiment irrécupérable (JSON corrompu) — dernier recours, pas
 le mécanisme principal.
 
 ## Points d'entrée utiles pour étendre
 
-- `ROUTINES_LEON`/`ROUTINES_COLETTE` (`app.js`) — un tableau de routines
-  par enfant (cf. "Profils" plus haut ; même principe pour un 3ᵉ enfant
-  futur), chacune avec `id`, `nom`, `emoji` (repris par l'écran "Ma
-  journée"), `lieu` (pilote la teinte de scène), `felicitation` (texte de
-  fin — texte propre à chaque enfant, y compris l'accord de genre :
-  "habillé"/"habillée" etc., pas de génération automatique), et `taches`
-  (le même format qu'avant : `zone` doit correspondre à un élément
-  `.zone-cible` dans `index.html`, `calque` révèle un sprite du profil
-  actif via `data-calque` — cf. `PROFILS[id].sprites`, `badge` affiche un
-  emoji via `data-badge` si aucun sprite n'existe encore), et
-  `disponibleApresHeure` optionnel (nombre, 0-23) : si présent, la
-  routine sort du chaînage séquentiel et se débloque à partir de cette
-  heure au lieu d'attendre que les précédentes soient validées (cf.
-  "Aller se coucher"). Ajouter une routine en dur = ajouter une entrée au
-  tableau du bon enfant ; **pour qu'elle apparaisse aussi chez l'autre
-  enfant, ajouter la même entrée (adaptée) dans son propre tableau** — il
-  n'y a pas de fusion automatique entre les deux, volontairement (cf.
-  "par défaut identiques" mais "des tâches différentes possibles" dans
-  `docs/produit/modele-de-donnees.md`). Pour une routine créée par un
-  parent depuis l'app, cf. `cle("routines_perso")`/`toutesLesRoutines()`
-  plus haut — même format, juste dans l'autre tableau. Une routine
-  apparaît automatiquement au menu, verrouillée jusqu'à ce que la
-  précédente soit validée (sauf si elle a `disponibleApresHeure`).
-- `REPAS` (`app.js`) — tableau plat `{ id, nom, emoji }`, commun aux deux
-  enfants (les repas ne dépendent pas du profil), purement informatif
+- `routinesDemarrage(prenom, silhouette)` (`app.js`) — le gabarit de
+  routines amorcé à la création d'un profil (cf. "Profils" plus haut),
+  chacune avec `id`, `nom`, `emoji` (repris par l'écran "Ma journée"),
+  `lieu` (pilote la teinte de scène), `felicitation` (texte de fin,
+  personnalisé avec le prénom), et `taches` (`zone` doit correspondre à
+  un élément `.zone-cible` dans `index.html`, `calque` révèle un sprite
+  du profil actif via `data-calque` — cf. `profilActif().sprites`,
+  `badge` affiche un emoji via `data-badge` si aucun sprite n'existe
+  encore), et `disponibleApresHeure` optionnel (nombre, 0-23) : si
+  présent, la routine sort du chaînage séquentiel et se débloque à partir
+  de cette heure au lieu d'attendre que les précédentes soient validées
+  (cf. "Aller se coucher"). `chainee: true` (posé sur "shabiller"/
+  "partir") marque une routine comme participant au chaînage/verrouillage
+  séquentiel du menu (cf. `construireMenu()`) — absent sur une routine
+  créée depuis l'espace parent, qui reste donc toujours disponible. Pour
+  une routine créée par un parent depuis l'app, cf.
+  `cle("routines_perso")`/`toutesLesRoutines()` plus haut — même format,
+  sans `chainee`. Une routine apparaît automatiquement au menu.
+- `REPAS` (`app.js`) — tableau plat `{ id, nom, emoji }`, commun à tous
+  les profils (les repas ne dépendent pas du profil), purement informatif
   pour l'écran "Ma journée" (pas de tâches, pas d'horaire).
-- `AVENTURES_COMMUNES`/`AVENTURES_LEON`/`AVENTURES_COLETTE` (`app.js`) —
-  aventures communes aux deux enfants (l'école), ou propres à l'un d'eux
-  (une praticienne précise). Chaque aventure a `lieu`, `emoji`,
+- `AVENTURES_COMMUNES` (`app.js`) — catalogue de départ commun à tous les
+  profils (l'école, à titre d'exemple). Chaque aventure a `lieu`, `emoji`,
   `texteTrajet`, `texteArrivee`, `texteTrajetRetour` (trajet du retour
   vers la maison — texte générique par défaut si absent), `programme`
   (3 lignes), `personne` optionnelle (`{ emoji, nom }`, affiche un 2ᵉ
-  sprite à l'arrivée à côté du vrai avatar de l'enfant actif), `date`
+  sprite à l'arrivée à côté du vrai avatar de l'enfant actif — c'est ce
+  champ qui distingue une visite chez une praticienne d'une sortie
+  ordinaire, cf. "Ce qui n'est volontairement pas couvert"), `date`
   optionnelle (format `cleJour()`, ex. `"2026-8-27"` — sert uniquement à
   ensemencer le planning d'une nouvelle journée via `planningParDefaut()`,
   cf. plus bas ; absente pour une activité créée depuis l'espace parent,
@@ -428,17 +499,18 @@ le mécanisme principal.
   dans `PLANNING_DEFAUT` quand elle est programmée ; absente = ajoutée en
   fin de journée) et `recompensePieces` (0 = pas de récompense propre,
   sinon une pièce sort du coffre une fois le retour à la maison
-  confirmé). Ajouter une aventure = ajouter une entrée au bon tableau
-  (commune, ou propre à un enfant). **Ce qui la rend accessible dans
-  "Partir à l'aventure" n'est plus `date` mais sa présence dans
-  `etat.planning` du jour** (`aventuresPlanifieesAujourdhui()`, utilisée
-  par `construireMissions()`) — `date` ne fait que la faire entrer dans
-  ce planning la première fois qu'un jour est ensemencé,
-  après quoi le planning (édité par un parent ou peuplé à la création
-  d'une activité) fait foi.
+  confirmé). Ajouter une aventure commune = ajouter une entrée à ce
+  tableau. **Ce qui la rend accessible dans "Partir à l'aventure" n'est
+  plus `date` mais sa présence dans `etat.planning` du jour**
+  (`aventuresPlanifieesAujourdhui()`, utilisée par `construireMissions()`)
+  — `date` ne fait que la faire entrer dans ce planning la première fois
+  qu'un jour est ensemencé, après quoi le planning (édité par un parent
+  ou peuplé à la création d'une activité) fait foi.
 - `PLANNING_DEFAUT` (`app.js`) — le squelette de journée type utilisé par
   `planningParDefaut()` pour initialiser `etat.planning` à chaque
   nouveau jour (avant édition éventuelle par un parent, cf. plus haut).
+  Référence les ids `shabiller`/`partir`/`soir` du gabarit de départ —
+  cf. `routinesDemarrage()` ci-dessus.
 - `synchroniserAvatar()` — recalcule les calques/badges visibles à partir
   de **toutes** les routines (pas seulement la routine en cours), pour
   que l'avatar reste cohérent entre le menu et l'écran de routine.
@@ -454,7 +526,7 @@ le mécanisme principal.
   tests, plutôt qu'une constante en tête de fichier.
 - `#silhouette-enfant` (`index.html`/`styles.css`) — l'enfant de profil
   sur l'écran de trajet est un `<path>` SVG à aplat uni (`fill`), pas un
-  sprite, **partagé entre les deux profils** (à contre-jour, une
+  sprite, **partagé entre tous les profils** (à contre-jour, une
   silhouette n'a pas besoin de les distinguer) : simple à retourner
   (`scaleX(-1)`, cf. `.retour`) et à recolorer, mais grossier — à
   remplacer par un vrai sprite de profil si la direction artistique
@@ -463,20 +535,22 @@ le mécanisme principal.
   positionnement `absolute` en px (pas de détourage réel) puis teinté au
   filtre CSS (`grayscale`+`sepia`+`hue-rotate`) façon profil gravé.
   `construireRecompenses()` (`app.js`) pointe la balise `<img>` vers
-  `profilActif().sprites.base` : mêmes valeurs de recadrage pour les deux
-  enfants, parce que les deux sprites de base viennent du même générateur
+  `profilActif().sprites.base` : mêmes valeurs de recadrage pour tous les
+  avatars, parce que tous les sprites de base viennent du même générateur
   avec la tête au même endroit sur la même grille (cf.
   `scripts/generate_sprites_detailed_preview.py`) — à recalculer
   seulement si cette grille change.
 - `A_METTRE_EN_CACHE` (`sw.js`) — liste des fichiers mis en cache pour le
   fonctionnement hors-ligne. **Si tu ajoutes un asset référencé par
-  `index.html`/`styles.css`** (nouvelle image, nouvelle scène...),
-  ajoute-le ici aussi, sinon il ne sera pas disponible hors-ligne.
-  Incrémenter `CACHE_NAME` (ex. `dayrise-v2`) force le renouvellement du
-  cache d'un appareil déjà installé au prochain chargement en ligne.
+  `index.html`/`styles.css`/un nouvel avatar** (nouvelle image, nouvelle
+  scène...), ajoute-le ici aussi, sinon il ne sera pas disponible
+  hors-ligne. Incrémenter `CACHE_NAME` (ex. `acolyte-v15`) force le
+  renouvellement du cache d'un appareil déjà installé au prochain
+  chargement en ligne.
 - `construireClavier(conteneur, onTouche)` / `majCasesCode(conteneurCases, saisi)`
   (`app.js`) — pavé numérique générique (partagé entre la vérification du
-  code existant et la saisie d'un nouveau code, cf. `modeCode` dans
-  `validerCode()`), pas un composant par écran. Pour un nouvel écran de
-  code, appeler ces deux fonctions avec les éléments `.case-code`/
-  `.touche-code` de cet écran plutôt que d'en dupliquer le HTML/JS.
+  code existant, la saisie d'un nouveau code et le tout premier code
+  parent d'un profil, cf. `modeCode` dans `validerCode()`), pas un
+  composant par écran. Pour un nouvel écran de code, appeler ces deux
+  fonctions avec les éléments `.case-code`/`.touche-code` de cet écran
+  plutôt que d'en dupliquer le HTML/JS.

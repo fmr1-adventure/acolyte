@@ -38,14 +38,15 @@ la routine, pas l'inverse.)
 
 ## Aventure (aspect données)
 
-Une **Aventure** est une sortie programmée (ex. "chez Pauline",
+Une **Aventure** est une sortie programmée (ex. "chez le/la praticien·ne",
 "le magasin de bricolage") — cf. distinction Routine/Mission dans
-`concept.md`. Dans le prototype (`AVENTURES` dans `app.js`), une
-aventure porte : `lieu`, les textes du trajet et de l'arrivée, le
-`programme` (3 lignes annoncées à l'arrivée), une `personne` optionnelle
-(pour une sortie chez quelqu'un) et une `date` optionnelle (filtre pour
-savoir si elle apparaît dans les sorties du jour — une aventure sans
-date, comme "chez Pauline", n'apparaît jamais toute seule, cf. TODO.md).
+`concept.md`. Dans le prototype (`AVENTURES_COMMUNES`/`aventures_perso`
+dans `app.js`), une aventure porte : `lieu`, les textes du trajet et de
+l'arrivée, le `programme` (3 lignes annoncées à l'arrivée), une
+`personne` optionnelle (pour une sortie chez quelqu'un) et une `date`
+optionnelle (filtre pour savoir si elle apparaît dans les sorties du jour
+— une aventure sans date, comme une visite récurrente chez une
+praticienne, n'apparaît jamais toute seule, cf. TODO.md).
 
 Créer une activité (espace parent) ne l'ajoute qu'au **catalogue** —
 jamais à un planning précis, ni aujourd'hui ni un jour futur. La placer
@@ -97,8 +98,8 @@ comme les catalogues Routines/Activités perso.
 
 Rattachable en option à une Routine ou une Aventure créée par un parent
 via `entourageIds` (tableau d'ids) — **jamais** via le champ `personne`
-déjà utilisé par les 3 aventures praticienne codées en dur (Pauline, Elsa,
-Arianne) : ce champ-là n'est pas qu'un affichage, sa présence bascule tout
+déjà utilisé par une aventure praticienne (ajoutée depuis l'espace
+parent) : ce champ-là n'est pas qu'un affichage, sa présence bascule tout
 le déroulé de "Partir à l'aventure" vers l'écran séance (code praticienne,
 note obligatoire). Les deux champs cohabitent sans jamais se substituer
 l'un à l'autre.

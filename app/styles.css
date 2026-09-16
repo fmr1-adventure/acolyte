@@ -42,7 +42,14 @@ html, body {
   margin: 0; padding: 0; min-height: 100%; width: 100%; overflow-x: hidden;
   background: var(--bg); color: var(--text);
   font-family: "Atkinson Hyperlegible", "Segoe UI", Roboto, Arial, sans-serif;
-  -webkit-user-select: none; user-select: none; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none;
+  /* PAS `contain`/`none` : sur au moins un moteur Chromium testé, les
+     deux bloquent purement et simplement tout geste de scroll (molette
+     et tactile), pas juste le rebond/pull-to-refresh visé à l'origine —
+     confirmé en direct (retour d'usage "le scroll ne marche pas", cf.
+     TODO.md), `auto` est la seule valeur qui laisse vraiment défiler une
+     page qui déborde. */
+  overscroll-behavior: auto;
 }
 /* Taille de base fluide : optimisée tablette (viewport ~600-900px en
    portrait sur une 11"), tout en restant raisonnable sur un écran plus
@@ -129,17 +136,17 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 @keyframes rebondBas { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(7px); } }
 /* Poignée invisible superposée à l'avatar (#avatar-poignee dans
    index.html, remplie par app.js) : mêmes dimensions/position que
-   .avatar-wrap pour capter le geste exactement là où l'enfant voit
-   Léon — les calques de l'avatar ont pointer-events:none. */
+   .avatar-wrap pour capter le geste exactement là où l'enfant voit son
+   avatar — les calques de l'avatar ont pointer-events:none. */
 .poignee-glissable {
   position: absolute; left: 50%; bottom: 14px; width: 122px; height: 190px; transform: translateX(-50%);
   cursor: grab; touch-action: none;
 }
 /* Pile de vêtements (#pile-vetements dans index.html, remplie par
    app.js pour une tâche `pileGlissable`) : posée au sol, à l'écart de
-   l'avatar et de zone-dos (la cible), pour que le geste "ramasser puis
-   ranger" ait une vraie distance à parcourir plutôt que de partir déjà
-   sur la cible. */
+   l'avatar et de #zone-panier (la cible), pour que le geste "ramasser
+   puis ranger" ait une vraie distance à parcourir plutôt que de partir
+   déjà sur la cible. */
 #pile-vetements { position: absolute; left: 16px; bottom: 12px; width: 60px; height: 60px; }
 /* Panier de linge : visible en permanence pendant "Aller se coucher"
    (cf. app.js), pas juste au moment de "ranger" — repère fixe avant
@@ -257,12 +264,15 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
   transition: border-color .15s ease, background .15s ease;
 }
 .zone-cible.active { border-color: var(--accent); background: rgba(240, 149, 47, .18); }
-#zone-visage  { left: 50%; margin-left: -46px; top: 3px;   width: 92px;  height: 48px; }
-#zone-torse   { left: 50%; margin-left: -62px; top: 57px;  width: 124px; height: 80px; }
-#zone-bassin  { left: 50%; margin-left: -46px; top: 118px; width: 92px;  height: 46px; }
-#zone-jambes  { left: 50%; margin-left: -51px; top: 146px; width: 102px; height: 42px; }
-#zone-pieds   { left: 50%; margin-left: -56px; top: 168px; width: 112px; height: 36px; }
-#zone-dos     { left: 50%; margin-left: 31px;  top: 73px;  width: 50px;  height: 50px; }
+/* Une seule cible pour tout l'habillage, plutôt qu'une par endroit du
+   corps (visage/torse/bassin/jambes/pieds/dos) : viser un endroit précis
+   n'apportait rien à l'enfant, juste des essais en plus s'il ratait la
+   bonne zone — cf. index.html. Mêmes propriétés de position que
+   .avatar-wrap (`bottom`, pas `top`) et mêmes largeur/hauteur, pour
+   couvrir exactement la silhouette plutôt qu'un rectangle décalé (`top:0`
+   partait du haut de #scene, pas du haut de l'avatar — trop haut au-dessus
+   de la tête et ne descendait pas jusqu'aux pieds, retour de terrain). */
+#zone-corps   { left: 50%; margin-left: -61px; bottom: 14px; width: 122px; height: 190px; }
 /* cible du panier de linge (tâche "ranger", pileGlissable) : superposée
    à #panier-linge, au sol à côté de l'avatar, à l'opposé de
    #pile-vetements pour que le geste "ramasser puis ranger" ait une
@@ -296,7 +306,7 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 }
 #btn-espace-parent:active { opacity: 1; transform: translate(1px, 1px); }
 
-/* Mode debug (tests, jamais vu par Léon — cf. modeDebugActif() dans
+/* Mode debug (tests, jamais vu par l'enfant — cf. modeDebugActif() dans
    app.js) : même famille visuelle que les deux boutons ci-dessus, mais
    volontairement décalé pour ne pas les chevaucher. */
 #btn-debug {
@@ -337,7 +347,7 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 #emoji-picker-recherche:focus { outline: none; border-color: var(--accent); }
 #emoji-picker-grille {
   display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px;
-  overflow-y: auto; flex: 1;
+  overflow-y: auto; flex: 1; min-height: 0;
 }
 #btn-emoji-picker-fermer {
   width: 48px; height: 48px; font-size: 20px; font-weight: 800; flex-shrink: 0;
@@ -360,7 +370,7 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 
 .btn-continuer.maintien { background: var(--accent-shadow); }
 
-#chemin { padding-bottom: 20px; overflow-y: auto; flex: 1; }
+#chemin { padding-bottom: 20px; overflow-y: auto; flex: 1; min-height: 0; }
 .noeud {
   display: flex; align-items: center; gap: 14px; min-height: 58px; margin-bottom: 9px;
   padding: 7px 16px 7px 11px; background: var(--surface); border: 2px solid var(--surface-high);
@@ -457,6 +467,70 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
   margin-bottom: 8px; flex-shrink: 0;
 }
 
+/* ---------- Minuteur générique (widget sur l'écran de routine) ---------- */
+/* Compact et posé sous la consigne (#etape-courante), jamais un écran à
+   part : le glisser-déposer d'une tâche à zone continue de fonctionner
+   normalement à côté (cf. index.html, synchroniserMinuteurWidget() dans
+   app.js). Style "jauge" (cf. dessinerMinuteur() dans app.js) : une
+   barre qui se vide, transition fluide entre deux ticks plutôt que des
+   sauts d'une seconde à l'autre. D'autres styles (cadran horaire,
+   sablier...) viendront réutiliser ce même widget sans toucher à celui-ci. */
+#minuteur-widget { flex-shrink: 0; margin: 6px 0 10px; display: flex; flex-direction: column; gap: 8px; }
+#minuteur-widget-jauge { width: 100%; height: 22px; background: var(--surface); border: 2px solid var(--surface-high); overflow: hidden; }
+#minuteur-widget-remplissage { height: 100%; background: var(--accent); transition: width 1s linear; }
+#minuteur-widget-ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#minuteur-widget-chrono {
+  font-size: 20px; font-weight: 800; font-family: monospace; color: var(--accent-edge);
+}
+.btn-mini-sos {
+  font: inherit; font-size: 13px; font-weight: 700; color: var(--text);
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 6px 10px; flex-shrink: 0;
+}
+.btn-mini-sos:active { transform: translate(1px, 1px); }
+.btn-minuteur-widget-fini { margin-top: 0; }
+
+/* Style "cadran" (routine.styleMinuteur === "cadran") — alternative à la
+   jauge ci-dessus, disque qui rétrécit en rotation horaire façon Time
+   Timer : repère visuel documenté pour un public TSA/TDAH (cf. le plan
+   de ce chantier). --pct = fraction de temps RESTANT (1 -> 0), posée par
+   dessinerMinuteur() dans app.js à chaque tick. conic-gradient plutôt
+   qu'un <svg> stroke-dasharray (envisagé au départ) : donne directement
+   le vrai disque plein qui rétrécit (pas un simple anneau), sans calcul
+   trigonométrique d'arc à maintenir pour un résultat équivalent. Pas de
+   transition CSS sur le gradient lui-même (ne s'anime pas nativement) —
+   un saut par seconde reste lisible pour ce style, contrairement à la
+   jauge qui a besoin de sa transition fluide. */
+.minuteur-cadran { flex-shrink: 0; width: 56px; height: 56px; margin: 0 auto; }
+.minuteur-cadran-disque {
+  width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--surface-high);
+  background: conic-gradient(var(--accent) calc(var(--pct, 1) * 360deg), var(--surface) 0);
+}
+
+/* Minuteur global de routine (`routine.dureeGlobale`) — même mécanique
+   que #minuteur-widget ci-dessus, réutilise .btn-mini-sos, mais posé en
+   haut de l'écran (avant #scene, cf. index.html) plutôt que sous la
+   consigne : c'est un repère pour toute la routine, pas pour la tâche en
+   cours. Plus fin (jauge 14px vs 22px) pour rester secondaire par
+   rapport au minuteur de tâche quand les deux sont visibles en même
+   temps. */
+#minuteur-routine-widget { flex-shrink: 0; margin: 0 0 8px; display: flex; flex-direction: column; gap: 6px; }
+#minuteur-routine-jauge { width: 100%; height: 14px; background: var(--surface); border: 2px solid var(--surface-high); overflow: hidden; }
+#minuteur-routine-remplissage { height: 100%; background: var(--accent-edge); transition: width 1s linear; }
+#minuteur-routine-ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.minuteur-routine-label { font-size: 12px; font-weight: 700; color: var(--text-soft); flex: 1; }
+#minuteur-routine-chrono { font-size: 15px; font-weight: 800; font-family: monospace; color: var(--accent-edge); }
+/* Cadran plus petit ici (34px vs 56px) — même raison que la jauge plus
+   fine ci-dessus : rester secondaire par rapport au minuteur de tâche. */
+.minuteur-cadran-routine { width: 34px; height: 34px; }
+.minuteur-cadran-routine .minuteur-cadran-disque { background: conic-gradient(var(--accent-edge) calc(var(--pct, 1) * 360deg), var(--surface) 0); }
+
+/* Alerte de fin de minuteur non résolue (cf. entrerBlocageMinuteur() dans
+   app.js) — pulsation continue, distincte de .pop-ouverture (ponctuelle) :
+   ici l'attente peut durer, le signal doit rester visible tant qu'un
+   parent n'a pas entré son code. */
+.pulse-alerte { font-size: 88px; animation: pulseAlerte 1s ease-in-out infinite; }
+@keyframes pulseAlerte { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.12); opacity: .75; } }
+
 /* ---------- Scènes centrées (coffre / fin) ---------- */
 .scene-centree { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; gap: 10px; position: relative; }
 /* #coffre-emoji est un <button> (pas juste un <div>) : pour une routine
@@ -516,6 +590,26 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 #coffre-recompense { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 10px; }
 #coffre-recompense-texte { font-size: 22px; font-weight: 800; color: var(--accent-edge); }
 
+/* Bouton d'action principal des formulaires/listes parent les plus
+   longs — fixé au viewport (position: fixed, pas juste "après le
+   contenu") : ces écrans défilent au niveau de la page entière plutôt
+   que dans une zone scrollable dédiée (cf. .screen, position: relative
+   une fois actif), donc un contenu qui grossit (ex. minuteur par
+   tâche, cf. .tache-parent-minuteur, ou simplement une longue liste
+   d'activités/routines/entourage) repoussait un bouton simplement "en
+   bas du flux" hors champ, sans qu'il soit évident qu'il suffisait de
+   défiler pour le retrouver (retour de terrain, formulaires ; même
+   souci relevé sur les catalogues "+ Nouveau X", cf. TODO.md). `position:
+   sticky` ne suffit pas ici (il faudrait déjà avoir défilé jusqu'à lui) :
+   `fixed` le rend visible dès l'ouverture de l'écran, quelle que soit la
+   longueur du contenu — les mêmes bornes que #app (max-width 620px,
+   centré) pour rester aligné avec le reste du contenu. Le padding-bottom
+   correspondant sur les .._contenu/.._liste (plus bas) évite que le
+   dernier champ/la dernière carte se retrouve caché derrière. */
+#btn-creer-routine, #btn-creer-aventure, #btn-creer-personne, #btn-continuer-premiere-configuration,
+#btn-nouvelle-activite, #btn-nouvelle-routine, #btn-nouvelle-personne {
+  position: fixed; left: 18px; right: 18px; bottom: 18px; max-width: 584px; margin: 0 auto; z-index: 5;
+}
 .btn-continuer {
   background: var(--accent); color: var(--deep); border: 3px solid var(--accent-edge);
   font-size: 21px; font-weight: 800; padding: 17px 34px; box-shadow: var(--shadow-hard);
@@ -532,9 +626,10 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
   position: absolute; inset: 0;
   background: url("assets/scenes/fenetre-voiture.jpg") center / cover;
 }
-/* L'enfant (Léon ou Colette, cf. PROFILS dans app.js) vu de l'intérieur,
-   tête de profil au premier plan devant la fenêtre — silhouette plutôt
-   qu'un sprite détaillé : à contre-jour devant la vitre, un aplat sombre
+/* L'enfant (profil actif, cf. tousLesProfils() dans app.js) vu de
+   l'intérieur, tête de profil au premier plan devant la fenêtre —
+   silhouette plutôt qu'un sprite détaillé : à contre-jour devant la
+   vitre, un aplat sombre
    suffit et évite de dessiner un visage de profil par enfant. Un seul
    élément partagé, pas une variante par profil : une silhouette à
    contre-jour n'a pas besoin de distinguer les deux. */
@@ -556,7 +651,7 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 }
 .sprite-simple { font-size: 56px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .sprite-simple span { font-size: 14px; font-weight: 700; color: var(--text-mute); }
-/* Léon en vrai sprite (pas un emoji) sur l'écran d'arrivée : `.avatar-wrap`
+/* L'enfant en vrai sprite (pas un emoji) sur l'écran d'arrivée : `.avatar-wrap`
    est pensé pour un décor en `position:relative` de pleine hauteur
    (#scene / #scene-menu) — ici il vit dans un `.sprite-simple` flex, donc
    on retire le positionnement absolu et on réduit la taille en
@@ -566,7 +661,7 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .ligne-programme { font-size: 18px; font-weight: 600; padding: 6px 0; color: var(--text-soft); }
 
 /* ---------- Ma journée (planning chronologique) ---------- */
-#journee-contenu { display: flex; flex-direction: column; gap: 18px; overflow-y: auto; flex: 1; padding-bottom: 12px; }
+#journee-contenu { display: flex; flex-direction: column; gap: 18px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px; }
 .groupe-journee-titre { font-size: 14px; letter-spacing: 1.5px; font-weight: 800; color: var(--text-faint); margin-bottom: 8px; }
 .liste-planning { display: flex; flex-direction: column; }
 .ligne-journee {
@@ -642,7 +737,7 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 #resultats-ajout-texte .ligne-journee { margin-bottom: 8px; }
 
 /* ---------- Mes récompenses (étoiles + pièces à collectionner) ---------- */
-#recompenses-contenu { display: flex; flex-direction: column; gap: 26px; overflow-y: auto; flex: 1; padding-bottom: 12px; }
+#recompenses-contenu { display: flex; flex-direction: column; gap: 26px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px; }
 .recompenses-vide { font-size: 15px; color: var(--text-faint); }
 .grille-recompenses { display: flex; flex-wrap: wrap; gap: 14px; }
 .recompense-item { width: 84px; height: 84px; cursor: pointer; }
@@ -659,7 +754,7 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
   0%, 100% { filter: drop-shadow(0 0 0 transparent) brightness(1); }
   40% { filter: drop-shadow(0 0 14px var(--accent)) brightness(1.6); }
 }
-/* Portrait de Léon sur la pièce : recadrage simple (pas de nouvel
+/* Portrait de l'enfant sur la pièce : recadrage simple (pas de nouvel
    asset) du sprite avatar existant sur la zone du visage, via un
    positionnement approximatif plutôt qu'un détourage précis. Petit et
    teinté dans le ton de la pièce (façon profil gravé, type tête sur une
@@ -675,8 +770,17 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 }
 
 /* ---------- Espace parent ---------- */
-#parent-contenu, #parent-routines-liste, #parent-historique-liste, #parent-seances-liste, #parent-activites-liste, #parent-routines-catalogue-liste, #parent-entourage-liste, #parent-planning-journees-liste {
-  display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; padding-bottom: 12px;
+#parent-contenu, #parent-routines-liste, #parent-historique-liste, #parent-seances-liste, #parent-planning-journees-liste {
+  display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px;
+}
+/* Ces 3 catalogues ont un bouton "+ Nouveau X" fixé en bas d'écran
+   (#btn-nouvelle-activite/-routine/-personne, cf. règle position:fixed
+   plus haut) plutôt qu'à la suite de la liste — padding-bottom agrandi
+   (même valeur que les formulaires .._contenu plus bas) pour que la
+   dernière carte ne se retrouve pas cachée derrière, ce dont les listes
+   ci-dessus (pas de bouton fixe) n'ont pas besoin. */
+#parent-activites-liste, #parent-routines-catalogue-liste, #parent-entourage-liste {
+  display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px;
 }
 .carte-parent-soustitre { font-size: 13px; font-weight: 500; color: var(--text-faint); margin-top: 3px; }
 /* option pas encore construite : même style "verrouillee" que le menu,
@@ -684,7 +788,32 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .carte-parent.verrouillee { cursor: default; }
 
 /* ---------- Formulaires parent (nouvelle activité / nouvelle routine) ---------- */
-#nouvelle-aventure-contenu, #nouvelle-routine-contenu, #nouvelle-personne-contenu, #seance-note-contenu { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; padding-bottom: 8px; }
+#nouvelle-aventure-contenu, #nouvelle-routine-contenu, #nouvelle-personne-contenu, #seance-note-contenu, #premiere-configuration-contenu { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px; }
+
+/* Grille de choix d'avatar (première configuration / "+ Nouvel enfant"),
+   même esprit que .etoile-note-btn (bouton "éteint" tant que non choisi) —
+   la vignette (sprite de base) porte le choix, pas un texte à côté. */
+/* Aperçu de la combinaison de traits en cours (genre/coupe/peau/cheveux/
+   yeux, cf. construireChoixApparenceInitiale() dans app.js) — jamais
+   cliquable, un simple retour visuel pendant que les vrais choix se font
+   via les menus (.nr-lieu-choix pour la coupe, .pc-swatches ci-dessous
+   pour les couleurs) plutôt qu'en parcourant des portraits. */
+#pc-avatar-apercu {
+  display: flex; justify-content: center; padding: 8px 0;
+  background: var(--surface); border: 2px solid var(--surface-high);
+}
+#pc-avatar-apercu-img { width: 96px; height: auto; image-rendering: pixelated; }
+/* Couleur de peau/cheveux/yeux : la pastille de couleur porte le choix
+   (même esprit que .pc-avatar-carte avant elle), pas un aperçu du
+   personnage entier — inutile de recomposer un portrait par couleur
+   quand la teinte seule suffit à choisir. */
+.pc-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.pc-swatch {
+  width: 40px; height: 40px; border: 3px solid var(--surface-high);
+  padding: 0;
+}
+.pc-swatch.choisi { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(240,149,47,.35) inset; }
+.pc-swatch:active { transform: translate(1px, 1px); }
 .champ-parent { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 700; color: var(--text-soft); }
 .champ-parent input[type="text"] {
   font: inherit; font-size: 17px; font-weight: 600; color: var(--text);
@@ -750,8 +879,10 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 
 /* une ligne de tâche = texte (large) + emoji (étroit) + zone (menu) sur
    une même ligne, plutôt qu'un bloc par champ comme le reste du
-   formulaire — sinon 5 tâches rendraient le formulaire interminable. */
-.tache-parent { display: flex; align-items: center; gap: 8px; }
+   formulaire — sinon 5 tâches rendraient le formulaire interminable.
+   flex-wrap : la ligne minuteur (.tache-parent-minuteur, largeur 100%)
+   passe seule à la ligne suivante plutôt que de comprimer le reste. */
+.tache-parent { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .tache-parent-num {
   width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 800; color: var(--text-faint); background: var(--surface); border: 2px solid var(--surface-high);
@@ -763,10 +894,37 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
   background: var(--surface); border: 2px solid var(--surface-high); padding: 9px 10px;
 }
 .tache-parent-texte::placeholder, .tache-parent-emoji::placeholder { color: var(--text-faint); font-weight: 500; }
-.tache-parent-zone {
-  flex-shrink: 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--text);
-  background: var(--surface); border: 2px solid var(--surface-high); padding: 9px 6px;
+/* Coché = la tâche se glisse n'importe où sur l'avatar (#zone-corps) pour
+   être validée ; décoché = pas de geste (tâche minuteur seul, ex. "Fais
+   tes devoirs"), cf. creerNouvelleRoutine() dans app.js. Remplace
+   l'ancien <select> à 6 zones (visage/torse/bassin/jambes/pieds/dos) —
+   une seule cible pour tout le corps maintenant, cf. #zone-corps. */
+.tache-parent-corps-case {
+  flex-shrink: 0; display: flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 700; color: var(--text-soft);
 }
+.tache-parent-corps-case input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+/* Minuteur optionnel par tâche (cf. creerNouvelleRoutine() dans app.js) —
+   sur sa propre ligne (flex-basis 100%, cf. .tache-parent ci-dessus) pour
+   ne jamais comprimer texte/emoji/zone sur un écran étroit. Replié par
+   défaut (bouton seul, cf. toggleChampsMinuteurRoutine() dans app.js) :
+   la grande majorité des tâches n'ont pas de minuteur, pas la peine
+   d'imposer deux champs de plus par ligne rien que pour les montrer
+   vides — c'est ce qui rendait le formulaire trop long pour tenir sans
+   défiler jusqu'au bouton "Créer" (retour de terrain). */
+.tache-parent-minuteur { flex-basis: 100%; margin-left: 32px; }
+.btn-toggle-minuteur {
+  font: inherit; font-size: 12px; font-weight: 700; color: var(--text-soft);
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 4px 8px;
+}
+.btn-toggle-minuteur.actif { color: var(--text); border-color: var(--accent-edge); }
+.tache-parent-minuteur-champs { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.tache-parent-minuteur-duree {
+  width: 56px; font: inherit; font-size: 13px; font-weight: 700; color: var(--text); text-align: center;
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 6px 4px;
+}
+.tache-parent-minuteur-case { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-soft); }
+.tache-parent-minuteur-case input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
 
 @keyframes rebond { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-14px);} }
 

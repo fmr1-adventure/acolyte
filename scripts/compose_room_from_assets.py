@@ -2,8 +2,8 @@
 PREVIEW seulement — validation rapide du pipeline "vrais sprites Bitglow".
 
 Assemble une chambre à partir des sprites extraits automatiquement des
-packs gratuits Bitglow (voir extract_sprites.py). Pas encore l'assemblage
-final de la chambre de Léon — juste de quoi voir si le rendu "vue du
+packs gratuits Bitglow (voir extract_sprites.py). Pas encore un
+assemblage final de chambre — juste de quoi voir si le rendu "vue du
 dessus, vrais assets" convainc avant d'investir plus de temps dedans.
 
 Usage :

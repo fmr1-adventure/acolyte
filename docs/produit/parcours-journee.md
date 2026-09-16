@@ -17,9 +17,9 @@ dans `concept.md` ; les entités de données dans `modele-de-donnees.md`.
    (l'écran drag-and-drop existant dans `app/`). Il doit aller
    **jusqu'au bout** pour obtenir l'étoile de cette routine.
 4. **Fin de routine — félicitations puis appel au parent** : message
-   écrit + dit, spécifique à la routine (ex. "Bravo Léon, tu t'es habillé
-   tout seul !"), suivi de "Maintenant va chercher papa ou maman pour
-   obtenir ta récompense."
+   écrit + dit, spécifique à la routine et personnalisé avec le prénom de
+   l'enfant (ex. "Bravo Sacha, tu t'es habillé·e tout seul·e !"), suivi de
+   "Maintenant va chercher papa ou maman pour obtenir ta récompense."
 5. **Relecture/correction parent** : les tâches de la routine terminée
    deviennent déclickables (togglables), pour que le parent puisse
    décocher une tâche pas réellement effectuée avant de valider. Mode

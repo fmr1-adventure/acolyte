@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Dayrise</title>
+<title>Acolyte</title>
 <link rel="stylesheet" href="styles.css">
 <!-- Installable en icône d'écran d'accueil ("Ajouter à l'écran d'accueil")
      plutôt qu'un onglet/favori de navigateur classique — un lancement
@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Dayrise">
+<meta name="apple-mobile-web-app-title" content="Acolyte">
 </head>
 <body>
 <div id="app">
@@ -29,7 +29,7 @@
        code, cf. ouvrirEspaceParent() dans app.js), symétrique du reset. -->
   <button id="btn-espace-parent" aria-label="Espace parent" title="Espace parent">⚙️</button>
 
-  <!-- Mode debug (tests, jamais vu par Léon) : masqué par défaut, révélé
+  <!-- Mode debug (tests, jamais vu par l'enfant) : masqué par défaut, révélé
        par `modeDebugActif()` dans app.js (activé une fois via ?debug=1
        dans l'URL, retenu ensuite sur ce navigateur). Voir app/README.md. -->
   <button id="btn-debug" class="hidden" aria-label="Mode debug" title="Mode debug">🧪</button>
@@ -57,7 +57,7 @@
     </div>
 
     <div class="debug-bloc">
-      <div class="debug-bloc-titre">Profil de cet appareil : <span id="debug-profil-valeur">Léon</span></div>
+      <div class="debug-bloc-titre">Profil de cet appareil : <span id="debug-profil-valeur">—</span></div>
       <div id="debug-profils"></div>
       <div class="debug-note">Chaque enfant a son propre appareil en usage réel (cf. "Cet appareil" dans l'espace parent) — ceci ne sert qu'à tester les deux profils sur un même appareil de dev.</div>
     </div>
@@ -127,7 +127,7 @@
   <!-- ============ 0. Menu de la journée ============ -->
   <div id="screen-menu" class="screen active">
     <div class="barre-haut">
-      <div class="prenom-actif" id="prenom-menu">Léon</div>
+      <div class="prenom-actif" id="prenom-menu"></div>
       <button id="btn-mes-recompenses" class="bloc-monnaies" aria-label="Voir mes récompenses">
         <div id="jauge-jour"></div>
         <div id="pieces-total"></div>
@@ -138,7 +138,7 @@
 
     <div id="scene-menu">
       <!-- Calques <img> injectés par construireCalquesAvatar() (app.js)
-           selon le profil actif (Léon ou Colette) — cf. PROFILS. -->
+           selon le profil actif — cf. tousLesProfils() dans app.js. -->
       <div id="avatar-wrap-menu" class="avatar-wrap">
         <div class="badge-zone badge-dos" data-badge="dos"></div>
         <div class="badge-zone badge-visage" data-badge="visage"></div>
@@ -206,16 +206,37 @@
            cf. app.js). -->
       <button class="btn-retour-ecran" id="btn-retour-routine" aria-label="Retour au menu">←</button>
       <div class="bloc-nom">
-        <div class="prenom-actif" id="prenom-routine">Léon</div>
+        <div class="prenom-actif" id="prenom-routine"></div>
         <div id="nom-routine"></div>
       </div>
       <button class="btn-voix" id="btn-voix-routine" aria-label="Réécouter">🔊</button>
       <div id="barre-etapes"></div>
     </div>
 
+    <!-- Minuteur global de routine (`routine.dureeGlobale`, cf. app.js) —
+         même mécanique que #minuteur-widget plus bas, mais pour la
+         routine entière plutôt qu'une tâche : posé en haut de l'écran,
+         au-dessus de la scène, pour rester visible pendant tout le
+         déroulé sans gêner le glisser-déposer. Pas de bouton "J'ai fini"
+         ici : une routine se termine quand toutes ses tâches le sont
+         (cf. synchroniserRoutineEcran()). -->
+    <div id="minuteur-routine-widget" class="hidden">
+      <div id="minuteur-routine-jauge"><div id="minuteur-routine-remplissage"></div></div>
+      <!-- Style "cadran" (routine.styleMinuteur, cf. app.js) : disque qui
+           rétrécit en rotation horaire façon Time Timer, alternative à la
+           jauge ci-dessus — un seul des deux visible à la fois
+           (dessinerMinuteur() dans app.js). -->
+      <div id="minuteur-routine-cadran" class="minuteur-cadran minuteur-cadran-routine hidden"><div class="minuteur-cadran-disque"></div></div>
+      <div id="minuteur-routine-ligne">
+        <span class="minuteur-routine-label">⏱️ Toute la routine</span>
+        <span id="minuteur-routine-chrono">20:00</span>
+        <button class="btn-mini-sos" id="btn-minuteur-routine-aide">🆘 Besoin d'aide</button>
+      </div>
+    </div>
+
     <div id="scene">
       <!-- Calques <img> injectés par construireCalquesAvatar() (app.js)
-           selon le profil actif (Léon ou Colette) — cf. PROFILS. -->
+           selon le profil actif — cf. tousLesProfils() dans app.js. -->
       <div id="avatar-wrap" class="avatar-wrap">
         <div class="badge-zone badge-dos" data-badge="dos"></div>
         <div class="badge-zone badge-visage" data-badge="visage"></div>
@@ -248,16 +269,39 @@
            juste en dessous est la vraie cible du glisser. -->
       <div id="panier-linge" aria-hidden="true">🧺</div>
 
-      <div class="zone-cible" id="zone-visage"></div>
-      <div class="zone-cible" id="zone-torse"></div>
-      <div class="zone-cible" id="zone-bassin"></div>
-      <div class="zone-cible" id="zone-jambes"></div>
-      <div class="zone-cible" id="zone-pieds"></div>
-      <div class="zone-cible" id="zone-dos"></div>
+      <!-- Une seule cible pour tout l'habillage (cf. app.js) — plutôt que
+           plusieurs zones par endroit du corps : viser un endroit précis
+           n'apportait rien à l'enfant, juste des essais en plus quand il
+           ratait la bonne zone. Glisser n'importe où sur l'avatar suffit. -->
+      <div class="zone-cible" id="zone-corps"></div>
       <div class="zone-cible" id="zone-panier"></div>
     </div>
 
     <div id="etape-courante"></div>
+
+    <!-- Minuteur générique (`tache.minuteurDuree`, cf. app.js) — widget
+         compact affiché/masqué par synchroniserMinuteurWidget() selon la
+         tâche courante, jamais un écran séparé : le glisser-déposer
+         d'une tâche à zone continue de fonctionner normalement en même
+         temps (cf. #chemin plus bas). -->
+    <div id="minuteur-widget" class="hidden">
+      <div id="minuteur-widget-decompte">
+        <div id="minuteur-widget-jauge"><div id="minuteur-widget-remplissage"></div></div>
+        <!-- Style "cadran" (routine.styleMinuteur, cf. app.js) : disque
+             qui rétrécit en rotation horaire façon Time Timer, alternative
+             à la jauge ci-dessus — un seul des deux visible à la fois
+             (dessinerMinuteur() dans app.js). -->
+        <div id="minuteur-widget-cadran" class="minuteur-cadran hidden"><div class="minuteur-cadran-disque"></div></div>
+        <div id="minuteur-widget-ligne">
+          <span id="minuteur-widget-chrono">20:00</span>
+          <button class="btn-mini-sos" id="btn-minuteur-widget-aide">🆘 Besoin d'aide</button>
+        </div>
+      </div>
+      <!-- Visible seulement pour une tâche sans zone (rien d'autre pour
+           la valider, cf. synchroniserMinuteurWidget()) ; onclick posé
+           dynamiquement à chaque rendu (même fonction). -->
+      <button class="btn-continuer btn-minuteur-widget-fini hidden" id="btn-minuteur-widget-fini">J'ai fini ✅</button>
+    </div>
 
     <div id="chemin"></div>
   </div>
@@ -353,6 +397,27 @@
     <button class="btn-continuer" id="btn-fini-histoire">L'histoire est finie</button>
   </div>
 
+  <!-- ============ 1ter. Vérification à la fin d'un minuteur ============ -->
+  <div id="screen-minuteur-verification" class="screen">
+    <div class="scene-centree">
+      <div id="minuteur-verification-emoji">🤔</div>
+      <div class="texte-consigne">As-tu besoin d'aide pour faire ta routine ou ta mission ?</div>
+      <div class="reveil-choix">
+        <button class="btn-continuer" id="btn-minuteur-verif-non">🙂 Non, ça va</button>
+        <button class="btn-continuer" id="btn-minuteur-verif-oui">🙁 Oui, aide-moi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 1quater. Minuteur bloqué : un parent est nécessaire ============ -->
+  <div id="screen-minuteur-bloque" class="screen">
+    <div class="scene-centree">
+      <div id="minuteur-bloque-emoji" class="pulse-alerte">🆘</div>
+      <div class="texte-consigne">Un parent est nécessaire. Un parent peut entrer son code pour continuer.</div>
+      <button class="btn-continuer" id="btn-minuteur-bloque-code">Un parent est avec moi</button>
+    </div>
+  </div>
+
   <!-- ============ 2. Fin de routine : félicitations + appel au parent ============ -->
   <div id="screen-bravo-routine" class="screen">
     <div class="scene-centree">
@@ -391,6 +456,60 @@
   </div>
 
   <!-- ============ Espace parent (hub) ============ -->
+  <!-- ============ Première configuration (prénom + avatar) ============ -->
+  <!-- Affiché quand cet appareil n'a encore aucun profil (cf. demarrer()
+       dans app.js), ou rouvert depuis "Cet appareil" -> "+ Nouvel enfant"
+       pour un appareil déjà configuré (bouton retour visible seulement
+       dans ce cas, cf. ouvrirPremiereConfiguration()). Le code parent est
+       demandé juste après, sur screen-validation (mode "initial1"/
+       "initial2", même pavé numérique que le reste) : la création réelle
+       du profil n'a lieu qu'une fois ce code confirmé deux fois, cf.
+       finaliserPremiereConfiguration(). -->
+  <div id="screen-premiere-configuration" class="screen">
+    <div class="barre-haut">
+      <button class="btn-retour-ecran hidden" id="btn-retour-premiere-configuration" aria-label="Annuler">←</button>
+      <div class="prenom-actif">Bienvenue</div>
+      <div></div>
+    </div>
+    <div id="premiere-configuration-contenu">
+      <label class="champ-parent">
+        <span>Prénom de l'enfant</span>
+        <input type="text" id="pc-prenom" placeholder="Ex : Sacha" maxlength="30">
+      </label>
+      <div class="champ-parent">
+        <span>Garçon ou fille ?</span>
+        <div class="nr-lieu-choix">
+          <button type="button" class="nr-lieu-btn choisi" id="pc-genre-garcon">Garçon</button>
+          <button type="button" class="nr-lieu-btn" id="pc-genre-fille">Fille</button>
+        </div>
+      </div>
+      <!-- Aperçu de la combinaison en cours (jamais le moyen de choisir —
+           cf. #pc-coupe-choix/#pc-peau-choix/etc. plus bas, de simples
+           menus, pas une galerie de portraits à parcourir). -->
+      <div id="pc-avatar-apercu">
+        <img id="pc-avatar-apercu-img" src="" alt="">
+      </div>
+      <div class="champ-parent">
+        <span>Coupe de cheveux</span>
+        <div id="pc-coupe-choix" class="nr-lieu-choix"></div>
+      </div>
+      <div class="champ-parent">
+        <span>Couleur de peau</span>
+        <div id="pc-peau-choix" class="pc-swatches"></div>
+      </div>
+      <div class="champ-parent">
+        <span>Couleur de cheveux</span>
+        <div id="pc-cheveux-choix" class="pc-swatches"></div>
+      </div>
+      <div class="champ-parent">
+        <span>Couleur des yeux</span>
+        <div id="pc-yeux-choix" class="pc-swatches"></div>
+      </div>
+      <div id="pc-erreur" class="texte-erreur"></div>
+    </div>
+    <button class="btn-continuer" id="btn-continuer-premiere-configuration">Continuer</button>
+  </div>
+
   <div id="screen-parent" class="screen">
     <div class="barre-haut">
       <button class="btn-retour-ecran" id="btn-retour-menu-parent" aria-label="Retour au menu">←</button>
@@ -407,7 +526,7 @@
       <div class="prenom-actif">Relancer une routine</div>
       <div></div>
     </div>
-    <div class="texte-consigne" id="parent-routines-intro">Si l'état de Léon a changé (ex. il s'est redéshabillé), choisis la routine à relancer.</div>
+    <div class="texte-consigne" id="parent-routines-intro">Si l'état de l'enfant a changé (ex. il/elle s'est redéshabillé·e), choisis la routine à relancer.</div>
     <div id="parent-routines-liste"></div>
   </div>
 
@@ -438,7 +557,6 @@
       <div class="prenom-actif">Activités</div>
       <div></div>
     </div>
-    <div class="texte-consigne">Touche une activité pour l'ajouter ou la retirer d'aujourd'hui, ✏️ pour la modifier.</div>
     <div id="parent-activites-liste"></div>
     <button class="btn-continuer" id="btn-nouvelle-activite">➕ Nouvelle activité</button>
   </div>
@@ -482,8 +600,9 @@
       <div class="prenom-actif">Cet appareil</div>
       <div></div>
     </div>
-    <div class="texte-consigne">Choisis l'enfant que cet appareil affiche. Colette a son propre appareil, distinct de celui de Léon — ce choix n'est pas destiné à être changé tous les jours.</div>
+    <div class="texte-consigne">Choisis l'enfant que cet appareil affiche. Chaque enfant a son propre appareil — ce choix n'est pas destiné à être changé tous les jours.</div>
     <div id="parent-appareil-liste"></div>
+    <button class="btn-continuer" id="btn-nouvel-enfant">➕ Nouvel enfant</button>
   </div>
 
   <!-- ============ Espace parent : nouvelle routine ============ -->
@@ -509,72 +628,133 @@
           <button type="button" class="nr-lieu-btn" id="nr-lieu-salon">Salon</button>
         </div>
       </div>
-      <div class="texte-consigne" style="margin: 8px 0 0;">Remplis au moins une tâche (dans l'ordre). « Zone » = où glisser l'icône sur l'avatar.</div>
+      <div class="texte-consigne" style="margin: 8px 0 0;">Remplis au moins une tâche (dans l'ordre). « Glisser pour valider » coché = glisser l'icône n'importe où sur l'avatar valide la tâche ; décoché, la tâche se valide avec le bouton « J'ai fini » (pour une tâche sans geste, ex. « Fais tes devoirs »). Un minuteur peut s'ajouter à une tâche, glissée ou non, juste comme repère — il n'est jamais nécessaire pour valider.</div>
 
       <div class="tache-parent">
         <span class="tache-parent-num">1</span>
         <input type="text" class="tache-parent-texte" id="nr-t1-texte" placeholder="Ex : Brosse-toi les dents.">
         <input type="text" class="tache-parent-emoji" id="nr-t1-emoji" placeholder="🪥" maxlength="4">
-        <select class="tache-parent-zone" id="nr-t1-zone">
-          <option value="zone-visage">Visage</option>
-          <option value="zone-torse">Torse</option>
-          <option value="zone-bassin">Bassin</option>
-          <option value="zone-jambes">Jambes</option>
-          <option value="zone-pieds">Pieds</option>
-          <option value="zone-dos">Dos</option>
-        </select>
+        <label class="tache-parent-corps-case">
+          <input type="checkbox" id="nr-t1-corps" checked>
+          <span>Glisser pour valider</span>
+        </label>
+        <div class="tache-parent-minuteur">
+          <button type="button" class="btn-toggle-minuteur" id="nr-t1-minuteur-toggle">⏱️ Minuteur</button>
+          <div class="tache-parent-minuteur-champs hidden" id="nr-t1-minuteur-champs">
+            <input type="number" class="tache-parent-minuteur-duree" id="nr-t1-minuteur" placeholder="min" min="1" max="180">
+            <label class="tache-parent-minuteur-case">
+              <input type="checkbox" id="nr-t1-minuteur-alertes" checked>
+              <span>🔔 alerter si bloqué</span>
+            </label>
+          </div>
+        </div>
       </div>
       <div class="tache-parent">
         <span class="tache-parent-num">2</span>
         <input type="text" class="tache-parent-texte" id="nr-t2-texte" placeholder="Ex : Entre dans le bain.">
         <input type="text" class="tache-parent-emoji" id="nr-t2-emoji" placeholder="🛁" maxlength="4">
-        <select class="tache-parent-zone" id="nr-t2-zone">
-          <option value="zone-visage">Visage</option>
-          <option value="zone-torse">Torse</option>
-          <option value="zone-bassin">Bassin</option>
-          <option value="zone-jambes">Jambes</option>
-          <option value="zone-pieds">Pieds</option>
-          <option value="zone-dos">Dos</option>
-        </select>
+        <label class="tache-parent-corps-case">
+          <input type="checkbox" id="nr-t2-corps" checked>
+          <span>Glisser pour valider</span>
+        </label>
+        <div class="tache-parent-minuteur">
+          <button type="button" class="btn-toggle-minuteur" id="nr-t2-minuteur-toggle">⏱️ Minuteur</button>
+          <div class="tache-parent-minuteur-champs hidden" id="nr-t2-minuteur-champs">
+            <input type="number" class="tache-parent-minuteur-duree" id="nr-t2-minuteur" placeholder="min" min="1" max="180">
+            <label class="tache-parent-minuteur-case">
+              <input type="checkbox" id="nr-t2-minuteur-alertes" checked>
+              <span>🔔 alerter si bloqué</span>
+            </label>
+          </div>
+        </div>
       </div>
       <div class="tache-parent">
         <span class="tache-parent-num">3</span>
         <input type="text" class="tache-parent-texte" id="nr-t3-texte" placeholder="Ex : Lave-toi.">
         <input type="text" class="tache-parent-emoji" id="nr-t3-emoji" placeholder="🧼" maxlength="4">
-        <select class="tache-parent-zone" id="nr-t3-zone">
-          <option value="zone-visage">Visage</option>
-          <option value="zone-torse">Torse</option>
-          <option value="zone-bassin">Bassin</option>
-          <option value="zone-jambes">Jambes</option>
-          <option value="zone-pieds">Pieds</option>
-          <option value="zone-dos">Dos</option>
-        </select>
+        <label class="tache-parent-corps-case">
+          <input type="checkbox" id="nr-t3-corps" checked>
+          <span>Glisser pour valider</span>
+        </label>
+        <div class="tache-parent-minuteur">
+          <button type="button" class="btn-toggle-minuteur" id="nr-t3-minuteur-toggle">⏱️ Minuteur</button>
+          <div class="tache-parent-minuteur-champs hidden" id="nr-t3-minuteur-champs">
+            <input type="number" class="tache-parent-minuteur-duree" id="nr-t3-minuteur" placeholder="min" min="1" max="180">
+            <label class="tache-parent-minuteur-case">
+              <input type="checkbox" id="nr-t3-minuteur-alertes" checked>
+              <span>🔔 alerter si bloqué</span>
+            </label>
+          </div>
+        </div>
       </div>
       <div class="tache-parent">
         <span class="tache-parent-num">4</span>
         <input type="text" class="tache-parent-texte" id="nr-t4-texte" placeholder="Ex : Sors et sèche-toi.">
         <input type="text" class="tache-parent-emoji" id="nr-t4-emoji" placeholder="🧺" maxlength="4">
-        <select class="tache-parent-zone" id="nr-t4-zone">
-          <option value="zone-visage">Visage</option>
-          <option value="zone-torse">Torse</option>
-          <option value="zone-bassin">Bassin</option>
-          <option value="zone-jambes">Jambes</option>
-          <option value="zone-pieds">Pieds</option>
-          <option value="zone-dos">Dos</option>
-        </select>
+        <label class="tache-parent-corps-case">
+          <input type="checkbox" id="nr-t4-corps" checked>
+          <span>Glisser pour valider</span>
+        </label>
+        <div class="tache-parent-minuteur">
+          <button type="button" class="btn-toggle-minuteur" id="nr-t4-minuteur-toggle">⏱️ Minuteur</button>
+          <div class="tache-parent-minuteur-champs hidden" id="nr-t4-minuteur-champs">
+            <input type="number" class="tache-parent-minuteur-duree" id="nr-t4-minuteur" placeholder="min" min="1" max="180">
+            <label class="tache-parent-minuteur-case">
+              <input type="checkbox" id="nr-t4-minuteur-alertes" checked>
+              <span>🔔 alerter si bloqué</span>
+            </label>
+          </div>
+        </div>
       </div>
       <div class="tache-parent">
         <span class="tache-parent-num">5</span>
         <input type="text" class="tache-parent-texte" id="nr-t5-texte" placeholder="Ex : Mets ton pyjama.">
         <input type="text" class="tache-parent-emoji" id="nr-t5-emoji" placeholder="👕" maxlength="4">
-        <select class="tache-parent-zone" id="nr-t5-zone">
-          <option value="zone-visage">Visage</option>
-          <option value="zone-torse">Torse</option>
-          <option value="zone-bassin">Bassin</option>
-          <option value="zone-jambes">Jambes</option>
-          <option value="zone-pieds">Pieds</option>
-          <option value="zone-dos">Dos</option>
-        </select>
+        <label class="tache-parent-corps-case">
+          <input type="checkbox" id="nr-t5-corps" checked>
+          <span>Glisser pour valider</span>
+        </label>
+        <div class="tache-parent-minuteur">
+          <button type="button" class="btn-toggle-minuteur" id="nr-t5-minuteur-toggle">⏱️ Minuteur</button>
+          <div class="tache-parent-minuteur-champs hidden" id="nr-t5-minuteur-champs">
+            <input type="number" class="tache-parent-minuteur-duree" id="nr-t5-minuteur" placeholder="min" min="1" max="180">
+            <label class="tache-parent-minuteur-case">
+              <input type="checkbox" id="nr-t5-minuteur-alertes" checked>
+              <span>🔔 alerter si bloqué</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <!-- Minuteur global (`routine.dureeGlobale`, cf. app.js) — chronomètre
+           la routine entière plutôt qu'une tâche précise (ex. "Fais tes
+           devoirs" si ce n'est pas découpé en tâches séparées) ; se
+           combine sans conflit avec un minuteur par tâche ci-dessus.
+           Replié par défaut, même raison que .tache-parent-minuteur plus
+           haut. -->
+      <div class="champ-parent">
+        <span>Minuteur global de la routine (facultatif)</span>
+        <button type="button" class="btn-toggle-minuteur" id="nr-global-minuteur-toggle">⏱️ Minuteur global</button>
+        <div class="tache-parent-minuteur-champs hidden" id="nr-global-minuteur-champs">
+          <input type="number" class="tache-parent-minuteur-duree" id="nr-global-minuteur" placeholder="min" min="1" max="180">
+          <label class="tache-parent-minuteur-case">
+            <input type="checkbox" id="nr-global-minuteur-alertes" checked>
+            <span>🔔 alerter si bloqué</span>
+          </label>
+        </div>
+      </div>
+      <!-- Forme visuelle (routine.styleMinuteur, cf. app.js) — s'applique à
+           TOUS les minuteurs de cette routine (par tâche ci-dessus ou
+           global juste au-dessus), pas un réglage par minuteur individuel :
+           pas d'écran de réglages sensoriels par enfant aujourd'hui, mais
+           une routine appartient à un seul profil, donc deux enfants
+           peuvent déjà avoir des styles différents sur "leurs" routines.
+           Sans effet si aucun minuteur n'est configuré ci-dessus. -->
+      <div class="champ-parent">
+        <span>Forme du minuteur</span>
+        <div class="nr-lieu-choix">
+          <button type="button" class="nr-lieu-btn choisi" id="nr-style-jauge">Jauge</button>
+          <button type="button" class="nr-lieu-btn" id="nr-style-cadran">Cadran</button>
+        </div>
       </div>
       <label class="champ-parent">
         <span>Autres mots pour la retrouver (facultatif, séparés par des virgules)</span>
@@ -679,7 +859,7 @@
        automatique d'aujourd'hui (jamais verrouillé, toujours 🎁). -->
   <div id="screen-coffre" class="screen">
     <div class="barre-haut">
-      <div class="prenom-actif" id="coffre-titre">Bravo Léon !</div>
+      <div class="prenom-actif" id="coffre-titre">Bravo !</div>
       <button class="btn-voix" id="btn-voix-coffre" aria-label="Réécouter">🔊</button>
       <div></div>
     </div>
@@ -773,7 +953,7 @@
         "/>
       </svg>
     </div>
-    <div class="texte-consigne" id="trajet-texte">On roule vers chez Pauline.</div>
+    <div class="texte-consigne" id="trajet-texte">On roule.</div>
     <div class="note-bas">C'est un temps d'attente : rien à faire, rien à toucher. Quand on est arrivés, un parent appuie ici.</div>
     <button class="btn-continuer" id="btn-arrive">On est arrivés ✅</button>
   </div>
@@ -781,23 +961,23 @@
   <!-- ============ 4. Arrivée chez la praticienne ============ -->
   <div id="screen-arrivee" class="screen">
     <div class="barre-haut">
-      <div class="prenom-actif" id="arrivee-lieu">Chez Pauline</div>
+      <div class="prenom-actif" id="arrivee-lieu"></div>
       <button class="btn-voix" id="btn-voix-arrivee" aria-label="Réécouter">🔊</button>
       <div></div>
     </div>
     <div id="scene-arrivee">
       <div class="sprite-simple" id="sprite-enfant">
         <!-- Calques <img> injectés par construireCalquesAvatar() (app.js)
-             selon le profil actif (Léon ou Colette) — cf. PROFILS. -->
+             selon le profil actif — cf. tousLesProfils() dans app.js. -->
         <div id="avatar-wrap-arrivee" class="avatar-wrap">
           <div class="badge-zone badge-dos" data-badge="dos"></div>
           <div class="badge-zone badge-visage" data-badge="visage"></div>
         </div>
-        <span id="arrivee-prenom-enfant">Léon</span>
+        <span id="arrivee-prenom-enfant"></span>
       </div>
       <div class="sprite-simple hidden" id="sprite-personne"></div>
     </div>
-    <div class="texte-consigne" id="arrivee-texte">Pauline est là. Orthophoniste, une demi-heure.</div>
+    <div class="texte-consigne" id="arrivee-texte"></div>
     <div class="carte-programme">
       <div class="label-trajet">CE QUI VA SE PASSER</div>
       <div id="arrivee-programme"></div>
@@ -807,12 +987,12 @@
 
   <!-- ============ Séance chez une praticienne (en cours) ============ -->
   <!-- N'apparaît que pour une aventure avec une praticienne précise
-       (personne, cf. terminerVisite() dans app.js) — Pauline, Elsa,
-       Arianne. C'est elle qui garde l'appareil ici, pas l'enfant : rien
+       (personne, cf. terminerVisite() dans app.js) — une praticienne
+       ajoutée par un parent. C'est elle qui garde l'appareil ici, pas l'enfant : rien
        à faire pour personne avant qu'elle tape "Terminer la séance". -->
   <div id="screen-seance" class="screen">
     <div class="barre-haut">
-      <div class="prenom-actif" id="seance-titre">Chez Pauline</div>
+      <div class="prenom-actif" id="seance-titre"></div>
       <div></div>
       <div></div>
     </div>

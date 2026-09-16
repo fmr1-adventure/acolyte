@@ -1,9 +1,9 @@
 /*
- * Prototype de parcours — Léon ET Colette : menu de la journée → routines
- * indépendantes ("S'habiller", "Se préparer à partir") → félicitations →
- * validation parent (code + relecture/correction) → étoile + jauge de
- * journée → retour au menu → récompense de fin de journée une fois
- * toutes les routines validées.
+ * Prototype de parcours — un ou plusieurs enfants : menu de la journée →
+ * routines indépendantes ("S'habiller", "Se préparer à partir") →
+ * félicitations → validation parent (code + relecture/correction) →
+ * étoile + jauge de journée → retour au menu → récompense de fin de
+ * journée une fois toutes les routines validées.
  *
  * Modèle : voir docs/produit/modele-de-donnees.md — une Routine a une
  * liste ordonnée de Tâches (relation mère-fille). `etat.routines[id].fait`
@@ -17,25 +17,25 @@
  * pièce (cf. `chargerPieces`/`ajouterPieces` et
  * docs/produit/modele-de-donnees.md).
  *
- * Profils (PROFILS, plus bas) : CHAQUE ENFANT UTILISE SON PROPRE APPAREIL
- * — ce n'est PAS un sélecteur dans une même app partagée (Colette aura sa
- * tablette, distincte de celle de Léon). `profilActif()` détermine "quel
- * enfant est CET appareil" une bonne fois pour toutes (query param
- * `?enfant=`, retenu ensuite dans `localStorage` sur cet appareil, cf.
- * `resoudreProfilActif()`) — pas un choix qui revient à chaque session.
+ * Profils (PROFILS/tousLesProfils(), plus bas) : CHAQUE ENFANT UTILISE
+ * SON PROPRE APPAREIL — ce n'est PAS un sélecteur dans une même app
+ * partagée. Un profil est créé une fois sur l'appareil qui lui est dédié,
+ * via l'écran de première configuration (prénom, avatar, code parent —
+ * cf. `demarrerPremiereConfiguration()`), puis `profilActif()` détermine
+ * "quel enfant est CET appareil" une bonne fois pour toutes (retenu dans
+ * `localStorage` sur cet appareil, query param `?enfant=` possible pour
+ * un profil déjà créé) — pas un choix qui revient à chaque session.
  * Toutes les clés `localStorage` propres à un enfant (journée, étoiles,
  * pièces, historique, routines/aventures perso) sont préfixées par
  * `profilActif().prefixe` (cf. `cle()`) ; celles de l'appareil/famille
  * (code parent, mode debug) restent partagées, cf. `codeParentActuel()`/
- * `modeDebugActif()`. Léon garde exactement ses clés `leon_...`
- * d'aujourd'hui (zéro migration, zéro risque sur sa tablette réelle) ;
- * Colette obtient les mêmes clés préfixées `colette_`. Voir
- * `docs/produit/modele-de-donnees.md` pour le détail de ce qui est
- * commun (REPAS, PLANNING_DEFAUT, moteur générique) vs propre à un enfant
- * (ROUTINES, vêtements/avatar, aventures avec une praticienne précise).
+ * `modeDebugActif()`. Voir `docs/produit/modele-de-donnees.md` pour le
+ * détail de ce qui est commun (REPAS, PLANNING_DEFAUT, moteur générique)
+ * vs propre à un enfant (routines, vêtements/avatar, aventures avec une
+ * praticienne précise).
  *
  * Code parent : partagé par appareil (pas par enfant — mêmes parents des
- * deux côtés), 1234 par défaut tant qu'aucun n'a été enregistré.
+ * deux côtés), choisi à la première configuration.
  */
 
 // ---------------------------------------------------------------------
@@ -44,10 +44,10 @@
 // `?debug=1` à chaque fois que le port change d'une session de test à
 // l'autre) ; ailleurs (ex. une URL de prévisualisation non-localhost),
 // activable une fois via `?debug=1` dans l'URL, retenu ensuite sur CET
-// appareil/navigateur via `dayrise_debug` (localStorage) — partagé par
+// appareil/navigateur via `acolyte_debug` (localStorage) — partagé par
 // appareil, pas par enfant (un appareil de test reste en debug quel que
 // soit le profil affiché dessus, cf. `resoudreProfilActif()` plus bas).
-// N'affecte jamais les tablettes réelles de Léon/Colette : elles ne
+// N'affecte jamais les tablettes réelles des enfants : elles ne
 // chargent que l'URL GitHub Pages publiée, jamais un localhost (cf.
 // app/README.md). Ajoute un bouton 🧪 (cf. index.html, symétrique de
 // ⚙️/↺) qui ouvre un panneau listant tous les écrans, chacun atteint via
@@ -58,8 +58,8 @@
   try {
     const params = new URLSearchParams(location.search);
     if (params.has("debug")) {
-      if (params.get("debug") === "0") localStorage.removeItem("dayrise_debug");
-      else localStorage.setItem("dayrise_debug", "1");
+      if (params.get("debug") === "0") localStorage.removeItem("acolyte_debug");
+      else localStorage.setItem("acolyte_debug", "1");
     }
   } catch (e) {}
 })();
@@ -68,7 +68,7 @@ function modeDebugActif() {
   // `leon_debug` : ancienne clé (avant le support multi-profil), lue en
   // secours pour ne pas redemander `?debug=1` sur un appareil qui l'avait
   // déjà activé — jamais réécrite.
-  try { return localStorage.getItem("dayrise_debug") === "1" || localStorage.getItem("leon_debug") === "1"; } catch (e) { return false; }
+  try { return localStorage.getItem("acolyte_debug") === "1" || localStorage.getItem("leon_debug") === "1"; } catch (e) { return false; }
 }
 
 // `dateDebugForcee` (Date, null = heure réelle) simule le moment présent
@@ -87,104 +87,310 @@ function dateActuelle() {
   return dateDebugForcee || new Date();
 }
 
-// Code parent : persisté à part (`dayrise_code_parent`), modifiable depuis
+// Code parent : persisté à part (`acolyte_code_parent`), modifiable depuis
 // l'espace parent (cf. demarrerChangementCode()) — "1234" tant qu'aucun
 // nouveau code n'a été enregistré. Partagé par APPAREIL, pas par enfant
 // (cf. resoudreProfilActif() plus bas) : ce sont les mêmes parents des
 // deux côtés, pas une raison d'avoir deux codes à retenir.
 function codeParentActuel() {
   try {
-    // `leon_code_parent` : ancienne clé (avant le support multi-profil),
-    // lue en secours pour ne pas réinitialiser silencieusement le code
-    // qu'Alexandra a peut-être déjà changé sur la tablette de Léon —
-    // jamais réécrite (sauverCodeParent() n'écrit plus que la nouvelle clé).
-    return localStorage.getItem("dayrise_code_parent") || localStorage.getItem("leon_code_parent") || "1234";
+    return localStorage.getItem("acolyte_code_parent") || "1234";
   } catch (e) { return "1234"; }
 }
 function sauverCodeParent(code) {
-  try { localStorage.setItem("dayrise_code_parent", code); } catch (e) {}
+  try { localStorage.setItem("acolyte_code_parent", code); } catch (e) {}
 }
 
 // ---------------------------------------------------------------------
-// Profils (Léon, Colette, ...) — CHAQUE ENFANT SUR SON PROPRE APPAREIL,
-// PAS un sélecteur dans une même app partagée. `resoudreProfilActif()`
-// détermine une bonne fois pour toutes "quel enfant est cet appareil" :
-// query param `?enfant=id` (une fois, comme `?debug=1`), retenu ensuite
-// dans `localStorage` SUR CET APPAREIL (`dayrise_enfant`). Par défaut
-// (aucun choix jamais fait) : "leon" — pour que la tablette de Léon,
-// déjà en usage réel, continue de fonctionner sans aucune configuration
-// après cette mise à jour. Un parent peut aussi changer le profil d'un
-// appareil depuis l'espace parent (cf. `construireParentAppareil()`) —
-// utile si un appareil est un jour réattribué, ou pour ajouter un 3ᵉ
-// enfant plus tard (il suffit d'une nouvelle entrée dans PROFILS).
+// Profils — CHAQUE ENFANT SUR SON PROPRE APPAREIL, PAS un sélecteur dans
+// une même app partagée. Un déploiement neuf n'a AUCUN profil : le tout
+// premier lancement affiche l'écran de première configuration (prénom,
+// avatar, code parent — cf. `demarrerPremiereConfiguration()` plus bas,
+// déclenché depuis `demarrer()` si `tousLesProfils()` est vide), qui crée
+// le profil dans `profils_perso`. `PROFILS` reste le socle "en dur" —
+// vide ici, mais une entrée peut y être ajoutée à la main (même forme
+// qu'un profil créé par l'app, avec en plus des accesseurs `routines()`/
+// `aventuresPropres()` vers des catalogues dédiés) pour un déploiement qui
+// voudrait figer un profil au code plutôt que le configurer depuis l'app.
 //
-// `prefixe` retrouve exactement les clés `localStorage` déjà utilisées
-// par le prototype Léon-seul (`leon_journee`, `leon_pieces`, ...) : zéro
-// migration, zéro risque de perte sur sa tablette réelle. Colette obtient
-// les mêmes clés préfixées `colette_`.
-const PROFILS = {
-  leon: {
-    id: "leon",
-    prefixe: "leon",
-    prenom: "Léon",
-    routines: () => ROUTINES_LEON,
-    aventuresPropres: () => AVENTURES_LEON,
-    chambre: "assets/scenes/chambre-leon.jpg",
-    dodo: "assets/avatar/leon-dodo.png",
-    sprites: {
-      base: "assets/avatar/leon-base.png",
-      calques: [
-        { calque: "calque-calecon",     fichier: "assets/avatar/leon-calecon.png" },
-        { calque: "calque-haut",        fichier: "assets/avatar/leon-haut.png" },
-        { calque: "calque-pantalon",    fichier: "assets/avatar/leon-pantalon.png" },
-        { calque: "calque-chaussettes", fichier: "assets/avatar/leon-chaussettes.png" },
-        { calque: "calque-chaussures",  fichier: "assets/avatar/leon-chaussures.png" },
-        { calque: "calque-manteau",     fichier: "assets/avatar/leon-manteau.png" },
-      ],
-    },
-  },
-  colette: {
-    id: "colette",
-    prefixe: "colette",
-    prenom: "Colette",
-    routines: () => ROUTINES_COLETTE,
-    aventuresPropres: () => AVENTURES_COLETTE,
-    chambre: "assets/scenes/chambre-colette.jpg",
-    dodo: "assets/avatar/colette-dodo.png",
-    sprites: {
-      base: "assets/avatar/colette-base.png",
-      calques: [
-        { calque: "calque-culotte",     fichier: "assets/avatar/colette-culotte.png" },
-        { calque: "calque-haut",        fichier: "assets/avatar/colette-haut.png" },
-        { calque: "calque-robe",        fichier: "assets/avatar/colette-robe.png" },
-        { calque: "calque-chaussettes", fichier: "assets/avatar/colette-chaussettes.png" },
-        { calque: "calque-chaussures",  fichier: "assets/avatar/colette-chaussures.png" },
-        { calque: "calque-manteau",     fichier: "assets/avatar/colette-manteau.png" },
-      ],
-    },
-  },
-};
+// `prefixe` (= `id` pour un profil créé depuis l'app) retrouve les clés
+// `localStorage` propres à cet enfant (`<prefixe>_journee`,
+// `<prefixe>_pieces`, ...) — cf. `cle()`.
+const PROFILS = {};
+
+// Profils créés depuis l'app (écran de première configuration, ou "+
+// Nouvel enfant" dans "Cet appareil") — même pattern que
+// routines_perso/aventures_perso/entourage_perso plus bas : persistés à
+// part, jamais remis à zéro, fusionnés avec PROFILS via
+// `tousLesProfils()`. Purement des données (JSON) : contrairement à une
+// entrée PROFILS en dur, pas d'accesseurs `routines()`/`aventuresPropres()`
+// — ces profils n'ont aucun catalogue de base, tout vit dans leurs propres
+// `routines_perso`/`aventures_perso` (cf. `toutesLesRoutines()`/
+// `toutesLesAventures()`, qui traitent un profil sans accesseur comme un
+// catalogue de base vide).
+function chargerProfilsPerso() {
+  try { return JSON.parse(localStorage.getItem("acolyte_profils_perso") || "[]"); } catch (e) { return []; }
+}
+function sauverProfilsPerso(liste) {
+  try { localStorage.setItem("acolyte_profils_perso", JSON.stringify(liste)); } catch (e) {}
+}
+// Même principe de masquage par id que toutesLesRoutines() : un profil
+// perso remplace une éventuelle entrée PROFILS du même id plutôt que de
+// s'y ajouter en double.
+function tousLesProfils() {
+  const perso = chargerProfilsPerso();
+  const idsPerso = new Set(perso.map(p => p.id));
+  const table = {};
+  Object.values(PROFILS).filter(p => !idsPerso.has(p.id)).forEach(p => { table[p.id] = p; });
+  perso.forEach(p => { table[p.id] = p; });
+  return table;
+}
 
 (function initProfilActif() {
   try {
     const params = new URLSearchParams(location.search);
-    if (params.has("enfant") && PROFILS[params.get("enfant")]) {
-      localStorage.setItem("dayrise_enfant", params.get("enfant"));
+    if (params.has("enfant") && tousLesProfils()[params.get("enfant")]) {
+      localStorage.setItem("acolyte_enfant", params.get("enfant"));
     }
   } catch (e) {}
 })();
+// `null` tant qu'aucun profil n'existe/n'est choisi sur cet appareil — cf.
+// `demarrer()`, qui affiche alors la première configuration plutôt que
+// d'appeler `chargerEtat()`/`profilActif()` (qui supposent un profil réel).
 function profilActifId() {
   try {
-    const stocke = localStorage.getItem("dayrise_enfant");
-    if (stocke && PROFILS[stocke]) return stocke;
+    const stocke = localStorage.getItem("acolyte_enfant");
+    if (stocke && tousLesProfils()[stocke]) return stocke;
   } catch (e) {}
-  return "leon";
+  return null;
 }
-function profilActif() { return PROFILS[profilActifId()]; }
+function profilActif() { return tousLesProfils()[profilActifId()] || null; }
 // Préfixe une clé localStorage propre à l'enfant actif (journée, étoiles,
 // historique, code, routines/aventures perso...) — jamais pour une clé
-// partagée par appareil (code parent, debug), cf. plus haut.
+// partagée par appareil (code parent, debug), cf. plus haut. Suppose un
+// profil actif réel (jamais appelée avant la première configuration).
 function cle(nomBase) { return profilActif().prefixe + "_" + nomBase; }
+
+// ---------------------------------------------------------------------
+// Avatars proposés à la première configuration — mêmes calques qu'un
+// profil codé en dur (base + calques, cf. `sprites` plus haut), générés
+// par scripts/generate_sprites_detailed_preview.py (voir CHILDREN dans ce
+// script pour les 4 combinaisons peau/cheveux ci-dessous, 2 par
+// silhouette). `silhouette` ("pantalon"/"robe") pilote uniquement le
+// gabarit de routines amorcé à la création (cf. `routinesDemarrage()`
+// plus bas) — un parent peut ensuite ajouter les deux jeux de vêtements à
+// une même routine si besoin, cf. l'espace parent.
+// Avatar personnalisable — remplace l'ancien choix figé à 4 avatars par
+// des traits combinables (genre, coupe, peau, cheveux, yeux), rendus à
+// l'avance par scripts/generate_sprites_detailed_preview.py (320
+// combinaisons corps/visage : 4 peaux × 5 couleurs de cheveux × 4 coupes
+// × 4 couleurs d'yeux, chacune avec sa version "dodo" assortie) plutôt
+// que composées en direct dans le navigateur — cf. app/assets/avatar/perso/,
+// nommés "<coupe>-<peau>-<cheveux>-<yeux>-{base,dodo}.png". Les vêtements
+// ne font pas partie de ce choix (non demandé) : ils restent les 2 jeux
+// de calques déjà existants, un par silhouette, cf. CALQUES_PAR_SILHOUETTE.
+//
+// `p2`/`n4`/`y1`/"court-net" = les valeurs exactes de l'ancien "avatar-a"
+// (lui-même la reprise générique d'un avatar réel) : gardées
+// comme valeurs par défaut à l'ouverture de l'écran plutôt qu'un choix
+// arbitraire.
+const PEAUX = [
+  { id: "p1", couleur: "#f5d6be" },
+  { id: "p2", couleur: "#deb28c" },
+  { id: "p3", couleur: "#b4825a" },
+  { id: "p4", couleur: "#78523a" },
+];
+const CHEVEUX_COULEURS = [
+  { id: "n1", couleur: "#e0ba5a" },
+  { id: "n2", couleur: "#a84c30" },
+  { id: "n3", couleur: "#785438" },
+  { id: "n4", couleur: "#4a362a" },
+  { id: "n5", couleur: "#1c1816" },
+];
+const YEUX_COULEURS = [
+  { id: "y1", couleur: "#221e28" },
+  { id: "y2", couleur: "#785430" },
+  { id: "y3", couleur: "#3c6ea5" },
+  { id: "y4", couleur: "#46825a" },
+];
+// Coupes propres à chaque genre (jamais mélangées dans le menu) — le
+// genre choisi fixe aussi `silhouette` (cf. silhouettePourGenre()), donc
+// le vêtement du bas de "S'habiller" (routinesDemarrage()).
+const COUPES_PAR_GENRE = {
+  garcon: [
+    { id: "court-net", nom: "Coupe courte" },
+    { id: "court-ebouriffe", nom: "Coupe ébouriffée" },
+  ],
+  fille: [
+    { id: "carre", nom: "Carré" },
+    { id: "couettes", nom: "Couettes" },
+  ],
+};
+const CALQUES_PAR_SILHOUETTE = {
+  pantalon: [
+    { calque: "calque-calecon",     fichier: "assets/avatar/avatar-a-calecon.png" },
+    { calque: "calque-haut",        fichier: "assets/avatar/avatar-a-haut.png" },
+    { calque: "calque-pantalon",    fichier: "assets/avatar/avatar-a-pantalon.png" },
+    { calque: "calque-chaussettes", fichier: "assets/avatar/avatar-a-chaussettes.png" },
+    { calque: "calque-chaussures",  fichier: "assets/avatar/avatar-a-chaussures.png" },
+    { calque: "calque-manteau",     fichier: "assets/avatar/avatar-a-manteau.png" },
+  ],
+  robe: [
+    { calque: "calque-culotte",     fichier: "assets/avatar/avatar-c-culotte.png" },
+    { calque: "calque-haut",        fichier: "assets/avatar/avatar-c-haut.png" },
+    { calque: "calque-robe",        fichier: "assets/avatar/avatar-c-robe.png" },
+    { calque: "calque-chaussettes", fichier: "assets/avatar/avatar-c-chaussettes.png" },
+    { calque: "calque-chaussures",  fichier: "assets/avatar/avatar-c-chaussures.png" },
+    { calque: "calque-manteau",     fichier: "assets/avatar/avatar-c-manteau.png" },
+  ],
+};
+function silhouettePourGenre(genre) { return genre === "fille" ? "robe" : "pantalon"; }
+// Résout la combinaison de traits en cours (`configInitiale` ou un profil
+// déjà créé) vers les fichiers réels — seul point qui connaît la
+// convention de nommage des fichiers générés.
+function spritesPourTraits(traits) {
+  const silhouette = silhouettePourGenre(traits.genre);
+  const prefixe = `assets/avatar/perso/${traits.coupe}-${traits.peau}-${traits.cheveux}-${traits.yeux}`;
+  return {
+    silhouette,
+    dodo: `${prefixe}-dodo.png`,
+    sprites: { base: `${prefixe}-base.png`, calques: CALQUES_PAR_SILHOUETTE[silhouette] },
+  };
+}
+
+// ---------------------------------------------------------------------
+// Première configuration — écran affiché quand cet appareil n'a encore
+// AUCUN profil (cf. `demarrer()`, tout en bas du fichier), ou rouvert
+// depuis "Cet appareil" ("+ Nouvel enfant") pour ajouter un profil
+// supplémentaire sur un appareil déjà configuré. Prénom + avatar ici,
+// code parent juste après (réutilise le pavé numérique existant, cf.
+// `demarrerCodeInitial()`) — la création réelle du profil n'a lieu
+// qu'une fois le code confirmé deux fois, cf. `finaliserPremiereConfiguration()`.
+let configInitiale = { prenom: "", genre: "garcon", coupe: "court-net", peau: "p2", cheveux: "n4", yeux: "y1" };
+// true seulement quand cet écran est rouvert depuis un appareil déjà
+// configuré (bouton retour utile) ; false au tout premier lancement
+// (aucun profil, donc aucun écran où revenir — bouton retour caché).
+let premiereConfigEstAjout = false;
+
+function ouvrirPremiereConfiguration(estAjout) {
+  premiereConfigEstAjout = !!estAjout;
+  configInitiale = { prenom: "", genre: "garcon", coupe: "court-net", peau: "p2", cheveux: "n4", yeux: "y1" };
+  document.getElementById("pc-prenom").value = "";
+  document.getElementById("pc-erreur").textContent = "";
+  document.getElementById("btn-retour-premiere-configuration").classList.toggle("hidden", !premiereConfigEstAjout);
+  document.getElementById("pc-genre-garcon").classList.add("choisi");
+  document.getElementById("pc-genre-fille").classList.remove("choisi");
+  construireChoixApparenceInitiale();
+  afficherEcran("screen-premiere-configuration");
+}
+
+// Genre : change aussi le menu de coupes proposé juste en dessous (2
+// propres à chaque genre, jamais les 4 mélangées) — si la coupe choisie
+// jusque-là n'existe pas pour le nouveau genre, on retombe sur la
+// première de sa liste plutôt que de garder un id invalide.
+function choisirGenreInitial(genre) {
+  configInitiale.genre = genre;
+  document.getElementById("pc-genre-garcon").classList.toggle("choisi", genre === "garcon");
+  document.getElementById("pc-genre-fille").classList.toggle("choisi", genre === "fille");
+  if (!COUPES_PAR_GENRE[genre].some(c => c.id === configInitiale.coupe)) {
+    configInitiale.coupe = COUPES_PAR_GENRE[genre][0].id;
+  }
+  construireChoixApparenceInitiale();
+}
+
+function choisirTraitInitial(trait, valeur) {
+  configInitiale[trait] = valeur;
+  construireChoixApparenceInitiale();
+}
+
+// Un menu à choix (boutons/pastilles) par trait plutôt qu'une grille
+// d'avatars déjà composés à parcourir — à 320 combinaisons, une galerie
+// de photos à faire défiler n'aurait plus de sens (demande explicite).
+// L'aperçu (#pc-avatar-apercu-img) reste le seul retour visuel de la
+// combinaison choisie, mis à jour à chaque changement.
+function construireChoixApparenceInitiale() {
+  const coupeConteneur = document.getElementById("pc-coupe-choix");
+  coupeConteneur.innerHTML = "";
+  COUPES_PAR_GENRE[configInitiale.genre].forEach(c => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "nr-lieu-btn" + (c.id === configInitiale.coupe ? " choisi" : "");
+    b.textContent = c.nom;
+    b.onclick = () => choisirTraitInitial("coupe", c.id);
+    coupeConteneur.appendChild(b);
+  });
+
+  construireSwatchesInitiale("pc-peau-choix", PEAUX, "peau");
+  construireSwatchesInitiale("pc-cheveux-choix", CHEVEUX_COULEURS, "cheveux");
+  construireSwatchesInitiale("pc-yeux-choix", YEUX_COULEURS, "yeux");
+
+  document.getElementById("pc-avatar-apercu-img").src = spritesPourTraits(configInitiale).sprites.base;
+}
+
+function construireSwatchesInitiale(idConteneur, options, trait) {
+  const conteneur = document.getElementById(idConteneur);
+  conteneur.innerHTML = "";
+  options.forEach(o => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pc-swatch" + (o.id === configInitiale[trait] ? " choisi" : "");
+    b.style.background = o.couleur;
+    b.setAttribute("aria-label", trait + " " + o.id);
+    b.onclick = () => choisirTraitInitial(trait, o.id);
+    conteneur.appendChild(b);
+  });
+}
+
+function validerPremiereConfiguration() {
+  const prenom = document.getElementById("pc-prenom").value.trim();
+  if (!prenom) {
+    document.getElementById("pc-erreur").textContent = "Donne un prénom avant de continuer.";
+    return;
+  }
+  configInitiale.prenom = prenom;
+  demarrerCodeInitial();
+}
+
+// Même pavé numérique que la vérification/le changement de code (cf.
+// construireClavier()/majCasesCode() plus bas) — seul modeCode change ce
+// qui se passe une fois les deux saisies confirmées identiques (cf.
+// validerCode()).
+function demarrerCodeInitial() {
+  ecranAvantValidation = "screen-premiere-configuration";
+  codeSaisi = "";
+  modeCode = "initial1";
+  premierNouveauCode = "";
+  document.getElementById("validation-sous-titre").textContent = "Choisis un code parent à 4 chiffres.";
+  document.getElementById("correction-wrap").classList.add("hidden");
+  document.getElementById("pavecode-wrap").classList.remove("hidden");
+  document.getElementById("pavecode-erreur").textContent = "";
+  construireClavier(document.getElementById("pavecode-clavier"), appuyerTouche);
+  majCasesCode(document.getElementById("pavecode-cases"), codeSaisi);
+  afficherEcran("screen-validation");
+}
+
+// Code confirmé deux fois (cf. validerCode(), branche "initial2") : crée
+// réellement le profil — jusqu'ici rien n'était encore écrit à part le
+// prénom/avatar en mémoire (`configInitiale`). Ordre important : le
+// profil doit exister dans `profils_perso` ET `acolyte_enfant` doit déjà
+// pointer dessus avant d'amorcer routines_perso, puisque
+// `sauverRoutinesPerso()` passe par `cle()` -> `profilActif()`.
+function finaliserPremiereConfiguration() {
+  const { silhouette, dodo, sprites } = spritesPourTraits(configInitiale);
+  const id = "enfant-" + Date.now();
+  const profil = { id, prefixe: id, prenom: configInitiale.prenom, dodo, sprites };
+
+  const perso = chargerProfilsPerso();
+  perso.push(profil);
+  sauverProfilsPerso(perso);
+  try { localStorage.setItem("acolyte_enfant", id); } catch (e) {}
+
+  sauverRoutinesPerso(routinesDemarrage(profil.prenom, silhouette).map(r =>
+    (r.id === "shabiller" || r.id === "partir") ? Object.assign({ chainee: true }, r) : r
+  ));
+
+  location.reload();
+}
 
 // `calque` = data-calque (ou tableau de data-calque) à révéler sur le
 // sprite ; `retire: true` les CACHE au lieu de les révéler (routine du
@@ -198,145 +404,108 @@ function cle(nomBase) { return profilActif().prefixe + "_" + nomBase; }
 // `emoji` (par routine) : utilisé par l'écran "Ma journée"
 // (`construireJournee()`) pour repérer chaque routine d'un coup d'œil.
 //
-// Une routine par enfant (ROUTINES_LEON / ROUTINES_COLETTE) plutôt qu'un
-// seul catalogue partagé : même PRINCIPE (mêmes `id`/`nom`/nombre de
-// routines, dans le même ordre — "par défaut, elles doivent être
-// identiques") mais des TÂCHES propres à chaque enfant, notamment pour
-// les vêtements (Colette a une culotte/un haut/une robe, pas un
-// caleçon/pantalon) — cf. docs/produit/modele-de-donnees.md. Le moteur
-// (synchroniserRoutineEcran, marquerTache, rendreGlissable...) reste
-// entièrement générique et partagé : il ne lit jamais "shabiller" ou
-// "calecon" en dur, seulement la structure Routine/Tâche. Un parent peut
-// diverger encore plus au fil du temps (ex. ajouter/retirer une tâche
-// chez l'un sans toucher l'autre) sans rien casser côté moteur.
-const ROUTINES_LEON = [
-  {
-    id: "shabiller",
-    nom: "S'habiller",
-    emoji: "👕",
-    lieu: "chambre",
-    felicitation: "Bravo Léon, tu t'es habillé tout seul !",
-    taches: [
-      { id: "calecon",     texte: "Mets ton caleçon.",     emoji: "🩲", zone: "zone-bassin", calque: "calque-calecon" },
-      { id: "tshirt",      texte: "Mets ton t-shirt.",     emoji: "👕", zone: "zone-torse",  calque: "calque-haut" },
-      { id: "pantalon",    texte: "Mets ton pantalon.",    emoji: "👖", zone: "zone-jambes", calque: "calque-pantalon" },
-      { id: "chaussettes", texte: "Mets tes chaussettes.", emoji: "🧦", zone: "zone-pieds",  calque: "calque-chaussettes" },
-    ],
-  },
-  {
-    id: "partir",
-    nom: "Se préparer à partir",
-    emoji: "🚪",
-    lieu: "salon",
-    felicitation: "Bravo Léon, tu es prêt à partir !",
-    // Manteau et sac retirés le temps de l'été (pas besoin de manteau,
-    // on part avec juste les chaussures) — gardés ici en commentaire
-    // pour les remettre facilement à la mauvaise saison :
-    // { id: "manteau", texte: "Mets ton manteau.", emoji: "🧥", zone: "zone-torse", calque: "calque-manteau" },
-    // { id: "sac",     texte: "Prends ton sac.",   emoji: "🎒", zone: "zone-dos",   badge: "dos" },
-    taches: [
-      { id: "chaussures", texte: "Mets tes chaussures.", emoji: "👟", zone: "zone-pieds", calque: "calque-chaussures" },
-    ],
-  },
-  {
-    id: "soir",
-    nom: "Aller se coucher",
-    emoji: "🌙",
-    lieu: "chambre",
-    felicitation: "Bravo Léon, tu es prêt à dormir !",
-    // Volontairement PAS chaînée après "S'habiller"/"Se préparer à
-    // partir" (contrairement aux autres routines, cf. construireMenu()) :
-    // le coucher n'a rien à voir avec le fait d'être habillé pour sortir,
-    // et les enchaîner créait un vrai risque — si un parent relance
-    // "S'habiller" en soirée (cf. espace parent), "Aller se coucher" se
-    // serait retrouvée verrouillée juste avant le coucher. À la place,
-    // débloquée par l'heure : avant `disponibleApresHeure`, elle reste
-    // inaccessible (pour éviter l'autre risque inverse — un enfant qui
-    // irait se déshabiller pour "aller se coucher" en pleine journée sans
-    // avoir rien fait d'autre), après, elle l'est, indépendamment de
-    // l'état des autres routines.
-    disponibleApresHeure: 18,
-    taches: [
-      // `avatarGlissable: true` (au lieu de `zone`) : contrairement aux
-      // autres tâches, ce n'est pas l'icône de la liste qu'on glisse vers
-      // l'avatar, mais l'avatar (habillé) lui-même qu'on tire hors de la
-      // scène — plus logique pour DÉshabiller que d'amener une carte
-      // jusqu'à lui (cf. rendreAvatarGlissable, plus bas).
-      { id: "enlever",  texte: "Enlève tes vêtements.", emoji: "👕",
-        calque: ["calque-haut", "calque-pantalon", "calque-chaussettes", "calque-chaussures", "calque-manteau"],
-        retire: true, avatarGlissable: true },
-      // `pileGlissable: true` : contrairement aux autres tâches, ce n'est
-      // pas l'icône de la liste qui se glisse vers `zone` mais la pile de
-      // vêtements qui apparaît dans la scène une fois "enlever" fait (cf.
-      // #pile-vetements, synchroniserRoutineEcran()) — matérialise les
-      // habits qui viennent de tomber, plutôt que de les faire disparaître
-      // pour de bon avant même cette tâche.
-      { id: "ranger",   texte: "Range tes vêtements ou mets-les au sale.", emoji: "🧺", zone: "zone-panier", pileGlissable: true },
-      // `miniJeu: "dents"` (au lieu de `zone`) : cette tâche s'ouvre en
-      // tapant sa ligne (cf. ouvrirMiniJeu()) plutôt qu'en y glissant
-      // l'icône — lance l'écran dédié `screen-dents` (minuteur +
-      // 6 zones). `badge`/`badgeFait` restent : le ✨ sur le visage de
-      // l'avatar continue de refléter que les dents sont faites, une
-      // fois le mini-jeu terminé (marquerTache() y est appelé pareil).
-      { id: "dents",    texte: "Brosse-toi les dents.",                   emoji: "🪥", miniJeu: "dents", badge: "visage", badgeFait: "✨" },
-      // `miniJeu: "histoire"` (au lieu de `zone`), même principe que
-      // "dents" ci-dessus : ouvre l'écran dédié `screen-histoire`
-      // (image + texte) en tapant la ligne, plutôt qu'un glisser-déposer
-      // — pas de geste à faire, juste un moment calme sur le canapé.
-      { id: "histoire", texte: "On lit l'histoire.",                      emoji: "📖", miniJeu: "histoire" },
-      { id: "coucher",  texte: "Je vais me coucher.",                     emoji: "😴", zone: "zone-pieds" },
-    ],
-  },
-];
-
-// Colette : mêmes `id`/`nom`/`emoji`/`lieu`, même nombre de routines, même
-// ordre — seules les tâches de "S'habiller" et le vocabulaire genré
-// changent (culotte/haut/robe au lieu de caleçon/t-shirt/pantalon ; les
-// calques associés pointent vers assets/avatar/colette-*.png via
-// PROFILS.colette.sprites, pas vers ceux de Léon). "Se préparer à partir"
-// est réellement identique (les chaussures ne dépendent pas du genre).
-const ROUTINES_COLETTE = [
-  {
-    id: "shabiller",
-    nom: "S'habiller",
-    emoji: "👕",
-    lieu: "chambre",
-    felicitation: "Bravo Colette, tu t'es habillée toute seule !",
-    taches: [
-      { id: "culotte",     texte: "Mets ta culotte.",      emoji: "🩲", zone: "zone-bassin", calque: "calque-culotte" },
-      { id: "haut",        texte: "Mets ton haut.",        emoji: "👚", zone: "zone-torse",  calque: "calque-haut" },
-      { id: "robe",        texte: "Mets ta robe.",         emoji: "👗", zone: "zone-jambes", calque: "calque-robe" },
-      { id: "chaussettes", texte: "Mets tes chaussettes.", emoji: "🧦", zone: "zone-pieds",  calque: "calque-chaussettes" },
-    ],
-  },
-  {
-    id: "partir",
-    nom: "Se préparer à partir",
-    emoji: "🚪",
-    lieu: "salon",
-    felicitation: "Bravo Colette, tu es prête à partir !",
-    taches: [
-      { id: "chaussures", texte: "Mets tes chaussures.", emoji: "👟", zone: "zone-pieds", calque: "calque-chaussures" },
-    ],
-  },
-  {
-    id: "soir",
-    nom: "Aller se coucher",
-    emoji: "🌙",
-    lieu: "chambre",
-    felicitation: "Bravo Colette, tu es prête à dormir !",
-    disponibleApresHeure: 18,
-    taches: [
-      { id: "enlever",  texte: "Enlève tes vêtements.", emoji: "👗",
-        calque: ["calque-haut", "calque-robe", "calque-chaussettes", "calque-chaussures", "calque-manteau"],
-        retire: true, avatarGlissable: true },
-      { id: "ranger",   texte: "Range tes vêtements ou mets-les au sale.", emoji: "🧺", zone: "zone-panier", pileGlissable: true },
-      { id: "dents",    texte: "Brosse-toi les dents.",                   emoji: "🪥", miniJeu: "dents", badge: "visage", badgeFait: "✨" },
-      { id: "histoire", texte: "On lit l'histoire.",                      emoji: "📖", miniJeu: "histoire" },
-      { id: "coucher",  texte: "Je vais me coucher.",                     emoji: "😴", zone: "zone-pieds" },
-    ],
-  },
-];
+// Gabarit de démarrage : un déploiement neuf n'a AUCUNE routine en dur —
+// `routinesDemarrage(prenom, silhouette)` sert uniquement à AMORCER
+// `routines_perso` du profil qu'on vient de créer (cf.
+// `finaliserPremiereConfiguration()`), avec les mêmes `id`/`nom`/nombre de
+// routines que le reste de l'app attend déjà ("shabiller"/"partir"/"soir",
+// cf. PLANNING_DEFAUT plus bas) mais un contenu neutre, immédiatement
+// modifiable comme n'importe quelle routine perso — aucune n'est figée.
+// `silhouette` ("pantalon"/"robe", choisie avec l'avatar) ne pilote que
+// les vêtements du bas de "S'habiller" et les calques déshabillés le
+// soir ; le reste du moteur (synchroniserRoutineEcran, marquerTache,
+// rendreGlissable...) reste entièrement générique et partagé : il ne lit
+// jamais "shabiller" ou "calecon" en dur, seulement la structure
+// Routine/Tâche.
+function routinesDemarrage(prenom, silhouette) {
+  const enRobe = silhouette === "robe";
+  const dessous = enRobe
+    ? { id: "culotte",  texte: "Mets ta culotte.",  emoji: "🩲", zone: "zone-corps", calque: "calque-culotte" }
+    : { id: "calecon",  texte: "Mets ton caleçon.", emoji: "🩲", zone: "zone-corps", calque: "calque-calecon" };
+  const bas = enRobe
+    ? { id: "robe",     texte: "Mets ta robe.",     emoji: "👗", zone: "zone-corps", calque: "calque-robe" }
+    : { id: "pantalon", texte: "Mets ton pantalon.", emoji: "👖", zone: "zone-corps", calque: "calque-pantalon" };
+  const calquesHabits = enRobe
+    ? ["calque-haut", "calque-robe", "calque-chaussettes", "calque-chaussures", "calque-manteau"]
+    : ["calque-haut", "calque-pantalon", "calque-chaussettes", "calque-chaussures", "calque-manteau"];
+  return [
+    {
+      id: "shabiller",
+      nom: "S'habiller",
+      emoji: "👕",
+      lieu: "chambre",
+      felicitation: "Bravo " + prenom + ", tu t'es habillé·e tout seul·e !",
+      taches: [
+        dessous,
+        { id: "haut",        texte: "Mets ton haut.",        emoji: "👚", zone: "zone-corps",  calque: "calque-haut" },
+        bas,
+        { id: "chaussettes", texte: "Mets tes chaussettes.", emoji: "🧦", zone: "zone-corps",  calque: "calque-chaussettes" },
+      ],
+    },
+    {
+      id: "partir",
+      nom: "Se préparer à partir",
+      emoji: "🚪",
+      lieu: "salon",
+      felicitation: "Bravo " + prenom + ", tu es prêt·e à partir !",
+      // Manteau et sac volontairement absents du gabarit de départ (pas
+      // toujours utiles selon la saison) — un parent peut ajouter une
+      // tâche "Mets ton manteau" (calque "calque-manteau") ou "Prends ton
+      // sac" (badge "dos") depuis l'espace parent (modifier la routine).
+      taches: [
+        { id: "chaussures", texte: "Mets tes chaussures.", emoji: "👟", zone: "zone-corps", calque: "calque-chaussures" },
+      ],
+    },
+    {
+      id: "soir",
+      nom: "Aller se coucher",
+      emoji: "🌙",
+      lieu: "chambre",
+      felicitation: "Bravo " + prenom + ", tu es prêt·e à dormir !",
+      // Volontairement PAS chaînée après "S'habiller"/"Se préparer à
+      // partir" (contrairement aux autres routines, cf. construireMenu()) :
+      // le coucher n'a rien à voir avec le fait d'être habillé pour sortir,
+      // et les enchaîner créait un vrai risque — si un parent relance
+      // "S'habiller" en soirée (cf. espace parent), "Aller se coucher" se
+      // serait retrouvée verrouillée juste avant le coucher. À la place,
+      // débloquée par l'heure : avant `disponibleApresHeure`, elle reste
+      // inaccessible (pour éviter l'autre risque inverse — un enfant qui
+      // irait se déshabiller pour "aller se coucher" en pleine journée sans
+      // avoir rien fait d'autre), après, elle l'est, indépendamment de
+      // l'état des autres routines.
+      disponibleApresHeure: 18,
+      taches: [
+        // `avatarGlissable: true` (au lieu de `zone`) : contrairement aux
+        // autres tâches, ce n'est pas l'icône de la liste qu'on glisse vers
+        // l'avatar, mais l'avatar (habillé) lui-même qu'on tire hors de la
+        // scène — plus logique pour DÉshabiller que d'amener une carte
+        // jusqu'à lui (cf. rendreAvatarGlissable, plus bas).
+        { id: "enlever",  texte: "Enlève tes vêtements.", emoji: "👕",
+          calque: calquesHabits, retire: true, avatarGlissable: true },
+        // `pileGlissable: true` : contrairement aux autres tâches, ce n'est
+        // pas l'icône de la liste qui se glisse vers `zone` mais la pile de
+        // vêtements qui apparaît dans la scène une fois "enlever" fait (cf.
+        // #pile-vetements, synchroniserRoutineEcran()) — matérialise les
+        // habits qui viennent de tomber, plutôt que de les faire disparaître
+        // pour de bon avant même cette tâche.
+        { id: "ranger",   texte: "Range tes vêtements ou mets-les au sale.", emoji: "🧺", zone: "zone-panier", pileGlissable: true },
+        // `miniJeu: "dents"` (au lieu de `zone`) : cette tâche s'ouvre en
+        // tapant sa ligne (cf. ouvrirMiniJeu()) plutôt qu'en y glissant
+        // l'icône — lance l'écran dédié `screen-dents` (minuteur +
+        // 6 zones). `badge`/`badgeFait` restent : le ✨ sur le visage de
+        // l'avatar continue de refléter que les dents sont faites, une
+        // fois le mini-jeu terminé (marquerTache() y est appelé pareil).
+        { id: "dents",    texte: "Brosse-toi les dents.",                   emoji: "🪥", miniJeu: "dents", badge: "visage", badgeFait: "✨" },
+        // `miniJeu: "histoire"` (au lieu de `zone`), même principe que
+        // "dents" ci-dessus : ouvre l'écran dédié `screen-histoire`
+        // (image + texte) en tapant la ligne, plutôt qu'un glisser-déposer
+        // — pas de geste à faire, juste un moment calme sur le canapé.
+        { id: "histoire", texte: "On lit l'histoire.",                      emoji: "📖", miniJeu: "histoire" },
+        { id: "coucher",  texte: "Je vais me coucher.",                     emoji: "😴", zone: "zone-corps" },
+      ],
+    },
+  ];
+}
 
 // Repas : purement informatifs pour l'écran "Ma journée"
 // (`construireJournee()`) — pas des routines (pas de tâches, pas
@@ -349,19 +518,20 @@ const REPAS = [
   { id: "diner",     nom: "Dîner",          emoji: "🌙🍽️" },
 ];
 
-// Aventures : sorties, sur le même principe que le trajet/arrivée
-// initialement codés pour Pauline (route en voiture -> programme annoncé
-// à l'arrivée -> "C'est parti"). `date` (même format que `cleJour()`,
-// ex. "2026-8-27") sert de filtre pour `aventuresDuJour()` — une
-// aventure sans date (Pauline, récurrente) n'apparaît jamais toute
+// Aventures : sorties, sur le même principe que le trajet/arrivée d'une
+// visite chez une praticienne (route en voiture -> programme annoncé à
+// l'arrivée -> "C'est parti"). `date` (même format que `cleJour()`, ex.
+// "2026-8-27") sert de filtre pour `aventuresDuJour()` — une aventure
+// sans date (ex. une praticienne récurrente) n'apparaît jamais toute
 // seule dans les sorties du jour, elle attend d'être reprogrammée
 // explicitement le moment venu.
 // `personne` (emoji + nom) affiche un 2ᵉ sprite à l'arrivée quand
 // l'aventure se passe chez quelqu'un ; absent pour une sortie sans
 // praticien (magasin, école...).
 // `recompensePieces` : 0 = pas de récompense propre à cette aventure
-// (le cas de Pauline aujourd'hui). > 0 = une pièce sort du coffre à la
-// fin (monnaie distincte des étoiles de routine, cf. `ajouterPieces`).
+// (le cas d'une visite chez une praticienne, typiquement). > 0 = une
+// pièce sort du coffre à la fin (monnaie distincte des étoiles de
+// routine, cf. `ajouterPieces`).
 // `texteTrajetRetour` : texte du trajet retour (vers la maison), une
 // fois l'aventure terminée ("C'est parti" déclenche ce retour, pas la
 // récompense directement, cf. `terminerAventure`) — texte par défaut si
@@ -371,14 +541,14 @@ const REPAS = [
 // autre item ("routine"/"repas"/"aventure"). Absent = ajoutée en fin de
 // journée.
 //
-// Trois catalogues plutôt qu'un seul, pour maximiser ce qui est en commun
-// SANS forcer une praticienne partagée entre les deux enfants :
-// - AVENTURES_COMMUNES : identique pour tous les profils (l'école).
-// - AVENTURES_LEON / AVENTURES_COLETTE : propres à un enfant (chacun a sa
-//   psychomotricienne — Elsa pour Léon, Arianne pour Colette — même
-//   Pauline, l'orthophoniste, reste spécifique à Léon). Même structure de
-//   données que Pauline/le magasin de bricolage : rien de nouveau côté
-//   moteur, juste de nouvelles entrées, cf. `toutesLesAventures()`.
+// AVENTURES_COMMUNES : catalogue de départ, identique pour tous les
+// profils (juste l'école, à titre d'exemple). Un profil n'a par ailleurs
+// AUCUNE aventure propre en dur (cf. `aventuresPropres()`, absent d'un
+// profil créé depuis l'app — `toutesLesAventures()` traite ça comme un
+// catalogue vide) : une visite chez une praticienne, comme toute autre
+// sortie propre à une famille, s'ajoute depuis l'espace parent ("+
+// Nouvelle activité") plutôt que d'être codée en dur — même structure de
+// données, rien de nouveau côté moteur.
 const AVENTURES_COMMUNES = [
   {
     id: "ecole",
@@ -389,67 +559,6 @@ const AVENTURES_COMMUNES = [
     programme: ["1. On dit au revoir", "2. On passe une bonne journée", "3. Un parent vient nous chercher"],
     recompensePieces: 0,
     texteTrajetRetour: "L'école est finie, on rentre à la maison.",
-  },
-];
-
-const AVENTURES_LEON = [
-  {
-    id: "pauline",
-    lieu: "Chez Pauline",
-    emoji: "🚗",
-    texteTrajet: "On roule vers chez Pauline. Tu n'as rien à faire, tu peux regarder dehors.",
-    personne: { emoji: "👩‍⚕️", nom: "Pauline" },
-    texteArrivee: "Pauline est là. Orthophoniste, une demi-heure, comme la dernière fois.",
-    programme: ["1. On entre et on s'assoit", "2. On travaille avec Pauline", "3. On repart"],
-    recompensePieces: 0,
-    texteTrajetRetour: "La séance est finie, on rentre à la maison.",
-  },
-  {
-    id: "elsa",
-    lieu: "Chez Elsa",
-    emoji: "🤸",
-    texteTrajet: "On roule vers chez Elsa. Tu n'as rien à faire, tu peux regarder dehors.",
-    personne: { emoji: "🧑‍⚕️", nom: "Elsa" },
-    texteArrivee: "Elsa est là. Psychomotricienne, comme la dernière fois.",
-    programme: ["1. On entre et on s'assoit", "2. On travaille avec Elsa", "3. On repart"],
-    recompensePieces: 0,
-    texteTrajetRetour: "La séance est finie, on rentre à la maison.",
-  },
-  {
-    id: "bricolage",
-    date: "2026-8-28",
-    // Après le petit-déjeuner, mais aussi (et surtout) après "Se préparer
-    // à partir" : les deux routines requises pour partir en aventure
-    // (`ROUTINES_REQUISES_DEPART`) doivent de toute façon être validées
-    // avant que l'enfant puisse même ouvrir l'écran des sorties — les
-    // placer avant dans le planning évite un ordre affiché qui
-    // contredirait ce que le jeu impose réellement.
-    apres: { type: "routine", id: "partir" },
-    lieu: "Le magasin de bricolage",
-    emoji: "🧰",
-    texteTrajet: "On roule vers le magasin de bricolage.",
-    texteArrivee: "On est arrivés au magasin de bricolage.",
-    programme: [
-      "1. On entre et on reste avec papa/maman",
-      "2. On cherche ce qu'il faut pour le bricolage",
-      "3. On repart",
-    ],
-    recompensePieces: 1,
-    texteTrajetRetour: "On a fini, on rentre à la maison.",
-  },
-];
-
-const AVENTURES_COLETTE = [
-  {
-    id: "arianne",
-    lieu: "Chez Arianne",
-    emoji: "🤸",
-    texteTrajet: "On roule vers chez Arianne. Tu n'as rien à faire, tu peux regarder dehors.",
-    personne: { emoji: "🧑‍⚕️", nom: "Arianne" },
-    texteArrivee: "Arianne est là. Psychomotricienne, comme la dernière fois.",
-    programme: ["1. On entre et on s'assoit", "2. On travaille avec Arianne", "3. On repart"],
-    recompensePieces: 0,
-    texteTrajetRetour: "La séance est finie, on rentre à la maison.",
   },
 ];
 
@@ -481,7 +590,11 @@ function sauverAventuresPerso(liste) {
 function toutesLesAventures() {
   const perso = chargerAventuresPerso();
   const idsPerso = new Set(perso.map(a => a.id));
-  return AVENTURES_COMMUNES.concat(profilActif().aventuresPropres()).filter(a => !idsPerso.has(a.id)).concat(perso);
+  // `aventuresPropres` : absent d'un profil créé depuis l'app (cf.
+  // tousLesProfils() plus haut) — traité comme "aucune aventure propre en
+  // dur", pas une erreur.
+  const propres = profilActif().aventuresPropres ? profilActif().aventuresPropres() : [];
+  return AVENTURES_COMMUNES.concat(propres).filter(a => !idsPerso.has(a.id)).concat(perso);
 }
 
 function aventureParId(id) { return toutesLesAventures().find(a => a.id === id); }
@@ -589,7 +702,7 @@ function etatParDefaut(planningSeed) {
 // ajouté par une mise à jour de l'app depuis la dernière sauvegarde de
 // la tablette) EN PLACE, plutôt que de tout jeter. Avant (`etatValide()`,
 // tout-ou-rien), le moindre champ manquant faisait repartir d'un état
-// neuf — Léon a perdu une vraie progression de sa journée comme ça
+// neuf — un enfant a perdu une vraie progression de sa journée comme ça
 // (cf. discussion produit, ajout de `planning`). Ne répare que si le
 // JOUR correspond : un changement de date reste un vrai nouveau départ
 // (l'ancien état est alors archivé, pas réparé — cf. `archiverJournee()`
@@ -612,9 +725,9 @@ function etatRepare(etat) {
   return etat;
 }
 
-// Historique des journées passées (`cle("historique")`, ex. `leon_historique`
-// pour Léon) — jamais remis à zéro, contrairement à `cle("journee")`.
-// Demandé explicitement une fois l'usage réel commencé avec Léon :
+// Historique des journées passées (`cle("historique")`, ex.
+// `<prefixe>_historique`) — jamais remis à zéro, contrairement à
+// `cle("journee")`. Demandé explicitement une fois l'usage réel commencé :
 // jusqu'ici, une journée terminée était perdue dès que la suivante
 // commençait. Archivée ici, juste avant d'être écrasée par une nouvelle
 // journée (cf. `chargerEtat()`) — pas à chaque reset de test
@@ -649,6 +762,12 @@ function chargerEtat() {
   if (etat && etat.jour && etat.jour !== cleJour()) {
     archiverJournee(etat);
     etat = null;
+    // Nouveau jour : les minuteurs d'hier n'ont plus de sens (cf. la
+    // section "Minuteur générique" plus bas) — sans ça, un `tacheId`/
+    // `routineId` qui coïncide avec une tâche d'aujourd'hui (cas courant,
+    // mêmes ids d'un jour à l'autre) empêcherait à tort son minuteur de
+    // redémarrer.
+    sauverMinuteursActifs([]);
   }
 
   etat = etatRepare(etat) || etatParDefaut(consommerPlanningFuturPourAujourdhui());
@@ -711,47 +830,37 @@ function sauverRoutinesPerso(liste) {
 function toutesLesRoutines() {
   const perso = chargerRoutinesPerso();
   const idsPerso = new Set(perso.map(r => r.id));
-  return profilActif().routines().filter(r => !idsPerso.has(r.id)).concat(perso);
+  // `routines` : absent d'un profil créé depuis l'app (cf. tousLesProfils()
+  // plus haut) — tout son catalogue vit alors dans routines_perso (amorcé
+  // par routinesDemarrage() à la création, cf.
+  // finaliserPremiereConfiguration()), traité ici comme un socle en dur
+  // vide plutôt qu'une erreur.
+  const base = profilActif().routines ? profilActif().routines() : [];
+  return base.filter(r => !idsPerso.has(r.id)).concat(perso);
 }
 
 function routineParId(id) { return toutesLesRoutines().find(r => r.id === id); }
 
 // Entourage ("qui est là ?") : catalogue léger — nom, emoji, rôle en
-// texte libre. `ENTOURAGE_COMMUNES` (demandé explicitement, famille
-// proche + les praticiennes déjà connues + les enfants eux-mêmes pour
-// les tagger comme fratrie) est identique sur les deux appareils, sur le
-// même principe que `AVENTURES_COMMUNES` ; un parent peut en ajouter
-// d'autres, persistées à part (`chargerEntouragePerso`/
-// `sauverEntouragePerso`, même principe que les catalogues perso
-// Activités/Routines) et propres à CET appareil, jamais remises à zéro.
-// Emoji de Pauline/Elsa/Arianne alignés sur leur `personne` déjà utilisée
-// dans les aventures praticienne (mêmes emoji, cf. AVENTURES_LEON/
-// AVENTURES_COLETTE plus haut) — pour rester la même personne reconnue
-// d'un écran à l'autre.
+// texte libre. `ENTOURAGE_COMMUNES` est le socle en dur, identique sur
+// tous les appareils, sur le même principe que `AVENTURES_COMMUNES` —
+// vide par défaut (aucune famille/praticien(ne) n'est universelle) ; un
+// parent ajoute les siens depuis l'espace parent ("+ Nouvelle personne"),
+// persistés à part (`chargerEntouragePerso`/`sauverEntouragePerso`, même
+// principe que les catalogues perso Activités/Routines) et propres à CET
+// appareil, jamais remis à zéro.
 //
 // ⚠️ Volontairement DISTINCT du champ `personne` déjà présent sur les
-// aventures chez une praticienne (Pauline/Elsa/Arianne) : `personne` n'est
-// pas qu'un affichage, sa seule présence bascule "C'est parti" vers tout
-// le flux "séance praticienne" (cf. `terminerVisite()`). Une activité/
-// routine taguée avec une personne de CE catalogue (`entourageIds`, cf.
-// `entourageDe()` plus bas) ne doit donc jamais se voir attribuer de
-// `personne` — les deux notions ne se fusionnent pas, même si elles se
-// ressemblent en surface (Pauline/Elsa/Arianne existent dans LES DEUX
-// catalogues, avec des rôles différents et non substituables).
-const ENTOURAGE_COMMUNES = [
-  { id: "papa", nom: "Papa", emoji: "👨", role: "" },
-  { id: "mama", nom: "Mama", emoji: "👩", role: "" },
-  { id: "papi", nom: "Papi", emoji: "👴", role: "" },
-  { id: "grandpa", nom: "GrandPa", emoji: "👴", role: "" },
-  { id: "mai", nom: "Maï", emoji: "👵", role: "" },
-  { id: "elsa", nom: "Elsa", emoji: "🧑‍⚕️", role: "Psychomotricienne" },
-  { id: "pauline", nom: "Pauline", emoji: "👩‍⚕️", role: "Orthophoniste" },
-  { id: "leon", nom: "Léon", emoji: "👦", role: "" },
-  { id: "colette", nom: "Colette", emoji: "👧", role: "" },
-  { id: "arianne", nom: "Arianne", emoji: "🧑‍⚕️", role: "Psychomotricienne" },
-  { id: "anaig", nom: "Anaïg", emoji: "👩", role: "" },
-  { id: "helene", nom: "Hélène", emoji: "👩", role: "" },
-];
+// aventures chez une praticienne : `personne` n'est pas qu'un affichage,
+// sa seule présence bascule "C'est parti" vers tout le flux "séance
+// praticienne" (cf. `terminerVisite()`). Une activité/routine taguée avec
+// une personne de CE catalogue (`entourageIds`, cf. `entourageDe()` plus
+// bas) ne doit donc jamais se voir attribuer de `personne` — les deux
+// notions ne se fusionnent pas, même si elles se ressemblent en surface
+// (une praticienne peut exister dans LES DEUX catalogues à la fois, avec
+// des rôles différents et non substituables — cf. `ouvrirEditionPersonne()`
+// plus bas).
+const ENTOURAGE_COMMUNES = [];
 function chargerEntouragePerso() {
   try { return JSON.parse(localStorage.getItem(cle("entourage_perso")) || "[]"); } catch (e) { return []; }
 }
@@ -802,8 +911,8 @@ function sauverPieces(n) {
 // pièces ne se remettent pas à zéro comme les étoiles, et rien dans
 // l'app ne doit pouvoir les retirer du compte, cf. plus haut ("dépensée
 // ... dans la vraie vie", pas une transaction dans l'app). Fonctionne
-// déjà pour Colette (clé propre à son profil via `cle()`) sans variante
-// parallèle, pour garder la même garantie des deux côtés.
+// pareil pour n'importe quel profil (clé propre via `cle()`) sans
+// variante parallèle, pour garder la même garantie partout.
 function ajouterPieces(n) {
   const total = chargerPieces() + Math.max(0, n);
   sauverPieces(total);
@@ -850,6 +959,28 @@ function jouerSon() {
   } catch (e) {}
 }
 
+// Signal d'attention (fin de minuteur non résolue, cf. tickMinuteurGlobal()/
+// entrerBlocageMinuteur()) — volontairement distinct du carillon de succès
+// ci-dessus (deux notes montantes en sinusoïde) : timbre carré, note grave,
+// répétée deux fois, pour ne jamais se confondre avec "bravo".
+function jouerAlerte() {
+  try {
+    if (!audioCtxPartage) audioCtxPartage = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtxPartage;
+    if (ctx.state === "suspended") ctx.resume();
+    [0, 1].forEach((tour) => {
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = "square"; osc.frequency.value = 392;
+      const t0 = ctx.currentTime + tour * 0.55;
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(0.2, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.35);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t0); osc.stop(t0 + 0.4);
+    });
+  } catch (e) {}
+}
+
 function afficherEcran(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -859,12 +990,12 @@ function afficherEcran(id) {
 // Avatar : construit les calques <img> depuis le profil actif, une seule
 // fois au démarrage (cf. appliquerProfilAuDom(), appelée depuis demarrer())
 // — seule leur VISIBILITÉ change ensuite à chaque rendu, cf.
-// synchroniserAvatar() juste après. index.html ne contient plus la liste
-// de calques en dur (spécifique à Léon) dans ses 3 emplacements
-// (#avatar-wrap-menu, #avatar-wrap, #avatar-wrap-arrivee) : un seul point
-// de vérité ici, alimenté par `profilActif().sprites`, plutôt que de
-// dupliquer 2x la même liste de balises `<img>` dans le HTML (Léon/
-// Colette) alors qu'un seul profil est actif par appareil (cf. PROFILS).
+// synchroniserAvatar() juste après. index.html ne contient pas de liste
+// de calques en dur dans ses 3 emplacements (#avatar-wrap-menu,
+// #avatar-wrap, #avatar-wrap-arrivee) : un seul point de vérité ici,
+// alimenté par `profilActif().sprites`, plutôt que de dupliquer la liste
+// de balises `<img>` par profil possible dans le HTML, alors qu'un seul
+// profil est actif par appareil (cf. tousLesProfils()).
 // Insère toujours AVANT les `.badge-zone` (dos/visage), qui restent en
 // dur dans index.html et doivent rester par-dessus les vêtements.
 function construireCalquesAvatar(idConteneur) {
@@ -890,13 +1021,13 @@ function construireCalquesAvatar(idConteneur) {
 
 // Applique le profil actif aux quelques endroits du DOM qui affichent son
 // prénom ou son avatar en dur dans index.html (le reste — routines,
-// textes parlés... — vient déjà des catalogues par profil, cf. PROFILS/
-// ROUTINES_LEON/ROUTINES_COLETTE plus haut). Appelé une seule fois au
+// textes parlés... — vient déjà des catalogues par profil, cf.
+// tousLesProfils()/toutesLesRoutines() plus haut). Appelé une seule fois au
 // démarrage (cf. demarrer()) : le profil actif ne change pas en cours de
 // session (cf. resoudreProfilActif()) — changer d'appareil, pas d'onglet.
 function appliquerProfilAuDom() {
   const profil = profilActif();
-  document.title = "Dayrise — " + profil.prenom;
+  document.title = "Acolyte — " + profil.prenom;
   ["prenom-menu", "prenom-routine", "arrivee-prenom-enfant"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = profil.prenom;
@@ -961,7 +1092,7 @@ function construireMenu() {
   planningCibleDate = null;
 
   // Déclenché par "Aller se coucher" spécifiquement, pas par le fait que
-  // toutes les routines du jour soient validées : Léon peut très bien
+  // toutes les routines du jour soient validées : un enfant peut très bien
   // n'avoir rien fait d'autre de la journée et aller directement se
   // coucher, ce doit quand même clôturer la journée.
   if (etat.routines.soir.valide && !etat.journeeFaite) {
@@ -997,11 +1128,14 @@ function construireMenu() {
   // sort volontairement de ce chaînage : ni bloquée par les précédentes,
   // ni prise en compte pour bloquer une éventuelle suivante — débloquée
   // par l'heure plutôt que par les autres routines (cf. sa définition
-  // dans ROUTINES_LEON/ROUTINES_COLETTE pour le pourquoi).
+  // dans routinesDemarrage() pour le pourquoi).
   //
-  // De même, seules les routines du catalogue par défaut du profil actif
-  // (`profilActif().routines()`) s'enchaînent entre elles : une routine
-  // créée par un parent (chargerRoutinesPerso) est toujours disponible,
+  // De même, seules les routines marquées `chainee: true` s'enchaînent
+  // entre elles — posé sur "shabiller"/"partir" au moment où
+  // finaliserPremiereConfiguration() les sème dans routines_perso (préservé
+  // ensuite si un parent les modifie, cf. creerNouvelleRoutine() qui
+  // fusionne sur l'objet d'origine). Une routine ajoutée après coup par un
+  // parent (via "+ Nouvelle routine") ne l'a jamais : toujours disponible,
   // ni bloquée par les précédentes ni prise en compte pour bloquer une
   // suivante — sinon un petit-déjeuner ajouté par un parent se
   // retrouverait verrouillé derrière "S'habiller"/"Se préparer à partir"
@@ -1026,7 +1160,7 @@ function construireMenu() {
       return;
     }
 
-    const chainee = profilActif().routines().some(rr => rr.id === r.id);
+    const chainee = !!r.chainee;
     const verrouillee = chainee && !toutPrecedentValide;
     const debloquee = !verrouillee && !etatR.valide;
     // "verrouillee" ne s'applique qu'à une routine PAS ENCORE validée —
@@ -1071,7 +1205,7 @@ const ROUTINES_REQUISES_DEPART = ["shabiller", "partir"];
 // l'attention dessus sans forcer le geste.
 function allerVersDepart() {
   const etat = chargerEtat();
-  const manquantes = profilActif().routines().filter(r => ROUTINES_REQUISES_DEPART.includes(r.id) && !etat.routines[r.id].valide);
+  const manquantes = toutesLesRoutines().filter(r => ROUTINES_REQUISES_DEPART.includes(r.id) && !etat.routines[r.id].valide);
   if (manquantes.length === 0) {
     dire("On part à l'aventure !");
     construireMissions();
@@ -1322,8 +1456,9 @@ function ajouterItemPlanning(type, id) {
 }
 
 // Catalogue d'ajout : tout ce qui existe (routines, aventures — pas
-// seulement celles du jour, un parent peut vouloir reprogrammer Pauline
-// par exemple —, repas) et n'est pas déjà dans le planning. Inclut les
+// seulement celles du jour, un parent peut vouloir reprogrammer une
+// activité récurrente par exemple —, repas) et n'est pas déjà dans le
+// planning. Inclut les
 // activités créées par un parent (cf. `toutesLesAventures()`) au même
 // titre que celles du catalogue en dur.
 function construireAjoutPlanning(planning) {
@@ -1700,10 +1835,13 @@ function synchroniserRoutineEcran() {
   const scene = document.getElementById("scene");
   scene.classList.toggle("scene-salon", routine.lieu === "salon");
   // Chambre du profil actif en fond quand la routine s'y déroule
-  // (habillage, coucher) — même image que PROFILS.*.chambre. Pas de
-  // décor pour "salon" : on efface l'image pour retrouver le dégradé
-  // placeholder de #scene.scene-salon.
-  scene.style.backgroundImage = routine.lieu === "chambre" ? "url('" + profilActif().chambre + "')" : "";
+  // (habillage, coucher) — même image que profilActif().chambre, un champ
+  // optionnel (absent pour un profil créé depuis l'app, cf.
+  // tousLesProfils() : pas de photo de chambre dédiée, seulement le
+  // dégradé). Pas de décor pour "salon" (ni pour "chambre" sans photo) :
+  // on efface l'image pour retrouver le dégradé placeholder de
+  // #scene.scene-salon.
+  scene.style.backgroundImage = (routine.lieu === "chambre" && profilActif().chambre) ? "url('" + profilActif().chambre + "')" : "";
   // Panier de linge : présent en permanence pendant "Aller se coucher",
   // pas seulement pendant la tâche "ranger" — sert de repère fixe avant
   // même que les vêtements ne tombent (cf. #panier-linge, index.html).
@@ -1775,12 +1913,18 @@ function synchroniserRoutineEcran() {
     const enCours = prochaine && t.id === prochaine.id;
     const noeud = document.createElement("div");
     noeud.className = "noeud" + (fait ? " fait" : "") + (enCours ? " en-cours" : "") + (enCours && t.miniJeu ? " noeud-tapable" : "");
-    const glisserIci = enCours && !t.avatarGlissable && !t.miniJeu && !t.pileGlissable;
+    // `!!t.zone` : une tâche sans zone (ex. "Fais tes devoirs", cf.
+    // synchroniserMinuteurWidget() plus bas) n'a rien à glisser, même
+    // sans être avatarGlissable/miniJeu/pileGlissable pour autant.
+    const glisserIci = enCours && !!t.zone && !t.avatarGlissable && !t.miniJeu && !t.pileGlissable;
     const classeIcone = "pastille-mini" + (glisserIci ? " pastille-glissable" : "");
     noeud.innerHTML = `<div class="${classeIcone}">${t.emoji}</div><div class="texte-etape">${t.texte}</div><div class="coche-mini">✓</div>`;
     if (glisserIci) rendreGlissable(noeud.querySelector(".pastille-glissable"), t);
     // `miniJeu` (ex. "dents") : ouvre un écran dédié en tapant la ligne,
-    // plutôt qu'en y glissant l'icône (cf. ouvrirMiniJeu()).
+    // plutôt qu'en y glissant l'icône (cf. ouvrirMiniJeu()). Un minuteur
+    // (`t.minuteurDuree`) n'a pas ce traitement : il se règle/se termine
+    // depuis le widget sous la consigne, jamais en tapant la ligne
+    // (cf. synchroniserMinuteurWidget()).
     if (enCours && t.miniJeu) noeud.onclick = () => ouvrirMiniJeu(t);
     liste.appendChild(noeud);
   });
@@ -1793,6 +1937,17 @@ function synchroniserRoutineEcran() {
   }
   [...barre.children].forEach((seg, i) => seg.classList.toggle("fait", etatR.fait.includes(routine.taches[i].id)));
 
+  // Minuteur global de routine : n'a de sens que tant qu'il reste une
+  // tâche à faire — une fois la routine finie (`!prochaine`), on l'efface
+  // plutôt que de le laisser tourner pour rien (cf. finDeRoutine() juste
+  // en dessous, qui prend le relais).
+  if (prochaine) synchroniserMinuteurRoutineWidget(routine);
+  else {
+    retirerUnMinuteur("routine", routine.id, null);
+    document.getElementById("minuteur-routine-widget").classList.add("hidden");
+  }
+  synchroniserMinuteurWidget(prochaine, routine);
+
   if (!prochaine) setTimeout(() => finDeRoutine(), 500);
 }
 
@@ -1803,6 +1958,14 @@ function marquerTache(id, valeur) {
   if (valeur && pos === -1) etatR.fait.push(id);
   if (!valeur && pos !== -1) etatR.fait.splice(pos, 1);
   sauverEtat(etat);
+  // Le minuteur de cette tâche (s'il y en avait un) devient sans objet
+  // dès qu'elle est faite — que ce soit via le glisser-déposer normal ou
+  // "J'ai fini" (cf. synchroniserMinuteurWidget()), les deux passent par
+  // ici : plus besoin de vérifier/alerter dessus. `routineId` ET
+  // `tacheId` (pas `tacheId` seul, cf. assurerMinuteurPourTache()) :
+  // "t1" d'une routine ne doit pas nettoyer le minuteur de "t1" d'une
+  // autre routine.
+  if (valeur) retirerUnMinuteur("tache", routineActuelleId, id);
   synchroniserRoutineEcran();
   if (valeur) {
     jouerSon();
@@ -1874,10 +2037,10 @@ function rendreGlissable(el, etape) {
 // listés dans `etape.calque`) tirés hors de la scène — succès si on les
 // lâche sous le bas de #scene (pas de zone précise à viser, cible
 // volontairement large et sans ambiguïté avec la tâche suivante "Range
-// tes vêtements", qui a sa propre zone-dos).
+// tes vêtements", qui cible "zone-panier").
 //
 // Retour de terrain (session précédente) : cloner tout #avatar-wrap et
-// le cacher pendant le geste faisait disparaître Léon entier de la
+// le cacher pendant le geste faisait disparaître l'enfant entier de la
 // scène, pas juste ses habits — pas intuitif ("enlève TES vêtements",
 // pas "pars"). Ici seuls les calques visibles concernés sont clonés
 // (donc juste le t-shirt/pantalon/etc.) ; le reste de l'avatar (corps,
@@ -2143,6 +2306,344 @@ function finHistoire() {
   afficherEcran("screen-routine");
 }
 
+// ---------------------------------------------------------------------
+// Minuteur générique — deux portées possibles : "tache" (`tache.minuteurDuree`,
+// widget sous la consigne courante) ou "routine" (`routine.dureeGlobale`,
+// widget en haut de l'écran, cf. synchroniserMinuteurRoutineWidget() plus
+// bas) — même mécanique pour les deux, juste des tailles/emplacements de
+// widget différents. Affiché SUR l'écran de routine, jamais un écran
+// séparé. Un minuteur de tâche est indépendant de `zone` : une tâche à
+// glisser-déposer (ex. "Mets ton caleçon") garde son geste normal, le
+// widget est juste un repère en plus ; une tâche SANS zone (ex. "Fais tes
+// devoirs") se valide via le bouton "J'ai fini" du même widget, faute de
+// cible à glisser (cf. synchroniserMinuteurWidget()).
+//
+// Plusieurs minuteurs peuvent tourner EN MÊME TEMPS (cle("minuteurs_actifs"),
+// un tableau plutôt qu'un seul objet) : le minuteur global d'une routine
+// et celui d'une de ses tâches, ou même les minuteurs de deux routines
+// différentes si l'enfant a quitté l'une sans finir sa tâche chronométrée
+// avant d'en commencer une autre — chacun identifié par
+// (portee, routineId, tacheId), cf. trouverMinuteur()/sauverUnMinuteur().
+//
+// Le minuteur continue de tourner même si l'enfant quitte l'écran de la
+// routine (menu, autre routine...) : vérifié par tickMinuteurGlobal(),
+// lancé au chargement de la page (tout en bas du fichier) et jamais
+// arrêté, indépendamment de l'écran affiché — c'est ce qui permet à la
+// vérification/l'alerte d'interrompre l'enfant même s'il n'est pas
+// devant la tablette au moment où le temps s'écoule (cf. "Fais tes
+// devoirs").
+//
+// État persisté (horodatage de fin réel `finPrevue`) plutôt qu'un simple
+// compte à rebours en mémoire — même principe que cle("reveil") : survit
+// à une mise en veille/fermeture de l'app, contrairement à un nombre de
+// secondes qui repartirait de zéro n'importe comment à la réouverture.
+//
+// Cycle si `alertes` est actif (sinon le minuteur s'arrête simplement à
+// 00:00 sans rien déclencher d'autre, cf. tickMinuteurGlobal()) :
+// decompte (durée réglée) -> temps écoulé, tâche/routine pas finie ->
+// verification1 ("As-tu besoin d'aide ?", plein écran) -> "Non" ->
+// decompte2 (durée réduite, widget à nouveau) -> temps écoulé -> bloque
+// directement (pas de 3e question ; "Oui" à verification1 -> bloque
+// aussi). "🆘 Besoin d'aide" (dans le widget, toujours visible pendant un
+// décompte même si `alertes` est désactivé : l'enfant peut demander de
+// l'aide même sur un minuteur sans escalade automatique) -> bloque
+// directement, à tout moment. Une fois bloque résolu par un parent (code
+// entré), l'aide vient d'être donnée : le cycle repart de `decompte`
+// avec la durée d'origine, plutôt que de laisser le minuteur inerte (cf.
+// debloquerMinuteurAvecCode()) — une nouvelle chance de finir dans les
+// temps, avec le même filet en cas de blocage répété. `minuteurEnDialogue`
+// retient LEQUEL des minuteurs actifs est concerné pendant qu'un écran de
+// vérification/blocage est affiché (un seul à la fois peut interrompre
+// l'enfant, cf. tickMinuteurGlobal()).
+function chargerMinuteursActifs() {
+  try { return JSON.parse(localStorage.getItem(cle("minuteurs_actifs")) || "[]"); } catch (e) { return []; }
+}
+function sauverMinuteursActifs(liste) {
+  try { localStorage.setItem(cle("minuteurs_actifs"), JSON.stringify(liste)); } catch (e) {}
+}
+function trouverMinuteur(portee, routineId, tacheId) {
+  return chargerMinuteursActifs().find(m => m.portee === portee && m.routineId === routineId && m.tacheId === tacheId) || null;
+}
+// Remplace l'entrée existante (même portee/routineId/tacheId) ou l'ajoute.
+function sauverUnMinuteur(minuteur) {
+  const liste = chargerMinuteursActifs();
+  const idx = liste.findIndex(m => m.portee === minuteur.portee && m.routineId === minuteur.routineId && m.tacheId === minuteur.tacheId);
+  if (idx === -1) liste.push(minuteur); else liste[idx] = minuteur;
+  sauverMinuteursActifs(liste);
+}
+function retirerUnMinuteur(portee, routineId, tacheId) {
+  sauverMinuteursActifs(chargerMinuteursActifs().filter(m => !(m.portee === portee && m.routineId === routineId && m.tacheId === tacheId)));
+}
+let minuteurEnDialogue = null;
+
+// Démarre le minuteur de `etape` s'il n'existe pas encore, ou renvoie
+// celui déjà en cours (decompte/decompte2/verification1/bloque) sans y
+// toucher — appelée à CHAQUE rendu de l'écran de routine tant que la
+// tâche courante a un minuteur (cf. synchroniserMinuteurWidget()), donc
+// volontairement idempotente : ne doit jamais réinitialiser un minuteur
+// déjà en cours pour la même tâche. `routineId` ET `tacheId` (pas
+// `tacheId` seul) : les tâches créées depuis ce formulaire partagent le
+// même id générique "t1".."t5" d'une routine à l'autre (cf.
+// creerNouvelleRoutine()), donc un `tacheId` seul confondrait la tâche
+// "t1" d'une routine avec la tâche "t1" d'une autre.
+// `routine` (en plus de `etape`) seulement pour lire son `styleMinuteur` —
+// posé sur la routine entière plutôt que par tâche (cf. dessinerMinuteur()
+// plus bas) : pas d'écran de réglages sensoriels par enfant aujourd'hui,
+// mais deux enfants peuvent déjà avoir des styles différents puisqu'une
+// routine appartient à un seul profil.
+function assurerMinuteurPourTache(etape, routine) {
+  const existant = trouverMinuteur("tache", routineActuelleId, etape.id);
+  if (existant) return existant;
+  const minuteur = {
+    portee: "tache",
+    routineId: routineActuelleId,
+    tacheId: etape.id,
+    etape: "decompte",
+    alertes: etape.minuteurAlertes !== false,
+    style: (routine && routine.styleMinuteur) || "jauge",
+    dureeEtape: etape.minuteurDuree,
+    finPrevue: new Date(dateActuelle().getTime() + etape.minuteurDuree * 1000).toISOString(),
+  };
+  sauverUnMinuteur(minuteur);
+  return minuteur;
+}
+
+// Même principe qu'assurerMinuteurPourTache(), pour le minuteur global
+// d'une routine entière (`routine.dureeGlobale`) — `tacheId: null` le
+// distingue de tous les minuteurs de tâche de cette même routine.
+function assurerMinuteurPourRoutine(routine) {
+  if (!routine.dureeGlobale) return null;
+  const existant = trouverMinuteur("routine", routine.id, null);
+  if (existant) return existant;
+  const minuteur = {
+    portee: "routine",
+    routineId: routine.id,
+    tacheId: null,
+    etape: "decompte",
+    alertes: routine.alertesGlobales !== false,
+    style: routine.styleMinuteur || "jauge",
+    dureeEtape: routine.dureeGlobale,
+    finPrevue: new Date(dateActuelle().getTime() + routine.dureeGlobale * 1000).toISOString(),
+  };
+  sauverUnMinuteur(minuteur);
+  return minuteur;
+}
+
+// Affiche/masque le widget de tâche (#minuteur-widget, dans screen-routine)
+// selon la tâche courante — appelée depuis synchroniserRoutineEcran() à
+// chaque rendu. Le widget doit apparaître si l'UN OU L'AUTRE est vrai :
+// un minuteur est réglé (jauge/chrono/SOS, seulement pendant un vrai
+// décompte — pas verification1/bloque, gérés par leurs propres écrans
+// plein écran) OU la tâche n'a pas de zone à glisser (`btn-minuteur-widget-fini`,
+// seule façon de la valider dans ce cas). Les deux sont indépendants
+// (cf. creerNouvelleRoutine()) : une tâche sans zone ET sans minuteur
+// doit quand même afficher le bouton "J'ai fini" — sinon elle n'est
+// validable d'aucune façon (bug réel signalé en usage : case "Glisser
+// pour valider" décochée sans minuteur réglé, tâche bloquée des deux
+// côtés).
+function synchroniserMinuteurWidget(prochaine, routine) {
+  const widget = document.getElementById("minuteur-widget");
+  const btnFini = document.getElementById("btn-minuteur-widget-fini");
+  const aMinuteur = !!(prochaine && prochaine.minuteurDuree);
+  const sansGeste = !!(prochaine && !prochaine.zone);
+  if (!prochaine || (!aMinuteur && !sansGeste)) { widget.classList.add("hidden"); return; }
+  widget.classList.remove("hidden");
+  let enDecompte = false;
+  if (aMinuteur) {
+    const minuteur = assurerMinuteurPourTache(prochaine, routine);
+    enDecompte = minuteur.etape === "decompte" || minuteur.etape === "decompte2";
+    if (enDecompte) dessinerMinuteurWidget(minuteur);
+  }
+  document.getElementById("minuteur-widget-decompte").classList.toggle("hidden", !enDecompte);
+  btnFini.classList.toggle("hidden", !sansGeste);
+  btnFini.onclick = () => marquerTache(prochaine.id, true);
+}
+
+// Même principe que synchroniserMinuteurWidget() ci-dessus, pour le
+// widget global (#minuteur-routine-widget, en haut de screen-routine,
+// cf. index.html) — pas de bouton "J'ai fini" ici : une routine se
+// termine quand toutes ses tâches sont faites (cf. synchroniserRoutineEcran()),
+// jamais par un geste dédié au minuteur lui-même.
+function synchroniserMinuteurRoutineWidget(routine) {
+  const widget = document.getElementById("minuteur-routine-widget");
+  if (!routine.dureeGlobale) { widget.classList.add("hidden"); return; }
+  const minuteur = assurerMinuteurPourRoutine(routine);
+  const enDecompte = minuteur.etape === "decompte" || minuteur.etape === "decompte2";
+  widget.classList.toggle("hidden", !enDecompte);
+  if (enDecompte) dessinerMinuteurWidget(minuteur);
+}
+
+// Rendu (jauge + chrono) — appelé à la fois par synchroniserMinuteurWidget()/
+// synchroniserMinuteurRoutineWidget() (dès qu'un décompte est affiché) et
+// par tickMinuteurGlobal() (à chaque tick tant que ce décompte tourne).
+// `minuteur.portee` choisit le widget (tâche ou routine) à mettre à jour ;
+// sans effet visible si ce widget est masqué (l'élément existe quand même
+// dans le DOM), donc pas besoin de vérifier lequel est affiché avant.
+function dessinerMinuteurWidget(minuteur) {
+  const restant = Math.max(0, (new Date(minuteur.finPrevue) - dateActuelle()) / 1000);
+  const pourcentage = minuteur.dureeEtape > 0 ? Math.max(0, Math.min(1, restant / minuteur.dureeEtape)) : 0;
+  const prefixe = minuteur.portee === "routine" ? "minuteur-routine" : "minuteur-widget";
+  dessinerMinuteur(prefixe, pourcentage, minuteur.style || "jauge");
+  document.getElementById(prefixe + "-chrono").textContent = formatChrono(restant);
+}
+
+// Fonction de rendu — deux styles au choix (routine.styleMinuteur, cf.
+// creerNouvelleRoutine()) : "jauge" (barre qui se vide) ou "cadran"
+// (disque qui rétrécit en rotation horaire, façon Time Timer). Les deux
+// éléments existent toujours dans le DOM pour un widget donné (cf.
+// index.html) ; seul celui du style actif est démasqué, plutôt que d'en
+// injecter/retirer un dynamiquement à chaque tick. `prefixe` (pas un
+// élément déjà résolu) car "cadran" et "jauge" ciblent des éléments
+// différents — aux appelants de ne connaître que "quel widget, quel
+// style, quelle fraction restante", jamais le détail de chaque style.
+function dessinerMinuteur(prefixe, pourcentageRestant, style) {
+  const enCadran = style === "cadran";
+  document.getElementById(prefixe + "-jauge").classList.toggle("hidden", enCadran);
+  document.getElementById(prefixe + "-cadran").classList.toggle("hidden", !enCadran);
+  if (enCadran) {
+    document.getElementById(prefixe + "-cadran").style.setProperty("--pct", pourcentageRestant);
+  } else {
+    document.getElementById(prefixe + "-remplissage").style.width = (pourcentageRestant * 100) + "%";
+  }
+}
+
+// Vérifie l'état de TOUS les minuteurs actifs, indépendamment de l'écran
+// affiché — c'est ce qui permet à la vérification/l'alerte d'apparaître
+// même si l'enfant est revenu au menu (ou ailleurs) entre-temps, pas
+// seulement s'il est resté sur l'écran de la routine. Lancé en continu
+// depuis le tout début du chargement de la page (cf. tout en bas du
+// fichier), pas seulement pendant une routine — sans effet la plupart du
+// temps (pas de minuteur actif), coût négligeable (une lecture localStorage).
+function tickMinuteurGlobal() {
+  if (!profilActifId()) return; // pas encore de profil configuré sur cet appareil (cf. cle())
+  const liste = chargerMinuteursActifs();
+  if (!liste.length) return;
+
+  // Rendu continu de tous les décomptes en cours, qu'ils soient affichés
+  // ou non en ce moment (sans effet si le widget correspondant est
+  // masqué) — avant toute transition, pour que le dernier chiffre visible
+  // avant une éventuelle interruption soit à jour.
+  liste.forEach(m => { if (m.etape === "decompte" || m.etape === "decompte2") dessinerMinuteurWidget(m); });
+
+  // Un seul écran de vérification/blocage à la fois : si l'un est déjà
+  // affiché (pour un autre minuteur, coïncidence rare), on attend qu'il
+  // se résolve avant d'en déclencher un second.
+  const ecranActifId = document.querySelector(".screen.active").id;
+  if (ecranActifId === "screen-minuteur-verification" || ecranActifId === "screen-minuteur-bloque") return;
+
+  for (const m of liste) {
+    if (m.etape !== "decompte" && m.etape !== "decompte2") continue;
+    const restant = (new Date(m.finPrevue) - dateActuelle()) / 1000;
+    if (restant > 0) continue;
+
+    if (!m.alertes) { retirerUnMinuteur(m.portee, m.routineId, m.tacheId); continue; }
+
+    if (m.etape === "decompte") {
+      m.etape = "verification1";
+      sauverUnMinuteur(m);
+      minuteurEnDialogue = { portee: m.portee, routineId: m.routineId, tacheId: m.tacheId };
+      jouerAlerte();
+      if (navigator.vibrate) navigator.vibrate([100, 80, 100, 80, 100]);
+      afficherEcran("screen-minuteur-verification");
+      dire("As-tu besoin d'aide pour faire ta routine ou ta mission ?");
+    } else {
+      entrerBlocageMinuteur(m);
+    }
+    return; // un seul déclenchement par tick, cf. commentaire plus haut
+  }
+}
+
+function repondreVerificationMinuteur(besoinAide) {
+  if (!minuteurEnDialogue) return;
+  const minuteur = trouverMinuteur(minuteurEnDialogue.portee, minuteurEnDialogue.routineId, minuteurEnDialogue.tacheId);
+  if (!minuteur) { minuteurEnDialogue = null; construireMenu(); return; }
+  if (besoinAide) { entrerBlocageMinuteur(minuteur); return; }
+  // "Non, ça va" : nouveau décompte, plus court (borné à 60s minimum pour
+  // rester utile même sur un très petit minuteur d'origine) — pas de 3e
+  // question si celui-ci arrive aussi à zéro, cf. tickMinuteurGlobal().
+  // Retour sur l'écran de la routine : le(s) widget(s) reprennent le
+  // décompte (cf. synchroniserMinuteurWidget()/synchroniserMinuteurRoutineWidget(),
+  // assurerMinuteurPourTache()/assurerMinuteurPourRoutine()).
+  minuteur.etape = "decompte2";
+  minuteur.dureeEtape = Math.max(60, Math.round(minuteur.dureeEtape / 3));
+  minuteur.finPrevue = new Date(dateActuelle().getTime() + minuteur.dureeEtape * 1000).toISOString();
+  sauverUnMinuteur(minuteur);
+  minuteurEnDialogue = null;
+  demarrerRoutine(minuteur.routineId);
+}
+
+// "🆘 Besoin d'aide" (dans l'un des deux widgets, cf.
+// demanderAideMinuteurTache()/demanderAideMinuteurRoutine()) ou 2e
+// décompte écoulé sans réponse (cf. tickMinuteurGlobal()) : passe direct
+// par-dessus une 3e question, sur l'idée que si ça bloque encore après
+// une relance, un parent doit s'en mêler plutôt que d'insister.
+function entrerBlocageMinuteur(minuteur) {
+  minuteur.etape = "bloque";
+  sauverUnMinuteur(minuteur);
+  minuteurEnDialogue = { portee: minuteur.portee, routineId: minuteur.routineId, tacheId: minuteur.tacheId };
+  jouerAlerte();
+  if (navigator.vibrate) navigator.vibrate([150, 100, 150, 100, 150, 100, 150]);
+  afficherEcran("screen-minuteur-bloque");
+  dire("Un parent est nécessaire.");
+}
+
+// Boutons SOS des deux widgets — chacun cherche SON minuteur (celui de la
+// tâche courante, ou celui de la routine active) plutôt que de supposer
+// "le seul actif" : plusieurs peuvent tourner en même temps (cf. tête de
+// section).
+function demanderAideMinuteurTache() {
+  const routine = routineParId(routineActuelleId);
+  if (!routine) return;
+  const etat = chargerEtat();
+  const prochaine = routine.taches.find(t => !etat.routines[routine.id].fait.includes(t.id));
+  const minuteur = prochaine && trouverMinuteur("tache", routineActuelleId, prochaine.id);
+  if (minuteur) entrerBlocageMinuteur(minuteur);
+}
+function demanderAideMinuteurRoutine() {
+  const minuteur = trouverMinuteur("routine", routineActuelleId, null);
+  if (minuteur) entrerBlocageMinuteur(minuteur);
+}
+
+// Déblocage réservé à un parent — même pavé numérique que le reste (cf.
+// construireClavier()/validerCode(), "Points d'entrée utiles" dans
+// app/README.md), pas un mécanisme séparé. Une fois validé, l'aide vient
+// d'être donnée : le cycle repart de `decompte` avec la durée d'origine
+// (`tache.minuteurDuree` ou `routine.dureeGlobale`, jamais
+// `minuteur.dureeEtape`, qui peut avoir été réduite par un décompte2
+// entre-temps) et revient sur la routine concernée. Si la tâche/routine a
+// disparu depuis (cas limite — modifiée entre-temps), efface simplement
+// le minuteur plutôt que de planter.
+function debloquerMinuteurAvecCode() {
+  ecranAvantValidation = "screen-minuteur-bloque";
+  codeSaisi = "";
+  modeCode = "verifier";
+  document.getElementById("validation-sous-titre").textContent = "Un parent entre le code pour continuer.";
+  document.getElementById("correction-wrap").classList.add("hidden");
+  document.getElementById("pavecode-wrap").classList.remove("hidden");
+  document.getElementById("pavecode-erreur").textContent = "";
+  construireClavier(document.getElementById("pavecode-clavier"), appuyerTouche);
+  majCasesCode(document.getElementById("pavecode-cases"), codeSaisi);
+  apresCodeValide = () => {
+    if (!minuteurEnDialogue) { construireMenu(); return; }
+    const { portee, routineId, tacheId } = minuteurEnDialogue;
+    minuteurEnDialogue = null;
+    const minuteur = trouverMinuteur(portee, routineId, tacheId);
+    if (!minuteur) { construireMenu(); return; }
+    const routine = routineParId(routineId);
+    const dureeOrigine = routine && (portee === "tache" ? (routine.taches.find(t => t.id === tacheId) || {}).minuteurDuree : routine.dureeGlobale);
+    if (!dureeOrigine) {
+      retirerUnMinuteur(portee, routineId, tacheId);
+    } else {
+      minuteur.etape = "decompte";
+      minuteur.dureeEtape = dureeOrigine;
+      minuteur.finPrevue = new Date(dateActuelle().getTime() + dureeOrigine * 1000).toISOString();
+      sauverUnMinuteur(minuteur);
+    }
+    demarrerRoutine(routineId);
+  };
+  afficherEcran("screen-validation");
+}
+
 function formatChrono(secondes) {
   const total = Math.ceil(secondes);
   return Math.floor(total / 60) + ":" + String(total % 60).padStart(2, "0");
@@ -2216,7 +2717,9 @@ let apresCodeValide = null;
 // connaître spécifiquement d'où on vient.
 let ecranAvantValidation = null;
 // "verifier" (code existant, cas normal) | "nouveau1"/"nouveau2" (les
-// deux saisies successives d'un nouveau code, cf. demarrerChangementCode()).
+// deux saisies successives d'un nouveau code, cf. demarrerChangementCode())
+// | "initial1"/"initial2" (même mécanique, pour le tout premier code
+// parent d'un profil qu'on vient de créer, cf. demarrerCodeInitial()).
 let modeCode = "verifier";
 let premierNouveauCode = "";
 // Bouton de la correction (#btn-valider-routine) : sert à la fois à
@@ -2289,30 +2792,38 @@ function validerCode() {
     return;
   }
 
-  // Changement de code (cf. demarrerChangementCode()) : deux saisies
-  // identiques de suite avant d'être enregistré, comme un changement de
-  // mot de passe classique — évite d'enregistrer une faute de frappe.
-  if (modeCode === "nouveau1") {
+  // Changement de code (cf. demarrerChangementCode()) ou tout premier code
+  // parent d'un profil qu'on vient de créer (cf. demarrerCodeInitial()) :
+  // deux saisies identiques de suite avant d'être enregistré, comme un
+  // changement de mot de passe classique — évite d'enregistrer une faute
+  // de frappe. Même mécanique pour les deux, seule la suite change une
+  // fois enregistré (cf. plus bas).
+  if (modeCode === "nouveau1" || modeCode === "initial1") {
     premierNouveauCode = codeSaisi;
     codeSaisi = "";
-    modeCode = "nouveau2";
+    modeCode = modeCode === "initial1" ? "initial2" : "nouveau2";
     document.getElementById("validation-sous-titre").textContent = "Retape le même code pour confirmer.";
     majCasesCode(cases, codeSaisi);
     return;
   }
-  // modeCode === "nouveau2"
+  // modeCode === "nouveau2" ou "initial2"
   if (codeSaisi === premierNouveauCode) {
+    const premiereConfig = modeCode === "initial2";
     sauverCodeParent(premierNouveauCode);
     document.getElementById("pavecode-wrap").classList.add("hidden");
-    dire("Nouveau code enregistré.");
     modeCode = "verifier";
-    construireEspaceParent();
-    afficherEcran("screen-parent");
+    if (premiereConfig) {
+      finaliserPremiereConfiguration();
+    } else {
+      dire("Nouveau code enregistré.");
+      construireEspaceParent();
+      afficherEcran("screen-parent");
+    }
   } else {
     document.getElementById("pavecode-erreur").textContent = "Les deux codes ne correspondent pas. On recommence.";
     codeSaisi = "";
     premierNouveauCode = "";
-    modeCode = "nouveau1";
+    modeCode = modeCode === "initial2" ? "initial1" : "nouveau1";
     document.getElementById("validation-sous-titre").textContent = "Entre le nouveau code à 4 chiffres.";
     majCasesCode(cases, codeSaisi);
   }
@@ -2451,19 +2962,18 @@ function construireEspaceParent() {
   });
 }
 
-// "Cet appareil" : quel profil (PROFILS) cet appareil affiche — PAS un
-// sélecteur destiné à l'enfant (cf. resoudreProfilActif()/PROFILS plus
-// haut, et le TODO "gestion des profils" qui a motivé cet écran) :
-// Colette a sa propre tablette, distincte de celle de Léon. Sert à
-// configurer un appareil une bonne fois pour toutes (au lieu de
-// mémoriser la syntaxe `?enfant=...` dans l'URL), ou à en réattribuer un
-// (remplacement, ajout d'un 3ᵉ enfant plus tard — il suffira d'une
+// "Cet appareil" : quel profil (tousLesProfils()) cet appareil affiche —
+// PAS un sélecteur destiné à l'enfant (cf. profilActifId() plus haut, et
+// le TODO "gestion des profils" qui a motivé cet écran) : chaque enfant a
+// sa propre tablette. Sert à configurer un appareil une bonne fois pour
+// toutes (au lieu de mémoriser la syntaxe `?enfant=...` dans l'URL), ou à
+// en réattribuer un (remplacement, ajout d'un 2ᵉ enfant plus tard — il suffira d'une
 // nouvelle entrée dans PROFILS pour qu'elle apparaisse ici automatiquement).
 function construireParentAppareil() {
   const actif = profilActifId();
   const liste = document.getElementById("parent-appareil-liste");
   liste.innerHTML = "";
-  Object.values(PROFILS).forEach(p => {
+  Object.values(tousLesProfils()).forEach(p => {
     const carte = document.createElement("div");
     carte.className = "carte-routine" + (p.id === actif ? " faite" : "");
     carte.innerHTML = `<div class="carte-routine-nom">${p.prenom}</div><div class="carte-routine-etat">${p.id === actif ? "✓ actif" : ""}</div>`;
@@ -2472,13 +2982,21 @@ function construireParentAppareil() {
   });
 }
 
+// Réutilise le même écran/formulaire que la toute première configuration
+// (cf. ouvrirPremiereConfiguration()) — seul `premiereConfigEstAjout`
+// change, pour afficher un bouton retour puisqu'il y a ici un espace
+// parent où revenir.
+function ouvrirNouveauProfilDepuisAppareil() {
+  ouvrirPremiereConfiguration(true);
+}
+
 // Change le profil de CET appareil (pas juste la session en cours) puis
 // recharge : à peu près tout l'état affiché (routines, avatar, étoiles,
 // jauge...) est déterminé au chargement via `profilActif()`, un
 // rechargement est donc plus sûr qu'essayer de tout re-synchroniser à la
 // main depuis ce seul écran.
 function changerProfilAppareil(id) {
-  try { localStorage.setItem("dayrise_enfant", id); } catch (e) {}
+  try { localStorage.setItem("acolyte_enfant", id); } catch (e) {}
   location.reload();
 }
 
@@ -2665,49 +3183,29 @@ function demarrerChangementCode() {
 }
 
 // Liste de toutes les activités (catalogue en dur + créées par un
-// parent) — accès + création, cf. carte "Activités" du hub. Toucher une
-// activité l'ajoute/la retire du planning du jour, donc de "Partir à
-// l'aventure" (même logique que le catalogue de "Ma journée", ici
-// recentré sur les seules activités).
+// parent) — accès + création, cf. carte "Activités" du hub. Simple
+// catalogue à consulter/éditer : programmer une activité pour un jour
+// (aujourd'hui ou à venir) se fait depuis "Planning des journées" (cf.
+// construireParentPlanningJournees()) — rien ici à sélectionner ni à
+// mettre en surbrillance, une carte ne fait qu'ouvrir son édition.
 function construireParentActivites() {
-  const etat = chargerEtat();
-  const planifiees = new Set(etat.planning.filter(it => it.type === "aventure").map(it => it.id));
   const liste = document.getElementById("parent-activites-liste");
   liste.innerHTML = "";
   toutesLesAventures().forEach(a => {
-    const programmee = planifiees.has(a.id);
     const carte = document.createElement("div");
-    carte.className = "carte-routine" + (programmee ? " faite" : "");
+    carte.className = "carte-routine";
     const nom = document.createElement("div");
     nom.className = "carte-routine-nom";
     nom.textContent = a.emoji + " " + a.lieu;
-    const droite = document.createElement("div");
-    droite.className = "carte-routine-droite";
-    // Bouton dédié : éditer une activité ne doit pas se confondre avec le
-    // tap sur le reste de la carte, qui l'ajoute/la retire d'aujourd'hui
-    // (cf. basculerActivitePlanning) — d'où le stopPropagation.
     const btnEditer = document.createElement("button");
     btnEditer.type = "button";
     btnEditer.className = "btn-mini-edition";
     btnEditer.textContent = "✏️";
     btnEditer.setAttribute("aria-label", "Modifier « " + a.lieu + " »");
-    btnEditer.onclick = (ev) => { ev.stopPropagation(); ouvrirEditionAventure(a.id); };
-    const etatDiv = document.createElement("div");
-    etatDiv.className = "carte-routine-etat";
-    etatDiv.textContent = programmee ? "✓ aujourd'hui" : "";
-    droite.append(btnEditer, etatDiv);
-    carte.append(nom, droite);
-    carte.onclick = () => basculerActivitePlanning(a.id);
+    btnEditer.onclick = () => ouvrirEditionAventure(a.id);
+    carte.append(nom, btnEditer);
     liste.appendChild(carte);
   });
-}
-
-function basculerActivitePlanning(id) {
-  const etat = chargerEtat();
-  const pos = etat.planning.findIndex(it => it.type === "aventure" && it.id === id);
-  if (pos === -1) etat.planning.push({ type: "aventure", id }); else etat.planning.splice(pos, 1);
-  sauverEtat(etat);
-  construireParentActivites();
 }
 
 // Nouvelle activité : formulaire minimal. Une nouvelle aventure n'a ni
@@ -2769,7 +3267,7 @@ function ouvrirNouvelleAventure() {
   document.getElementById("btn-creer-aventure").textContent = "Créer et ajouter à aujourd'hui";
   ["na-nom", "na-trajet", "na-arrivee", "na-etape1", "na-etape2", "na-etape3", "na-mots-cles"]
     .forEach(id => { document.getElementById(id).value = ""; });
-  document.getElementById("na-piece").checked = false;
+  document.getElementById("na-piece").checked = true;
   document.getElementById("na-erreur").textContent = "";
   emojiChoisiActivite = EMOJI_ACTIVITE[0];
   construireDeclencheurEmoji("na-emoji-trigger", emojiChoisiActivite);
@@ -2949,7 +3447,6 @@ function construireRoutinesCatalogue() {
 // comme "Range tes vêtements"/"Je vais me coucher" dans "Aller se
 // coucher" aujourd'hui.
 const EMOJI_ROUTINE = ["🪥","🛁","🧦","🧸","📚","🍽️","🧴","✏️","🧹","🚿","🎒","👕","🧼","⏰","🌟","🧦"];
-const ZONE_PAR_DEFAUT_ROUTINE = "zone-torse";
 let emojiChoisiRoutine = EMOJI_ROUTINE[0];
 let lieuChoisiRoutine = "chambre";
 
@@ -2959,10 +3456,46 @@ function choisirLieuRoutine(lieu) {
   document.getElementById("nr-lieu-salon").classList.toggle("choisi", lieu === "salon");
 }
 
+// Style visuel des minuteurs de cette routine (cf. dessinerMinuteur() —
+// "jauge" ou "cadran"), même principe de bouton à deux choix que
+// choisirLieuRoutine() ci-dessus.
+let styleMinuteurChoisi = "jauge";
+function choisirStyleMinuteur(style) {
+  styleMinuteurChoisi = style;
+  document.getElementById("nr-style-jauge").classList.toggle("choisi", style === "jauge");
+  document.getElementById("nr-style-cadran").classList.toggle("choisi", style === "cadran");
+}
+
 let entourageChoisiRoutine = [];
 // Même principe que aventureEnEditionId ci-dessus : `null` = création,
 // sinon id de la routine en cours de modification.
 let routineEnEditionId = null;
+
+// Bouton "⏱️ Minuteur" par tâche (cf. index.html, .btn-toggle-minuteur) :
+// replié par défaut, ne montre les champs (durée/alertes) que si un
+// parent l'ouvre explicitement ou que la tâche en avait déjà un à
+// l'édition — évite que 5 lignes toujours visibles allongent le
+// formulaire pour rien pour la grande majorité des tâches sans minuteur.
+function afficherChampsMinuteurRoutine(i, visible) {
+  document.getElementById("nr-t" + i + "-minuteur-champs").classList.toggle("hidden", !visible);
+  document.getElementById("nr-t" + i + "-minuteur-toggle").classList.toggle("actif", visible);
+}
+function toggleChampsMinuteurRoutine(i) {
+  const champs = document.getElementById("nr-t" + i + "-minuteur-champs");
+  afficherChampsMinuteurRoutine(i, champs.classList.contains("hidden"));
+}
+
+// Même principe qu'afficherChampsMinuteurRoutine()/toggleChampsMinuteurRoutine()
+// ci-dessus, pour le minuteur global (au niveau de la routine entière plutôt
+// que d'une tâche) — un seul jeu de champs, pas besoin d'index `i`.
+function afficherChampsMinuteurGlobal(visible) {
+  document.getElementById("nr-global-minuteur-champs").classList.toggle("hidden", !visible);
+  document.getElementById("nr-global-minuteur-toggle").classList.toggle("actif", visible);
+}
+function toggleChampsMinuteurGlobal() {
+  const champs = document.getElementById("nr-global-minuteur-champs");
+  afficherChampsMinuteurGlobal(champs.classList.contains("hidden"));
+}
 
 function ouvrirNouvelleRoutine() {
   routineEnEditionId = null;
@@ -2972,8 +3505,15 @@ function ouvrirNouvelleRoutine() {
   for (let i = 1; i <= 5; i++) {
     document.getElementById("nr-t" + i + "-texte").value = "";
     document.getElementById("nr-t" + i + "-emoji").value = "";
-    document.getElementById("nr-t" + i + "-zone").value = ZONE_PAR_DEFAUT_ROUTINE;
+    document.getElementById("nr-t" + i + "-corps").checked = true;
+    document.getElementById("nr-t" + i + "-minuteur").value = "";
+    document.getElementById("nr-t" + i + "-minuteur-alertes").checked = true;
+    afficherChampsMinuteurRoutine(i, false);
   }
+  document.getElementById("nr-global-minuteur").value = "";
+  document.getElementById("nr-global-minuteur-alertes").checked = true;
+  afficherChampsMinuteurGlobal(false);
+  choisirStyleMinuteur("jauge");
   document.getElementById("nr-mots-cles").value = "";
   document.getElementById("nr-erreur").textContent = "";
   emojiChoisiRoutine = EMOJI_ROUTINE[0];
@@ -3000,8 +3540,19 @@ function ouvrirEditionRoutine(id) {
     const t = r.taches[i - 1];
     document.getElementById("nr-t" + i + "-texte").value = t ? t.texte : "";
     document.getElementById("nr-t" + i + "-emoji").value = t ? t.emoji : "";
-    document.getElementById("nr-t" + i + "-zone").value = (t && t.zone) || ZONE_PAR_DEFAUT_ROUTINE;
+    // `!t || !!t.zone` — un emplacement encore vide (nouvelle tâche) part
+    // coché par défaut ; une tâche existante reflète son vrai état (ex.
+    // décoché pour "Fais tes devoirs", ou dents/histoire qui n'ont de
+    // toute façon pas de zone).
+    document.getElementById("nr-t" + i + "-corps").checked = !t || !!t.zone;
+    document.getElementById("nr-t" + i + "-minuteur").value = (t && t.minuteurDuree) ? Math.round(t.minuteurDuree / 60) : "";
+    document.getElementById("nr-t" + i + "-minuteur-alertes").checked = !t || t.minuteurAlertes !== false;
+    afficherChampsMinuteurRoutine(i, !!(t && t.minuteurDuree));
   }
+  document.getElementById("nr-global-minuteur").value = r.dureeGlobale ? Math.round(r.dureeGlobale / 60) : "";
+  document.getElementById("nr-global-minuteur-alertes").checked = r.alertesGlobales !== false;
+  afficherChampsMinuteurGlobal(!!r.dureeGlobale);
+  choisirStyleMinuteur(r.styleMinuteur || "jauge");
   document.getElementById("nr-mots-cles").value = (r.motsCles || []).join(", ");
   document.getElementById("nr-erreur").textContent = "";
   emojiChoisiRoutine = r.emoji;
@@ -3012,15 +3563,6 @@ function ouvrirEditionRoutine(id) {
   afficherEcran("screen-parent-nouvelle-routine");
 }
 
-// Zones proposées par le <select> du formulaire (cf. index.html,
-// #nr-t1-zone...) — une tâche `retire` (ex. "Enlève tes vêtements") n'a
-// PAS de zone, et "Range tes vêtements" cible "zone-panier", hors de
-// cette liste : le <select> ne peut représenter ni l'une ni l'autre
-// fidèlement. Sert de garde dans creerNouvelleRoutine() pour ne jamais
-// écraser une de ces deux valeurs avec ce que le <select> affiche par
-// défaut faute de mieux.
-const ZONES_FORMULAIRE_ROUTINE = ["zone-visage", "zone-torse", "zone-bassin", "zone-jambes", "zone-pieds", "zone-dos"];
-
 function creerNouvelleRoutine() {
   const nom = document.getElementById("nr-nom").value.trim();
   const original = routineEnEditionId ? routineParId(routineEnEditionId) : null;
@@ -3029,22 +3571,42 @@ function creerNouvelleRoutine() {
     const texte = document.getElementById("nr-t" + i + "-texte").value.trim();
     if (!texte) continue;
     const emoji = document.getElementById("nr-t" + i + "-emoji").value.trim() || "✅";
-    const zone = document.getElementById("nr-t" + i + "-zone").value;
+    const corpsCoche = document.getElementById("nr-t" + i + "-corps").checked;
+    const minuteurMinutes = document.getElementById("nr-t" + i + "-minuteur").value.trim();
+    const minuteurAlertes = document.getElementById("nr-t" + i + "-minuteur-alertes").checked;
     // Fusion positionnelle (emplacement i du formulaire <- tâche i de
     // l'originale) plutôt qu'un objet neuf : préserve les champs propres
     // à certaines routines codées en dur, absents de ce formulaire mais
     // essentiels ailleurs (`calque`/`retire`/`avatarGlissable` pour
-    // l'habillage, `miniJeu`/`badge`/`badgeFait`/`pileGlissable` pour le
-    // coucher, cf. ROUTINES_LEON/ROUTINES_COLETTE plus haut).
+    // l'habillage, `badge`/`badgeFait`/`pileGlissable` pour le coucher,
+    // cf. routinesDemarrage() plus haut).
     const origTache = original && original.taches[i - 1];
     const tache = Object.assign({}, origTache, { texte, emoji, id: (origTache && origTache.id) || ("t" + i) });
-    // `zone` à part : seulement écrasée par le <select> si l'originale
-    // était déjà une des 6 zones qu'il propose (donc éditable à l'écran
-    // sans surprise) ou s'il n'y avait pas d'originale (tâche neuve,
-    // ajoutée au-delà de celles de la routine de départ) — sinon
-    // (absente, ou "zone-panier") la valeur du <select>, forcément
-    // approximative, est ignorée et l'originale conservée telle quelle.
-    if (!origTache || ZONES_FORMULAIRE_ROUTINE.includes(origTache.zone)) tache.zone = zone;
+    // Minuteur : indépendant de la case "Glisser pour valider" — une
+    // tâche à glisser-déposer (ex. "Mets ton caleçon") peut très bien
+    // avoir un minuteur affiché à côté (cf. synchroniserMinuteurWidget())
+    // sans que ça change comment elle se valide. Seule une tâche SANS
+    // zone (case décochée, ex. "Fais tes devoirs") s'appuie sur le
+    // bouton "J'ai fini" du widget pour se faire valider, minuteur réglé
+    // ou non (corrigé : ce bouton restait caché sans minuteur avant).
+    if (minuteurMinutes) {
+      tache.minuteurDuree = Math.max(1, Math.round(parseFloat(minuteurMinutes) * 60));
+      tache.minuteurAlertes = minuteurAlertes;
+    } else {
+      delete tache.minuteurDuree; delete tache.minuteurAlertes;
+    }
+    // Case "Glisser pour valider" (une seule cible pour tout l'habillage,
+    // #zone-corps, cf. index.html/styles.css) : jamais pour "dents"/"histoire"
+    // (miniJeu déjà présent sur l'originale, préservé tel quel par
+    // Object.assign() ci-dessus) ni pour une tâche structurellement à
+    // part (`avatarGlissable`/"enlève tes vêtements", `pileGlissable`/
+    // "range tes vêtements" qui cible "zone-panier") — ces trois gèrent
+    // leur propre zone (ou absence de zone) indépendamment de cette case,
+    // qui ne les concerne pas.
+    const zoneAPart = origTache && (origTache.avatarGlissable || origTache.pileGlissable);
+    if ((!origTache || !origTache.miniJeu) && !zoneAPart) {
+      if (corpsCoche) tache.zone = "zone-corps"; else delete tache.zone;
+    }
     taches.push(tache);
   }
 
@@ -3054,6 +3616,11 @@ function creerNouvelleRoutine() {
   }
 
   const motsCles = document.getElementById("nr-mots-cles").value.trim();
+  // Minuteur global : même logique que le minuteur par tâche plus haut,
+  // au niveau de la routine entière (cf. assurerMinuteurPourRoutine()) —
+  // coexiste sans conflit avec les minuteurs de tâche individuels.
+  const globalMinutes = document.getElementById("nr-global-minuteur").value.trim();
+  const globalAlertes = document.getElementById("nr-global-minuteur-alertes").checked;
 
   // Édition d'une routine existante : fusionne les champs du formulaire
   // SUR l'objet d'origine (Object.assign), comme creerNouvelleAventure()
@@ -3062,9 +3629,11 @@ function creerNouvelleRoutine() {
   // ("Aller se coucher"). Sauvée dans `routines_perso` sous le même id,
   // qui masque alors l'originale (cf. toutesLesRoutines()).
   if (original) {
-    const maj = Object.assign({}, original, { nom, emoji: emojiChoisiRoutine, lieu: lieuChoisiRoutine, taches });
+    const maj = Object.assign({}, original, { nom, emoji: emojiChoisiRoutine, lieu: lieuChoisiRoutine, taches, styleMinuteur: styleMinuteurChoisi });
     if (entourageChoisiRoutine.length) maj.entourageIds = [...entourageChoisiRoutine]; else delete maj.entourageIds;
     if (motsCles) maj.motsCles = motsCles.split(",").map(m => m.trim()).filter(Boolean); else delete maj.motsCles;
+    if (globalMinutes) { maj.dureeGlobale = Math.max(1, Math.round(parseFloat(globalMinutes) * 60)); maj.alertesGlobales = globalAlertes; }
+    else { delete maj.dureeGlobale; delete maj.alertesGlobales; }
 
     const perso = chargerRoutinesPerso();
     const pos = perso.findIndex(x => x.id === maj.id);
@@ -3083,11 +3652,13 @@ function creerNouvelleRoutine() {
     nom,
     emoji: emojiChoisiRoutine,
     lieu: lieuChoisiRoutine,
+    styleMinuteur: styleMinuteurChoisi,
     felicitation: "Bravo " + profilActif().prenom + ", tu as fini : " + nom + " !",
     taches,
   };
   if (entourageChoisiRoutine.length) nouvelle.entourageIds = [...entourageChoisiRoutine];
   if (motsCles) nouvelle.motsCles = motsCles.split(",").map(m => m.trim()).filter(Boolean);
+  if (globalMinutes) { nouvelle.dureeGlobale = Math.max(1, Math.round(parseFloat(globalMinutes) * 60)); nouvelle.alertesGlobales = globalAlertes; }
 
   const perso = chargerRoutinesPerso();
   perso.push(nouvelle);
@@ -3162,10 +3733,9 @@ function ouvrirNouvellePersonne() {
 // existante — codée en dur ou déjà perso (cf. toutesLesPersonnes()) —
 // puis bascule creerNouvellePersonne() en mode mise à jour via
 // `personneEnEditionId`. ⚠️ Ne touche jamais au champ `personne` des
-// aventures praticienne (Pauline/Elsa/Arianne) : volontairement distinct
-// de ce catalogue (cf. commentaire sur ENTOURAGE_COMMUNES plus haut) —
-// renommer "Pauline" ici ne renomme pas la praticienne dans l'écran de
-// séance.
+// aventures praticienne : volontairement distinct de ce catalogue (cf.
+// commentaire sur ENTOURAGE_COMMUNES plus haut) — renommer une praticienne
+// ici ne la renomme pas dans l'écran de séance.
 function ouvrirEditionPersonne(id) {
   const p = personneParId(id);
   if (!p) return;
@@ -3531,7 +4101,7 @@ function dortEncore() {
 // encore passée, cf. `demarrer`).
 //
 // Une fois l'heure passée, ce même écran devient tapable (cf. wiring de
-// `#screen-dodo` plus bas) : un tap de Léon lance le rituel du réveil
+// `#screen-dodo` plus bas) : un tap de l'enfant lance le rituel du réveil
 // (`ouvrirReveil`) plutôt qu'un retour direct au menu. `reveilFait` (sur
 // `etat`, réparé comme `journeeFaite` dans `etatRepare`) retient que le
 // rituel a eu lieu pour ne pas le rejouer à chaque rechargement du reste
@@ -3634,9 +4204,12 @@ function allerFinDeJournee() {
 // renseigner `#coffre-texte`/`#coffre-recompense-texte`, puis renvoyer
 // `{ texteVoix, symbolesConfettis, emojiRevele }` — `emojiRevele` (ex.
 // "⭐") remplace le 🎁 au moment de l'ouverture, pour que ce soit
-// l'étoile elle-même qui apparaisse, pas un cadeau générique. Sans
-// `avantOuverture` (fin de journée, aventures) : comportement inchangé,
-// ouverture immédiate, 🎁 reste 🎁.
+// l'étoile (ou la pièce, cf. `terminerAventure`) elle-même qui
+// apparaisse, pas un cadeau générique. Sans `avantOuverture` (fin de
+// journée seulement, désormais) : comportement inchangé, ouverture
+// immédiate, 🎁 reste 🎁 — pas de parent qui vient de taper un code
+// juste avant dans ce cas, contrairement à une routine ou une aventure
+// (cf. TODO.md, point resté ouvert : faut-il aligner aussi celle-là ?).
 let coffreRetour = null;
 let coffreAvantOuverture = null;
 function ouvrirCoffre(texteVoix, symbolesConfettis, retour, avantOuverture) {
@@ -3706,9 +4279,9 @@ function lancerConfettis(symboles) {
 // (sinon un repas ou une routine s'intercale : on rentre bien à la
 // maison d'abord, pas droit à la suivante). Sert à personnaliser le
 // texte du trajet retour ci-dessous : si un parent enchaîne deux
-// activités dans le planning (ex. Pauline puis Elsa), le trajet retour
-// de la première n'est pas un vrai retour à la maison mais un aller vers
-// la seconde.
+// activités dans le planning (ex. deux visites à la suite), le trajet
+// retour de la première n'est pas un vrai retour à la maison mais un
+// aller vers la seconde.
 function prochaineAventureSansEscale(id) {
   const etat = chargerEtat();
   const pos = etat.planning.findIndex(it => it.type === "aventure" && it.id === id);
@@ -3723,10 +4296,11 @@ function prochaineAventureSansEscale(id) {
 // et son sens (`sensTrajet`). Pas de minuteur/barre de progression : le
 // trajet est un simple temps d'attente, et c'est un parent qui confirme
 // "On est arrivés" (bouton -> code, cf. allerValidationArrivee) — pas
-// l'enfant tout seul, et pas une horloge. Pauline reste accessible via ce
-// même mécanisme mais n'est jamais programmée automatiquement (pas de
-// `date`, cf. TODO.md) ; pour le moment seules les aventures listées
-// dans `aventuresDuJour()` sont atteignables depuis l'écran des sorties.
+// l'enfant tout seul, et pas une horloge. Une aventure sans `date` (ex.
+// une praticienne récurrente) reste accessible via ce même mécanisme mais
+// n'est jamais programmée automatiquement ; pour le moment seules les
+// aventures listées dans `aventuresDuJour()` sont atteignables depuis
+// l'écran des sorties.
 // ---------------------------------------------------------------------
 function allerAuTrajet() {
   const a = aventureParId(aventureActuelleId);
@@ -3774,7 +4348,7 @@ function allerAArrivee() {
 
 // "C'est parti" (côté arrivée) : deux cas bien différents derrière le
 // même bouton (#btn-cest-parti). Pour une aventure "praticienne" (a un
-// champ `personne` — Pauline, Elsa, Arianne), l'enfant ne pilote plus
+// champ `personne`), l'enfant ne pilote plus
 // rien à partir d'ici : c'est LA PRATICIENNE qui doit valider avec le
 // code pour démarrer la séance (cf. `demarrerSeanceCode()`), garder
 // l'appareil le temps de la séance, puis le revalider avec le code pour
@@ -3926,19 +4500,24 @@ function allerValidationArrivee() {
 }
 
 // Fin d'une aventure (une fois l'arrivée à la maison confirmée). Sans
-// récompense propre (Pauline aujourd'hui) : retour direct au menu. Avec
-// récompense (`recompensePieces` > 0) : la pièce sort du coffre, même
-// écran/même geste que la récompense de fin de journée (cf.
-// `ouvrirCoffre`).
+// récompense propre (une visite chez une praticienne, typiquement) :
+// retour direct au menu. Avec récompense (`recompensePieces` > 0) :
+// même principe "parent déverrouille, enfant ouvre" que
+// `ouvrirCoffreRoutine()` — le code parent qu'on vient de taper pour
+// confirmer l'arrivée tient lieu de déverrouillage, mais la pièce n'est
+// donnée (`ajouterPieces()`) que quand l'enfant tape lui-même le coffre
+// (cf. `avantOuverture` dans `ouvrirCoffre()`/`ouvrirCadenasCoffre()`).
 function terminerAventure(a) {
   aventureActuelleId = null;
   if (a.recompensePieces > 0) {
-    const total = ajouterPieces(a.recompensePieces);
-    const prenom = profilActif().prenom;
-    document.getElementById("coffre-texte").textContent = "Bravo " + prenom + ", tu as fait : " + a.lieu + " !";
-    document.getElementById("coffre-recompense-texte").textContent =
-      "+ " + a.recompensePieces + " 🪙 (" + total + " au total)";
-    ouvrirCoffre("Bravo " + prenom + ", tu as gagné une pièce !", ["🪙", "✨", "🎉", "🪙", "✨"], () => construireMenu());
+    ouvrirCoffre(null, null, () => construireMenu(), () => {
+      const total = ajouterPieces(a.recompensePieces);
+      const prenom = profilActif().prenom;
+      document.getElementById("coffre-texte").textContent = "Bravo " + prenom + ", tu as fait : " + a.lieu + " !";
+      document.getElementById("coffre-recompense-texte").textContent =
+        "+ " + a.recompensePieces + " 🪙 (" + total + " au total)";
+      return { texteVoix: "Bravo " + prenom + ", tu as gagné une pièce !", symbolesConfettis: ["🪙", "✨", "🎉", "🪙", "✨"], emojiRevele: "🪙" };
+    });
     return;
   }
   construireMenu();
@@ -4096,6 +4675,11 @@ document.getElementById("btn-pause-dents").onclick = toggleDentsPause;
 document.getElementById("btn-retour-histoire").onclick = quitterHistoire;
 document.getElementById("btn-voix-histoire").onclick = () => dire(document.getElementById("histoire-texte").textContent);
 document.getElementById("btn-fini-histoire").onclick = finHistoire;
+document.getElementById("btn-minuteur-widget-aide").onclick = demanderAideMinuteurTache;
+document.getElementById("btn-minuteur-routine-aide").onclick = demanderAideMinuteurRoutine;
+document.getElementById("btn-minuteur-verif-non").onclick = () => repondreVerificationMinuteur(false);
+document.getElementById("btn-minuteur-verif-oui").onclick = () => repondreVerificationMinuteur(true);
+document.getElementById("btn-minuteur-bloque-code").onclick = debloquerMinuteurAvecCode;
 document.getElementById("btn-voix-coffre").onclick = () => dire(document.getElementById("coffre-texte").textContent);
 document.getElementById("btn-voix-trajet").onclick = () => dire(document.getElementById("trajet-texte").textContent);
 document.getElementById("btn-voix-arrivee").onclick = () => dire(document.getElementById("arrivee-texte").textContent);
@@ -4145,7 +4729,13 @@ document.getElementById("nr-emoji-trigger").onclick = () =>
   ouvrirSelecteurEmoji(EMOJI_ROUTINE, emojiChoisiRoutine, (e) => { emojiChoisiRoutine = e; construireDeclencheurEmoji("nr-emoji-trigger", e); });
 document.getElementById("nr-lieu-chambre").onclick = () => choisirLieuRoutine("chambre");
 document.getElementById("nr-lieu-salon").onclick = () => choisirLieuRoutine("salon");
+document.getElementById("nr-style-jauge").onclick = () => choisirStyleMinuteur("jauge");
+document.getElementById("nr-style-cadran").onclick = () => choisirStyleMinuteur("cadran");
 document.getElementById("btn-creer-routine").onclick = creerNouvelleRoutine;
+for (let i = 1; i <= 5; i++) {
+  document.getElementById("nr-t" + i + "-minuteur-toggle").onclick = () => toggleChampsMinuteurRoutine(i);
+}
+document.getElementById("nr-global-minuteur-toggle").onclick = toggleChampsMinuteurGlobal;
 document.getElementById("btn-retour-parent-nouvelle-routine").onclick = () => { routineEnEditionId = null; construireRoutinesCatalogue(); afficherEcran("screen-parent-routines-catalogue"); };
 
 document.getElementById("btn-nouvelle-personne").onclick = ouvrirNouvellePersonne;
@@ -4164,6 +4754,15 @@ document.getElementById("emoji-picker-recherche").addEventListener("input", (e) 
 document.getElementById("btn-emoji-picker-fermer").onclick = fermerSelecteurEmoji;
 
 document.getElementById("btn-retour-parent-appareil").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
+document.getElementById("btn-nouvel-enfant").onclick = ouvrirNouveauProfilDepuisAppareil;
+
+// Caché au tout premier lancement (rien où revenir, cf.
+// ouvrirPremiereConfiguration()) ; visible depuis "Cet appareil" -> "+
+// Nouvel enfant".
+document.getElementById("btn-retour-premiere-configuration").onclick = () => { construireParentAppareil(); afficherEcran("screen-parent-appareil"); };
+document.getElementById("btn-continuer-premiere-configuration").onclick = validerPremiereConfiguration;
+document.getElementById("pc-genre-garcon").onclick = () => choisirGenreInitial("garcon");
+document.getElementById("pc-genre-fille").onclick = () => choisirGenreInitial("fille");
 
 // Le bouton "Terminé !" du coffre ne va pas toujours au même endroit
 // (fin de journée vs retour d'aventure) : `coffreRetour` est fixé par
@@ -4234,6 +4833,15 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// Vérification du minuteur actif (cf. tickMinuteurGlobal() plus haut) —
+// tourne en continu dès le chargement, pas seulement pendant une routine,
+// pour que la vérification/l'alerte puisse interrompre n'importe quel
+// écran. Premier appel immédiat (pas seulement dans 1s) pour éviter
+// qu'un minuteur déjà écoulé pendant que l'app était fermée laisse
+// passer un instant sur le mauvais écran au rechargement.
+tickMinuteurGlobal();
+setInterval(tickMinuteurGlobal, 1000);
+
 // point d'entrée : menu de la journée (le réveil, écran 01 du handoff,
 // reste sauté pour ce prototype). Filet de sécurité : si quoi que ce
 // soit plante ici (ex. un état corrompu malgré `etatRepare()`), on
@@ -4241,6 +4849,13 @@ if ("serviceWorker" in navigator) {
 // pour un enfant seul devant la tablette — dernier recours seulement,
 // `chargerEtat()` répare déjà les cas courants sans perdre la journée.
 (function demarrer() {
+  // Avant même le filet de sécurité ci-dessous : cet appareil n'a encore
+  // aucun profil actif (premier lancement, ou profil jamais choisi) —
+  // tout le reste (appliquerProfilAuDom(), chargerEtat()...) suppose un
+  // profil réel et plante sinon. Écran de première configuration plutôt
+  // que le filet de sécurité générique, qui présuppose lui aussi un
+  // profil (cf. son propre appel à `cle()` dans le catch plus bas).
+  if (!profilActifId()) { ouvrirPremiereConfiguration(false); return; }
   try {
     // Avant toute chose : calques d'avatar + prénom du profil actif dans
     // le DOM (cf. appliquerProfilAuDom()) — les écrans qui suivent
