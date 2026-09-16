@@ -191,7 +191,7 @@ function cle(nomBase) { return profilActif().prefixe + "_" + nomBase; }
 // de calques déjà existants, un par silhouette, cf. CALQUES_PAR_SILHOUETTE.
 //
 // `p2`/`n4`/`y1`/"court-net" = les valeurs exactes de l'ancien "avatar-a"
-// (lui-même la reprise générique de l'avatar réel de Léon) : gardées
+// (lui-même la reprise générique d'un avatar réel) : gardées
 // comme valeurs par défaut à l'ouverture de l'écran plutôt qu'un choix
 // arbitraire.
 const PEAUX = [
@@ -2438,7 +2438,7 @@ function assurerMinuteurPourRoutine(routine) {
 // seule façon de la valider dans ce cas). Les deux sont indépendants
 // (cf. creerNouvelleRoutine()) : une tâche sans zone ET sans minuteur
 // doit quand même afficher le bouton "J'ai fini" — sinon elle n'est
-// validable d'aucune façon (bug réel signalé par Léon : case "Glisser
+// validable d'aucune façon (bug réel signalé en usage : case "Glisser
 // pour valider" décochée sans minuteur réglé, tâche bloquée des deux
 // côtés).
 function synchroniserMinuteurWidget(prochaine, routine) {
