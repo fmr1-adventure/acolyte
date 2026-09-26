@@ -43,11 +43,17 @@ façonnent chaque écran :
 Aucun prénom, avatar ou contenu de famille n'est intégré à l'application
 : tout se configure directement dedans, sans jamais toucher au code. Au
 tout premier lancement sur un appareil (ou en ajoutant un enfant
-supplémentaire depuis l'espace parent), un court parcours demande le
-prénom de l'enfant, si c'est un garçon ou une fille, puis son avatar —
-coupe de cheveux, couleur de peau, de cheveux et d'yeux, chacun avec un
-aperçu qui se met à jour au fur et à mesure des choix — et enfin un code
-parent à définir (deux fois, comme un nouveau mot de passe) — trois
+supplémentaire depuis l'espace parent), l'acolyte se présente d'abord à
+l'enfant lui-même, en trois messages courts (dits à voix haute, chacun
+rejouable) qu'il valide un par un d'un tap — « Bienvenue, je suis ton
+acolyte... », « Mon rôle est de t'accompagner... », « J'ai besoin de
+quelques informations sur toi » — avant qu'un court parcours ne demande le
+prénom de l'enfant, sa date de naissance (jour, mois, année, sur trois
+roulettes à faire défiler plutôt qu'à taper), si c'est un garçon ou une
+fille, puis son avatar — coupe de cheveux, couleur de peau, de cheveux et
+d'yeux, chacun avec un aperçu qui se met à jour au fur et à mesure des
+choix — et enfin un code parent à définir (deux fois, comme un nouveau
+mot de passe) — trois
 routines de départ (s'habiller, se préparer à partir, aller se coucher)
 sont aussitôt disponibles, avec un texte déjà personnalisé au prénom
 choisi, et librement modifiables ensuite depuis l'espace parent. Rien
@@ -57,7 +63,11 @@ n'est envoyé où que ce soit : tout reste sur l'appareil.
 
 ### Le réveil
 
-Avant l'heure du réveil, l'application reste « endormie » : l'écran
+Le tout premier jour d'un enfant sur l'application, ce rituel est sauté
+: l'acolyte vient déjà de se présenter pendant l'accueil (cf. « Première
+configuration » ci-dessus), et on arrive directement au menu de la
+journée. Les jours suivants, avant l'heure du réveil, l'application
+reste « endormie » : l'écran
 montre l'avatar de l'enfant allongé de tout son long, yeux fermés, sous
 sa couette — un fond sombre et volontairement sans décor, pour ne pas
 être lumineux à cette heure — un bypass réservé aux parents permet de
@@ -66,7 +76,11 @@ simple tap sur cet écran
 lance un petit rituel avant d'arriver dans sa chambre : « Bonjour
 [prénom] » (réponse « Bonjour toi »), « As-tu bien dormi ? » (oui/non),
 puis « Comment te sens-tu ? » avec un choix d'images (malade,
-fatigué, en pleine forme, normal, triste, content).
+fatigué, en pleine forme, normal, triste, content). Le jour de son
+anniversaire (calculé depuis sa date de naissance), ce premier message
+devient « Bonjour [prénom] ! Joyeux anniversaire, tu as maintenant
+[âge] ans ! » avec une icône de gâteau — le reste du rituel ne change
+pas.
 
 ### Le menu de la journée
 

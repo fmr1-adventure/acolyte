@@ -259,29 +259,133 @@ function spritesPourTraits(traits) {
 }
 
 // ---------------------------------------------------------------------
-// Première configuration — écran affiché quand cet appareil n'a encore
-// AUCUN profil (cf. `demarrer()`, tout en bas du fichier), ou rouvert
-// depuis "Cet appareil" ("+ Nouvel enfant") pour ajouter un profil
-// supplémentaire sur un appareil déjà configuré. Prénom + avatar ici,
+// Accueil — première rencontre avec l'acolyte, avant la création du
+// profil (cf. `ouvrirPremiereConfiguration()` juste après). Joué aussi
+// bien au tout premier lancement de l'appareil (`demarrer()`, aucun
+// profil) que pour un enfant ajouté depuis l'espace parent
+// (`ouvrirNouveauProfilDepuisAppareil()`, appareil déjà configuré) :
+// c'est toujours l'enfant qui rencontre l'acolyte en premier et valide
+// chaque étape lui-même, jamais le parent qui remplit le formulaire
+// suivant à sa place. 3 écrans séquentiels sans bouton retour, comme le
+// rituel du réveil (cf. `ouvrirReveil()` plus bas) : une fois lancé, on
+// avance jusqu'à la création du profil.
+const TEXTE_ACCUEIL_1 = "Bienvenue, je suis ton acolyte, nous allons passer du temps ensemble tous les jours.";
+const TEXTE_ACCUEIL_2 = "Mon rôle est de t'accompagner dans ton quotidien sur tes routines et tes activités.";
+const TEXTE_ACCUEIL_3 = "Pour bien remplir mon rôle, j'ai besoin de quelques informations sur toi.";
+// Porté jusqu'au bouton final de l'accueil, qui ouvre la première
+// configuration avec le bon `estAjout` (cf. `ouvrirPremiereConfiguration()`).
+let accueilEstAjout = false;
+
+function ouvrirAccueil(estAjout) {
+  accueilEstAjout = !!estAjout;
+  document.getElementById("accueil-1-texte").textContent = TEXTE_ACCUEIL_1;
+  afficherEcran("screen-accueil-1");
+  dire(TEXTE_ACCUEIL_1);
+}
+function etapeAccueil2() {
+  document.getElementById("accueil-2-texte").textContent = TEXTE_ACCUEIL_2;
+  afficherEcran("screen-accueil-2");
+  dire(TEXTE_ACCUEIL_2);
+}
+function etapeAccueil3() {
+  document.getElementById("accueil-3-texte").textContent = TEXTE_ACCUEIL_3;
+  afficherEcran("screen-accueil-3");
+  dire(TEXTE_ACCUEIL_3);
+}
+
+// ---------------------------------------------------------------------
+// Première configuration — écran affiché après l'accueil ci-dessus,
+// qu'il s'agisse du tout premier lancement de l'appareil (cf.
+// `demarrer()`, tout en bas du fichier) ou d'un ajout depuis
+// "Cet appareil" ("+ Nouvel enfant") pour un appareil déjà configuré.
+// Prénom + date de naissance + avatar ici,
 // code parent juste après (réutilise le pavé numérique existant, cf.
 // `demarrerCodeInitial()`) — la création réelle du profil n'a lieu
 // qu'une fois le code confirmé deux fois, cf. `finaliserPremiereConfiguration()`.
-let configInitiale = { prenom: "", genre: "garcon", coupe: "court-net", peau: "p2", cheveux: "n4", yeux: "y1" };
-// true seulement quand cet écran est rouvert depuis un appareil déjà
-// configuré (bouton retour utile) ; false au tout premier lancement
-// (aucun profil, donc aucun écran où revenir — bouton retour caché).
+let configInitiale = { prenom: "", naissanceJour: 1, naissanceMois: 1, naissanceAnnee: 2018, genre: "garcon", coupe: "court-net", peau: "p2", cheveux: "n4", yeux: "y1" };
+// Change seulement où mène le bouton retour (cf. son wiring plus bas) :
+// vers "Cet appareil" si on vient de l'espace parent, vers le dernier
+// écran d'accueil (screen-accueil-3) au tout premier lancement — toujours
+// visible depuis que cet écran n'est plus atteignable autrement qu'après
+// l'accueil (cf. `ouvrirAccueil()`), qui laisse toujours un écran où
+// revenir.
 let premiereConfigEstAjout = false;
+
+// Date de naissance par défaut à l'ouverture de l'écran : une roulette a
+// toujours une valeur centrée (contrairement aux pastilles qu'elle
+// remplace, cf. index.html), donc pas d'état "vide" possible — on centre
+// une date plausible plutôt que le 1ᵉʳ janvier de l'année en cours.
+function naissanceParDefaut() {
+  const auj = dateActuelle();
+  return { naissanceJour: auj.getDate(), naissanceMois: auj.getMonth() + 1, naissanceAnnee: auj.getFullYear() - 8 };
+}
 
 function ouvrirPremiereConfiguration(estAjout) {
   premiereConfigEstAjout = !!estAjout;
-  configInitiale = { prenom: "", genre: "garcon", coupe: "court-net", peau: "p2", cheveux: "n4", yeux: "y1" };
+  configInitiale = Object.assign(
+    { prenom: "", genre: "garcon", coupe: "court-net", peau: "p2", cheveux: "n4", yeux: "y1" },
+    naissanceParDefaut()
+  );
   document.getElementById("pc-prenom").value = "";
   document.getElementById("pc-erreur").textContent = "";
-  document.getElementById("btn-retour-premiere-configuration").classList.toggle("hidden", !premiereConfigEstAjout);
   document.getElementById("pc-genre-garcon").classList.add("choisi");
   document.getElementById("pc-genre-fille").classList.remove("choisi");
+  construireRouesNaissanceInitiale();
   construireChoixApparenceInitiale();
   afficherEcran("screen-premiere-configuration");
+}
+
+// Jour/mois/année en 3 roulettes à faire défiler plutôt qu'un
+// <input type="date"> (cf. commentaire dans index.html) : chacune est une
+// colonne défilante avec accroche CSS (scroll-snap-type/scroll-snap-align)
+// au centre — cf. la bande fixe .pc-date-roues::before dans styles.css.
+// Années : les 18 dernières (couvre de nouveau-né à tout juste 17 ans),
+// largement au-delà de l'âge visé par l'app.
+const HAUTEUR_ROUE_DATE = 40;
+const MOIS_NOMS_COURTS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+function construireRouesNaissanceInitiale() {
+  const anneeActuelle = dateActuelle().getFullYear();
+  const annees = [];
+  for (let a = anneeActuelle; a >= anneeActuelle - 17; a--) annees.push(a);
+
+  construireRoueDate("pc-naissance-jour-roue", Array.from({ length: 31 }, (_, i) => i + 1), null,
+    configInitiale.naissanceJour, (v) => { configInitiale.naissanceJour = v; });
+  construireRoueDate("pc-naissance-mois-roue", Array.from({ length: 12 }, (_, i) => i + 1), MOIS_NOMS_COURTS,
+    configInitiale.naissanceMois, (v) => { configInitiale.naissanceMois = v; });
+  construireRoueDate("pc-naissance-annee-roue", annees, null,
+    configInitiale.naissanceAnnee, (v) => { configInitiale.naissanceAnnee = v; });
+}
+
+// `valeurs` = ce qui est stocké dans configInitiale (nombre) ; `labels`
+// (optionnel) = ce qui s'affiche à la place (ex. noms de mois), même
+// index. Détecte l'item centré par défilement au lieu d'un clic par item
+// (même mécanique pour le clic direct sur un item : on scrolle jusqu'à
+// lui, puis c'est le même code de détection qui le retient) — un simple
+// timeout après le dernier événement `scroll` plutôt que l'événement
+// `scrollend` (pas encore assez répandu sur les navigateurs de tablette
+// visés) pour repérer que le défilement s'est arrêté.
+function construireRoueDate(idRoue, valeurs, labels, valeurInitiale, onChange) {
+  const roue = document.getElementById(idRoue);
+  roue.innerHTML = "";
+  valeurs.forEach((v, i) => {
+    const item = document.createElement("div");
+    item.className = "pc-date-roue-item" + (v === valeurInitiale ? " choisi" : "");
+    item.textContent = labels ? labels[i] : v;
+    item.onclick = () => roue.scrollTo({ top: i * HAUTEUR_ROUE_DATE, behavior: "smooth" });
+    roue.appendChild(item);
+  });
+  const indexInitial = Math.max(0, valeurs.indexOf(valeurInitiale));
+  roue.scrollTop = indexInitial * HAUTEUR_ROUE_DATE;
+
+  let minuteur = null;
+  roue.onscroll = () => {
+    clearTimeout(minuteur);
+    minuteur = setTimeout(() => {
+      const index = Math.max(0, Math.min(valeurs.length - 1, Math.round(roue.scrollTop / HAUTEUR_ROUE_DATE)));
+      Array.from(roue.children).forEach((el, i) => el.classList.toggle("choisi", i === index));
+      onChange(valeurs[index]);
+    }, 120);
+  };
 }
 
 // Genre : change aussi le menu de coupes proposé juste en dessous (2
@@ -341,6 +445,9 @@ function construireSwatchesInitiale(idConteneur, options, trait) {
   });
 }
 
+// Pas de vérification sur la date de naissance : contrairement au
+// prénom, une roulette a toujours une valeur centrée (cf.
+// construireRoueDate()), jamais un état "vide" à bloquer.
 function validerPremiereConfiguration() {
   const prenom = document.getElementById("pc-prenom").value.trim();
   if (!prenom) {
@@ -378,7 +485,10 @@ function demarrerCodeInitial() {
 function finaliserPremiereConfiguration() {
   const { silhouette, dodo, sprites } = spritesPourTraits(configInitiale);
   const id = "enfant-" + Date.now();
-  const profil = { id, prefixe: id, prenom: configInitiale.prenom, dodo, sprites };
+  // Format "AAAA-M-J", comme cleJourPour() — cf. anniversaireAujourdhui()/
+  // ageDepuis() plus bas, qui la reparsent.
+  const naissance = configInitiale.naissanceAnnee + "-" + configInitiale.naissanceMois + "-" + configInitiale.naissanceJour;
+  const profil = { id, prefixe: id, prenom: configInitiale.prenom, naissance, dodo, sprites };
 
   const perso = chargerProfilsPerso();
   perso.push(profil);
@@ -388,6 +498,16 @@ function finaliserPremiereConfiguration() {
   sauverRoutinesPerso(routinesDemarrage(profil.prenom, silhouette).map(r =>
     (r.id === "shabiller" || r.id === "partir") ? Object.assign({ chainee: true }, r) : r
   ));
+
+  // L'acolyte vient déjà de se présenter pendant l'accueil (cf.
+  // ouvrirAccueil()) — pas de rituel de réveil ("réveille l'avatar
+  // endormi") ce tout premier jour, ça n'aurait pas de sens juste après
+  // s'être rencontrés. `reveilFait` à `true` d'entrée pour que
+  // `demarrer()` aille directement au menu au rechargement ci-dessous ;
+  // les jours suivants suivent le rituel normal, cf. `endormir()`.
+  const etat = chargerEtat();
+  etat.reveilFait = true;
+  sauverEtat(etat);
 
   location.reload();
 }
@@ -3051,12 +3171,14 @@ function construireParentAppareil() {
   });
 }
 
-// Réutilise le même écran/formulaire que la toute première configuration
-// (cf. ouvrirPremiereConfiguration()) — seul `premiereConfigEstAjout`
-// change, pour afficher un bouton retour puisqu'il y a ici un espace
-// parent où revenir.
+// Rejoue le même accueil que le tout premier lancement (cf.
+// ouvrirAccueil()) puis le même écran/formulaire de configuration (cf.
+// ouvrirPremiereConfiguration()) — seul `estAjout` change, pour afficher
+// un bouton retour sur ce dernier puisqu'il y a ici un espace parent où
+// revenir. Le nouvel enfant découvre ainsi l'acolyte lui-même, plutôt que
+// d'arriver directement sur le formulaire rempli par le parent.
 function ouvrirNouveauProfilDepuisAppareil() {
-  ouvrirPremiereConfiguration(true);
+  ouvrirAccueil(true);
 }
 
 // Change le profil de CET appareil (pas juste la session en cours) puis
@@ -4131,7 +4253,29 @@ function texteFinJournee(profil) {
   return "Bravo pour toutes les routines que tu as faites aujourd'hui " + profil.prenom + ". Bonne nuit et à demain.";
 }
 const HEURE_REVEIL = 7;
-function texteReveilBonjour(profil) { return "Bonjour " + profil.prenom; }
+// `profil.naissance` ("AAAA-M-J", cf. `finaliserPremiereConfiguration()`)
+// absente pour un profil créé avant l'ajout de ce champ — d'où les gardes
+// `if (!naissance)` : pas d'anniversaire à fêter plutôt qu'une erreur.
+function ageDepuis(naissance) {
+  if (!naissance) return null;
+  const [annee, mois, jour] = naissance.split("-").map(Number);
+  const auj = dateActuelle();
+  let age = auj.getFullYear() - annee;
+  if (auj.getMonth() + 1 < mois || (auj.getMonth() + 1 === mois && auj.getDate() < jour)) age--;
+  return age;
+}
+function anniversaireAujourdhui(naissance) {
+  if (!naissance) return false;
+  const [, mois, jour] = naissance.split("-").map(Number);
+  const auj = dateActuelle();
+  return auj.getMonth() + 1 === mois && auj.getDate() === jour;
+}
+function texteReveilBonjour(profil) {
+  if (anniversaireAujourdhui(profil.naissance)) {
+    return "Bonjour " + profil.prenom + " ! Joyeux anniversaire, tu as maintenant " + ageDepuis(profil.naissance) + " ans !";
+  }
+  return "Bonjour " + profil.prenom;
+}
 const TEXTE_REVEIL_DORMI = "As-tu bien dormi ?";
 const TEXTE_REVEIL_HUMEUR = "Comment te sens-tu ? Choisis bien ta réponse avec l'image qui te plaît le plus.";
 
@@ -4189,7 +4333,9 @@ function endormir() {
 // screen-coffre) : une fois lancé, on ne revient pas en arrière dans le
 // rituel, on avance jusqu'au menu.
 function ouvrirReveil() {
-  const texte = texteReveilBonjour(profilActif());
+  const profil = profilActif();
+  const texte = texteReveilBonjour(profil);
+  document.getElementById("reveil-emoji").textContent = anniversaireAujourdhui(profil.naissance) ? "🎂" : "☀️";
   document.getElementById("reveil-bonjour-texte").textContent = texte;
   afficherEcran("screen-reveil-bonjour");
   dire(texte);
@@ -4758,6 +4904,12 @@ document.getElementById("btn-voix-arrivee").onclick = () => dire(document.getEle
 document.getElementById("btn-voix-reveil-bonjour").onclick = () => dire(document.getElementById("reveil-bonjour-texte").textContent);
 document.getElementById("btn-voix-reveil-dormi").onclick = () => dire(document.getElementById("reveil-dormi-texte").textContent);
 document.getElementById("btn-voix-reveil-humeur").onclick = () => dire(document.getElementById("reveil-humeur-texte").textContent);
+document.getElementById("btn-accueil-1").onclick = etapeAccueil2;
+document.getElementById("btn-accueil-2").onclick = etapeAccueil3;
+document.getElementById("btn-accueil-3").onclick = () => ouvrirPremiereConfiguration(accueilEstAjout);
+document.getElementById("btn-voix-accueil-1").onclick = () => dire(document.getElementById("accueil-1-texte").textContent);
+document.getElementById("btn-voix-accueil-2").onclick = () => dire(document.getElementById("accueil-2-texte").textContent);
+document.getElementById("btn-voix-accueil-3").onclick = () => dire(document.getElementById("accueil-3-texte").textContent);
 
 protegerParAppuiLong(document.getElementById("btn-reset-test"), reinitialiserTout);
 
@@ -4828,10 +4980,13 @@ document.getElementById("btn-emoji-picker-fermer").onclick = fermerSelecteurEmoj
 document.getElementById("btn-retour-parent-appareil").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
 document.getElementById("btn-nouvel-enfant").onclick = ouvrirNouveauProfilDepuisAppareil;
 
-// Caché au tout premier lancement (rien où revenir, cf.
-// ouvrirPremiereConfiguration()) ; visible depuis "Cet appareil" -> "+
-// Nouvel enfant".
-document.getElementById("btn-retour-premiere-configuration").onclick = () => { construireParentAppareil(); afficherEcran("screen-parent-appareil"); };
+// Vers "Cet appareil" si on vient de l'espace parent ("+ Nouvel
+// enfant"), vers le dernier écran de l'accueil sinon (tout premier
+// lancement) — cf. commentaire sur `premiereConfigEstAjout`.
+document.getElementById("btn-retour-premiere-configuration").onclick = () => {
+  if (premiereConfigEstAjout) { construireParentAppareil(); afficherEcran("screen-parent-appareil"); }
+  else { etapeAccueil3(); }
+};
 document.getElementById("btn-continuer-premiere-configuration").onclick = validerPremiereConfiguration;
 document.getElementById("pc-genre-garcon").onclick = () => choisirGenreInitial("garcon");
 document.getElementById("pc-genre-fille").onclick = () => choisirGenreInitial("fille");
@@ -4924,10 +5079,11 @@ setInterval(tickMinuteurGlobal, 1000);
   // Avant même le filet de sécurité ci-dessous : cet appareil n'a encore
   // aucun profil actif (premier lancement, ou profil jamais choisi) —
   // tout le reste (appliquerProfilAuDom(), chargerEtat()...) suppose un
-  // profil réel et plante sinon. Écran de première configuration plutôt
-  // que le filet de sécurité générique, qui présuppose lui aussi un
-  // profil (cf. son propre appel à `cle()` dans le catch plus bas).
-  if (!profilActifId()) { ouvrirPremiereConfiguration(false); return; }
+  // profil réel et plante sinon. Accueil (cf. ouvrirAccueil()) puis écran
+  // de première configuration plutôt que le filet de sécurité générique,
+  // qui présuppose lui aussi un profil (cf. son propre appel à `cle()`
+  // dans le catch plus bas).
+  if (!profilActifId()) { ouvrirAccueil(false); return; }
   try {
     // Avant toute chose : calques d'avatar + prénom du profil actif dans
     // le DOM (cf. appliquerProfilAuDom()) — les écrans qui suivent

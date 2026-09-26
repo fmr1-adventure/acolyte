@@ -866,6 +866,33 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 }
 .nr-lieu-btn.choisi { opacity: 1; border-color: var(--accent); background: rgba(240,149,47,.14); color: var(--text); }
 
+/* Date de naissance : 3 roulettes qu'on fait défiler (jour/mois/année)
+   sur une seule ligne, plutôt que des grilles de pastilles empilées.
+   Bande centrale fixe (::before) qui indique la valeur retenue ; chaque
+   roulette est une colonne défilante avec accroche au centre
+   (scroll-snap) — cf. construireRoueDate() dans app.js, qui détecte
+   l'item centré une fois le défilement stabilisé. Le padding haut/bas
+   (une demi-hauteur de roulette) permet au premier et au dernier item
+   d'atteindre eux aussi le centre. */
+.pc-date-roues { display: flex; gap: 6px; position: relative; height: 120px; }
+.pc-date-roues::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: 40px; background: rgba(240,149,47,.14); border-top: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent); pointer-events: none;
+}
+.pc-date-roue {
+  flex: 1; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory;
+  padding: 40px 0; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+}
+.pc-date-roue::-webkit-scrollbar { display: none; }
+.pc-date-roue-item {
+  height: 40px; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: var(--text-faint); scroll-snap-align: center;
+}
+.pc-date-roue-item.choisi { color: var(--text); font-size: 19px; }
+
 /* Entourage ("qui est là ?") : chips à choix multiple, contrairement au
    lieu (chambre/salon) ci-dessus — nombre variable de personnes, donc
    dimensionnées à leur contenu et enveloppantes plutôt qu'étirées à
@@ -964,6 +991,15 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
    generate_sprites_detailed_preview.py) — flotte doucement au-dessus. */
 #dodo-zzz { position: absolute; top: 18%; right: 22%; font-size: 40px; animation: flotterZzz 3s ease-in-out infinite; }
 @keyframes flotterZzz { 0%,100% { transform: translateY(0); opacity: .85; } 50% { transform: translateY(-10px); opacity: 1; } }
+
+/* ---------- Accueil (première rencontre avec l'acolyte) ---------- */
+.accueil-emoji { font-size: 80px; }
+/* Même correctif que #screen-dodo.active ci-dessous (voir son commentaire) :
+   contenu court, sans rien à faire défiler, qui sinon se limiterait à sa
+   propre hauteur au lieu de remplir #app — visible comme un saut brusque
+   du contenu vers le centre de l'écran au moment de la désactivation
+   (retour à `position: absolute; inset: 0`, la règle des écrans inactifs). */
+#screen-accueil-1.active, #screen-accueil-2.active, #screen-accueil-3.active { position: absolute; inset: 0; }
 
 /* ---------- Réveil (bonjour / as-tu bien dormi / humeur) ---------- */
 #reveil-emoji { font-size: 80px; }
