@@ -19,10 +19,12 @@
 <body>
 <div id="app">
 
-  <!-- Bouton discret, visible sur tous les écrans, protégé par appui long
-       (~900ms) pour éviter qu'un enfant l'efface par accident. Utile en
-       usage réel si la journée doit être recommencée. -->
-  <button id="btn-reset-test" title="Maintenir pour recommencer la journée">↺</button>
+  <!-- Bouton discret, protégé par appui long (~900ms) pour éviter qu'un
+       enfant l'efface par accident. Outil de test uniquement : masqué par
+       défaut, révélé par `modeDebugActif()` dans app.js comme #btn-debug
+       ci-dessous — ne doit jamais apparaître sur l'app publiée (PROD),
+       seulement en local ou avec ?debug=1. -->
+  <button id="btn-reset-test" class="hidden" title="Maintenir pour recommencer la journée">↺</button>
 
   <!-- Entrée de l'espace parent, visible sur tous les écrans — pas
        protégée par appui long (pas destructif : ouvre juste l'écran du
