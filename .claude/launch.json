@@ -3,9 +3,10 @@
   "configurations": [
     {
       "name": "app-static",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "9014", "--directory", "app"],
-      "port": 9014
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "python3 -m http.server \"$PORT\" --directory app"],
+      "port": 9014,
+      "autoPort": true
     }
   ]
 }
