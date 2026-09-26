@@ -1082,6 +1082,9 @@ function synchroniserAvatar(etat) {
 // ---------------------------------------------------------------------
 function construireMenu() {
   const etat = chargerEtat();
+  // Retour au menu = plus rien en cours à reprendre au prochain lancement
+  // (cf. memoriserEnCours()/reprendreEnCours()).
+  if (etat.enCours) { delete etat.enCours; sauverEtat(etat); }
   // le mode édition de "Ma journée" ne survit pas à un retour au menu —
   // le code parent protège l'entrée en édition, pas juste un aller simple.
   journeeEnEdition = false;
@@ -1178,8 +1181,74 @@ function construireMenu() {
   afficherEcran("screen-menu");
 }
 
+// Activité en cours (`etat.enCours`) : routine ou étape d'aventure
+// ouverte en ce moment, mémorisée dans la journée pour que quitter l'app
+// (tablette mise en veille, app fermée par le système) ne ramène pas au
+// menu au prochain lancement — cf. reprendreEnCours(), appelée depuis
+// demarrer(). Effacée à chaque retour au menu (cf. construireMenu()) ;
+// vit dans `cle("journee")`, donc disparaît d'elle-même au changement de
+// jour.
+function memoriserEnCours(enCours) {
+  const etat = chargerEtat();
+  etat.enCours = enCours;
+  sauverEtat(etat);
+}
+
+// Rouvre l'activité mémorisée par memoriserEnCours(). Renvoie false s'il
+// n'y a rien (ou plus rien de valable : routine déjà validée, routine ou
+// aventure supprimée depuis) — l'appelant affiche alors le menu.
+// Sous-écrans d'une routine (dents, histoire) : on reprend sur l'écran
+// de la routine elle-même, rien n'y étant enregistré avant la fin.
+function reprendreEnCours() {
+  const enCours = chargerEtat().enCours;
+  if (!enCours) return false;
+  if (enCours.type === "routine") {
+    const routine = routineParId(enCours.id);
+    const etatR = routine && chargerEtat().routines[routine.id];
+    if (!etatR || etatR.valide) return false;
+    if (routine.taches.every(t => etatR.fait.includes(t.id))) {
+      // Toutes les tâches faites mais pas encore validées par un parent :
+      // retour sur les félicitations, d'où part la validation.
+      routineActuelleId = routine.id;
+      finDeRoutine();
+      return true;
+    }
+    demarrerRoutine(routine.id);
+    return true;
+  }
+  if (enCours.type === "aventure") {
+    const a = aventureParId(enCours.id);
+    if (!a) return false;
+    aventureActuelleId = a.id;
+    sensTrajet = enCours.sens === "retour" ? "retour" : "aller";
+    if (enCours.etape === "arrivee") allerAArrivee();
+    else if (enCours.etape === "seance" && a.personne) demarrerSeance(a);
+    else allerAuTrajet();
+    return true;
+  }
+  return false;
+}
+
+// Minuteur resté sur une question/un blocage quand l'app a été quittée :
+// tickMinuteurGlobal() ne le redéclenche pas (il ne réagit qu'aux
+// décomptes qui arrivent à zéro), donc on réaffiche l'écran ici, par-dessus
+// l'activité reprise, plutôt que de le laisser coincé sans issue.
+function reprendreDialogueMinuteur() {
+  const m = chargerMinuteursActifs().find(x => x.etape === "verification1" || x.etape === "bloque");
+  if (!m) return;
+  minuteurEnDialogue = { portee: m.portee, routineId: m.routineId, tacheId: m.tacheId };
+  if (m.etape === "verification1") {
+    afficherEcran("screen-minuteur-verification");
+    dire("As-tu besoin d'aide pour faire ta routine ou ta mission ?");
+  } else {
+    afficherEcran("screen-minuteur-bloque");
+    dire("Un parent est nécessaire.");
+  }
+}
+
 function demarrerRoutine(id) {
   routineActuelleId = id;
+  memoriserEnCours({ type: "routine", id: id });
   derniereEtapeAnnoncee = null;
   synchroniserRoutineEcran();
   afficherEcran("screen-routine");
@@ -4312,6 +4381,7 @@ function allerAuTrajet() {
   const texte = prochaine ? prochaine.texteTrajet
     : sensTrajet === "retour" ? (a.texteTrajetRetour || "On rentre à la maison.")
     : a.texteTrajet;
+  memoriserEnCours({ type: "aventure", id: a.id, sens: sensTrajet, etape: "trajet" });
   afficherEcran("screen-trajet");
   document.getElementById("trajet-texte").textContent = texte;
   document.getElementById("scene-trajet").classList.toggle("retour", sensTrajet === "retour");
@@ -4320,6 +4390,7 @@ function allerAuTrajet() {
 
 function allerAArrivee() {
   const a = aventureParId(aventureActuelleId);
+  memoriserEnCours({ type: "aventure", id: a.id, sens: sensTrajet, etape: "arrivee" });
   afficherEcran("screen-arrivee");
   document.getElementById("arrivee-lieu").textContent = a.lieu;
   document.getElementById("arrivee-texte").textContent = a.texteArrivee;
@@ -4396,6 +4467,7 @@ function demarrerSeanceCode() {
 // "Terminer la séance", pour elle, quand c'est fini. C'est elle qui garde
 // l'appareil jusque-là (cf. commentaire de `terminerVisite()`).
 function demarrerSeance(a) {
+  memoriserEnCours({ type: "aventure", id: a.id, sens: sensTrajet, etape: "seance" });
   document.getElementById("seance-titre").textContent = a.lieu;
   document.getElementById("seance-emoji").textContent = a.personne.emoji;
   const texte = "Séance avec " + a.personne.nom + " en cours.";
@@ -4869,7 +4941,8 @@ setInterval(tickMinuteurGlobal, 1000);
     // tablette éteinte puis rallumée après l'heure) : même écran dodo,
     // mais tapable cette fois — cf. wiring de `#screen-dodo`.
     if (dortEncore() || !chargerEtat().reveilFait) { afficherEcran("screen-dodo"); return; }
-    construireMenu();
+    if (!reprendreEnCours()) construireMenu();
+    reprendreDialogueMinuteur();
   } catch (e) {
     try { localStorage.removeItem(cle("journee")); } catch (e2) {}
     construireMenu();
