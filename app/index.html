@@ -19,10 +19,12 @@
 <body>
 <div id="app">
 
-  <!-- Bouton discret, visible sur tous les écrans, protégé par appui long
-       (~900ms) pour éviter qu'un enfant l'efface par accident. Utile en
-       usage réel si la journée doit être recommencée. -->
-  <button id="btn-reset-test" title="Maintenir pour recommencer la journée">↺</button>
+  <!-- Bouton discret, protégé par appui long (~900ms) pour éviter qu'un
+       enfant l'efface par accident. Outil de test uniquement : masqué par
+       défaut, révélé par `modeDebugActif()` dans app.js comme #btn-debug
+       ci-dessous — ne doit jamais apparaître sur l'app publiée (PROD),
+       seulement en local ou avec ?debug=1. -->
+  <button id="btn-reset-test" class="hidden" title="Maintenir pour recommencer la journée">↺</button>
 
   <!-- Entrée de l'espace parent, visible sur tous les écrans — pas
        protégée par appui long (pas destructif : ouvre juste l'écran du
@@ -457,18 +459,67 @@
 
   <!-- ============ Espace parent (hub) ============ -->
   <!-- ============ Première configuration (prénom + avatar) ============ -->
-  <!-- Affiché quand cet appareil n'a encore aucun profil (cf. demarrer()
-       dans app.js), ou rouvert depuis "Cet appareil" -> "+ Nouvel enfant"
-       pour un appareil déjà configuré (bouton retour visible seulement
-       dans ce cas, cf. ouvrirPremiereConfiguration()). Le code parent est
+  <!-- ============ Accueil (première rencontre avec l'acolyte) : 3 écrans
+       séquentiels avant screen-premiere-configuration, joués aussi bien au
+       tout premier lancement de l'appareil (demarrer()) que pour un enfant
+       ajouté depuis l'espace parent (ouvrirNouveauProfilDepuisAppareil()) —
+       c'est toujours l'enfant qui rencontre l'acolyte en premier, jamais
+       le parent qui remplit le formulaire suivant à sa place. Sans bouton
+       retour une fois lancé, comme le rituel du réveil (cf.
+       screen-reveil-bonjour). ============ -->
+  <div id="screen-accueil-1" class="screen">
+    <div class="barre-haut">
+      <div class="prenom-actif">Ton acolyte</div>
+      <button class="btn-voix" id="btn-voix-accueil-1" aria-label="Réécouter">🔊</button>
+      <div></div>
+    </div>
+    <div class="scene-centree">
+      <div class="accueil-emoji">👋</div>
+      <div id="accueil-1-texte" class="texte-consigne"></div>
+      <button class="btn-continuer" id="btn-accueil-1">Bonjour</button>
+    </div>
+  </div>
+
+  <div id="screen-accueil-2" class="screen">
+    <div class="barre-haut">
+      <div class="prenom-actif">Mon rôle</div>
+      <button class="btn-voix" id="btn-voix-accueil-2" aria-label="Réécouter">🔊</button>
+      <div></div>
+    </div>
+    <div class="scene-centree">
+      <div class="accueil-emoji">🤝</div>
+      <div id="accueil-2-texte" class="texte-consigne"></div>
+      <button class="btn-continuer" id="btn-accueil-2">D'accord</button>
+    </div>
+  </div>
+
+  <div id="screen-accueil-3" class="screen">
+    <div class="barre-haut">
+      <div class="prenom-actif">Et toi ?</div>
+      <button class="btn-voix" id="btn-voix-accueil-3" aria-label="Réécouter">🔊</button>
+      <div></div>
+    </div>
+    <div class="scene-centree">
+      <div class="accueil-emoji">✨</div>
+      <div id="accueil-3-texte" class="texte-consigne"></div>
+      <button class="btn-continuer" id="btn-accueil-3">On y va</button>
+    </div>
+  </div>
+
+  <!-- Affiché après l'accueil ci-dessus (cf. ouvrirAccueil()), qu'il
+       s'agisse du tout premier lancement de l'appareil (demarrer()) ou
+       d'un appareil déjà configuré rouvert depuis "Cet appareil" ->
+       "+ Nouvel enfant". Bouton retour toujours visible : vers "Cet
+       appareil" dans le second cas, vers le dernier écran de l'accueil
+       dans le premier (cf. son wiring dans app.js). Le code parent est
        demandé juste après, sur screen-validation (mode "initial1"/
-       "initial2", même pavé numérique que le reste) : la création réelle
-       du profil n'a lieu qu'une fois ce code confirmé deux fois, cf.
-       finaliserPremiereConfiguration(). -->
+       "initial2", même pavé numérique que le reste) : la création
+       réelle du profil n'a lieu qu'une fois ce code confirmé deux fois,
+       cf. finaliserPremiereConfiguration(). -->
   <div id="screen-premiere-configuration" class="screen">
     <div class="barre-haut">
-      <button class="btn-retour-ecran hidden" id="btn-retour-premiere-configuration" aria-label="Annuler">←</button>
-      <div class="prenom-actif">Bienvenue</div>
+      <button class="btn-retour-ecran" id="btn-retour-premiere-configuration" aria-label="Annuler">←</button>
+      <div class="prenom-actif">Qui es-tu ?</div>
       <div></div>
     </div>
     <div id="premiere-configuration-contenu">
@@ -476,6 +527,22 @@
         <span>Prénom de l'enfant</span>
         <input type="text" id="pc-prenom" placeholder="Ex : Sacha" maxlength="30">
       </label>
+      <!-- 3 roulettes à faire défiler plutôt qu'un <input type="date"> :
+           cohérent avec le reste de l'écran (pas de clavier ni de picker
+           système), et tient sur une seule ligne. Sert à déterminer l'âge
+           de l'enfant et à fêter son anniversaire (cf.
+           anniversaireAujourdhui()/ageDepuis() dans app.js). Toujours une
+           valeur au centre (comme un vrai sélecteur de date) : pas d'état
+           "vide", cf. construireRoueDate() qui centre un défaut au
+           chargement. -->
+      <div class="champ-parent">
+        <span>Date de naissance</span>
+        <div class="pc-date-roues">
+          <div id="pc-naissance-jour-roue" class="pc-date-roue"></div>
+          <div id="pc-naissance-mois-roue" class="pc-date-roue"></div>
+          <div id="pc-naissance-annee-roue" class="pc-date-roue"></div>
+        </div>
+      </div>
       <div class="champ-parent">
         <span>Garçon ou fille ?</span>
         <div class="nr-lieu-choix">
