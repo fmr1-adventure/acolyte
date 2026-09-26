@@ -4304,10 +4304,10 @@ function dortEncore() {
 }
 
 // Écran "en sommeil" (screen-dodo) : aucune carte, aucun bouton, rien à
-// faire tant que `dortEncore()` est vrai. Seuls les boutons globaux
-// (⚙️ espace parent, ↺ reset — hors des .screen, toujours affichés)
-// restent atteignables : c'est le bypass parental exceptionnel, via le
-// code déjà existant (cf. ouvrirEspaceParent). construireMenu() ne
+// faire tant que `dortEncore()` est vrai. Seul le bouton global ⚙️ espace
+// parent (hors des .screen, toujours affiché ; ↺ reset aussi si le mode
+// debug est actif) reste atteignable : c'est le bypass parental
+// exceptionnel, via le code déjà existant (cf. ouvrirEspaceParent). construireMenu() ne
 // revérifie pas ce verrou : une fois le code entré, revenir à l'écran
 // enfant depuis l'espace parent suffit à le lever pour la session en
 // cours (il retient au prochain rechargement si l'heure n'est pas
@@ -5047,6 +5047,9 @@ document.getElementById("btn-debug-code-reel").onclick = puisFermerDebug(ouvrirE
 document.getElementById("btn-debug-reset").onclick = puisFermerDebug(reinitialiserTout);
 
 document.getElementById("btn-debug").classList.toggle("hidden", !modeDebugActif());
+// Outil de test, jamais vu en usage réel (PROD) : même garde que #btn-debug
+// ci-dessus, pour ne pas exposer un reset accidentel de la journée.
+document.getElementById("btn-reset-test").classList.toggle("hidden", !modeDebugActif());
 
 // Service worker : rend l'app utilisable hors-ligne après un premier
 // chargement, indépendamment de la disponibilité d'un serveur particulier
