@@ -56,6 +56,8 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
 - **Espace parent** (code) : relancer une routine, historique des
   journées, notes des séances, planning, création/modification des
   routines et activités, entourage, profils de l'appareil.
+- **Reprise automatique** : quittée en pleine routine ou sortie, l'app
+  rouvre là où on en était plutôt que de revenir au menu.
 
 ## D'où vient ce projet (historique)
 

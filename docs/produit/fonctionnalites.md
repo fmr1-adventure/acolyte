@@ -99,6 +99,11 @@ La routine du coucher se débloque à une heure fixe, indépendamment des
 autres routines : un enfant qui n'a rien fait d'autre de la journée
 peut toujours aller se coucher normalement.
 
+Si l'application est quittée en pleine activité (tablette mise en
+veille, app fermée), elle **reprend là où on en était** à la
+réouverture — même routine, même étape de sortie — plutôt que de
+revenir au menu.
+
 ### Le minuteur visuel
 
 Un parent peut ajouter un minuteur à une tâche (ex. 10 minutes pour
