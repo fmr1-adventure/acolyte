@@ -1,6 +1,6 @@
 # Acolyte — jeu pixel art de routines pour enfants (TSA/TDAH)
 
-**Essayer l'app :** https://kristenify.github.io/acolyte/ — à ouvrir de
+**Essayer l'app :** https://fmr1-adventure.github.io/acolyte/ — à ouvrir de
 préférence sur une tablette. Tout ce qui y est saisi (prénom, avatar,
 routines...) reste sur l'appareil, rien n'est envoyé à un serveur.
 
