@@ -3211,6 +3211,41 @@ function changerProfilAppareil(id) {
   location.reload();
 }
 
+// Exporte tout le localStorage de cet appareil (profils, routines,
+// historique, code parent...) en JSON téléchargeable. localStorage est
+// isolé par origine : un changement d'URL (ex. nouveau compte GitHub
+// Pages, nouvelle tablette) n'y a plus accès sans ce transfert manuel.
+// Cf. importerDonneesAppareil() et screen-restaurer (?restaurer=1).
+function exporterDonneesAppareil() {
+  const donnees = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const cle = localStorage.key(i);
+    donnees[cle] = localStorage.getItem(cle);
+  }
+  const blob = new Blob([JSON.stringify(donnees, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const lien = document.createElement("a");
+  lien.href = url;
+  lien.download = "acolyte-sauvegarde-" + new Date().toISOString().slice(0, 10) + ".json";
+  lien.click();
+  URL.revokeObjectURL(url);
+}
+
+// Écrase le localStorage de cet appareil avec le contenu d'un fichier
+// exporté par exporterDonneesAppareil(), puis recharge sur l'URL sans
+// `?restaurer=1` pour retomber sur le boot normal (cf. demarrer()).
+function importerDonneesAppareil(fichier) {
+  const lecteur = new FileReader();
+  lecteur.onload = () => {
+    let donnees;
+    try { donnees = JSON.parse(lecteur.result); } catch (e) { alert("Fichier invalide."); return; }
+    if (!confirm("Remplacer les données actuelles de cet appareil par celles de ce fichier ?")) return;
+    Object.entries(donnees).forEach(([cle, valeur]) => { try { localStorage.setItem(cle, valeur); } catch (e) {} });
+    location.href = location.pathname;
+  };
+  lecteur.readAsText(fichier);
+}
+
 // Liste des routines avec leur état, pour choisir laquelle relancer.
 // Toutes affichées (pas seulement les validées) : un parent peut aussi
 // vouloir corriger une routine en cours sans attendre la fin.
@@ -4933,6 +4968,13 @@ document.getElementById("btn-voix-accueil-3").onclick = () => dire(document.getE
 
 protegerParAppuiLong(document.getElementById("btn-reset-test"), reinitialiserTout);
 
+document.getElementById("btn-exporter-donnees").onclick = exporterDonneesAppareil;
+document.getElementById("btn-restaurer-choisir").onclick = () => document.getElementById("input-restaurer").click();
+document.getElementById("input-restaurer").onchange = (ev) => {
+  const fichier = ev.target.files[0];
+  if (fichier) importerDonneesAppareil(fichier);
+};
+
 document.getElementById("btn-un-parent").onclick = allerValidation;
 document.getElementById("btn-valider-routine").onclick = () => { if (actionCorrection) actionCorrection(); };
 // Retour discret : ramène à l'écran actif juste avant l'ouverture de
@@ -5099,6 +5141,13 @@ setInterval(tickMinuteurGlobal, 1000);
 // pour un enfant seul devant la tablette — dernier recours seulement,
 // `chargerEtat()` répare déjà les cas courants sans perdre la journée.
 (function demarrer() {
+  // Atteint uniquement via ?restaurer=1 (jamais montré sans, pour ne
+  // jamais exposer ce chemin à un enfant qui tape au hasard) : restaure
+  // une sauvegarde avant même le reste du boot, cf. screen-restaurer et
+  // importerDonneesAppareil().
+  try {
+    if (new URLSearchParams(location.search).get("restaurer") === "1") { afficherEcran("screen-restaurer"); return; }
+  } catch (e) {}
   // Avant même le filet de sécurité ci-dessous : cet appareil n'a encore
   // aucun profil actif (premier lancement, ou profil jamais choisi) —
   // tout le reste (appliquerProfilAuDom(), chargerEtat()...) suppose un

@@ -506,6 +506,21 @@
     </div>
   </div>
 
+  <!-- Uniquement atteint via ?restaurer=1 dans l'URL (jamais montré sans,
+       cf. demarrer() dans app.js) : restaure sur CET appareil une
+       sauvegarde exportée depuis "Espace parent" -> "Cet appareil" ->
+       "Exporter les données" d'un autre appareil/origine (ex. changement
+       de compte GitHub Pages, nouvelle tablette) — localStorage étant
+       isolé par origine, rien ne suit automatiquement autrement. -->
+  <div id="screen-restaurer" class="screen">
+    <div class="scene-centree">
+      <div class="accueil-emoji">📥</div>
+      <div class="texte-consigne">Choisis le fichier de sauvegarde exporté depuis l'ancien appareil (Espace parent → Cet appareil → Exporter les données).</div>
+      <input type="file" id="input-restaurer" accept=".json,application/json" class="hidden">
+      <button class="btn-continuer" id="btn-restaurer-choisir">📥 Choisir le fichier</button>
+    </div>
+  </div>
+
   <!-- Affiché après l'accueil ci-dessus (cf. ouvrirAccueil()), qu'il
        s'agisse du tout premier lancement de l'appareil (demarrer()) ou
        d'un appareil déjà configuré rouvert depuis "Cet appareil" ->
@@ -670,6 +685,7 @@
     <div class="texte-consigne">Choisis l'enfant que cet appareil affiche. Chaque enfant a son propre appareil — ce choix n'est pas destiné à être changé tous les jours.</div>
     <div id="parent-appareil-liste"></div>
     <button class="btn-continuer" id="btn-nouvel-enfant">➕ Nouvel enfant</button>
+    <button class="btn-secondaire" id="btn-exporter-donnees">💾 Exporter les données de cet appareil</button>
   </div>
 
   <!-- ============ Espace parent : nouvelle routine ============ -->
