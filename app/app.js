@@ -245,6 +245,23 @@ const CALQUES_PAR_SILHOUETTE = {
   ],
 };
 function silhouettePourGenre(genre) { return genre === "fille" ? "robe" : "pantalon"; }
+// Un profil créé avant l'enregistrement de `genre` le retrouve par sa
+// silhouette, elle-même tirée du genre choisi à la configuration.
+function genreDuProfil(profil) {
+  if (profil.genre) return profil.genre;
+  const calques = (profil.sprites && profil.sprites.calques) || [];
+  return calques.some(c => c.calque === "calque-robe") ? "fille" : "garcon";
+}
+// Textes écrits une seule fois en forme inclusive ("habillé·e", "il/elle"),
+// accordés au moment où ils parlent d'un enfant précis — sinon la voix lit
+// le point médian tel quel.
+function accorderAuGenre(texte, genre) {
+  const fille = genre === "fille";
+  return texte
+    .replace(/(\p{L}+)·e(s?)(?!\p{L})/gu, (_, mot, s) => mot + (fille ? "e" : "") + s)
+    .replace(/\bil\/elle\b/g, fille ? "elle" : "il");
+}
+function accorderPourEnfant(texte) { return accorderAuGenre(texte, genreDuProfil(profilActif())); }
 // Résout la combinaison de traits en cours (`configInitiale` ou un profil
 // déjà créé) vers les fichiers réels — seul point qui connaît la
 // convention de nommage des fichiers générés.
@@ -488,14 +505,14 @@ function finaliserPremiereConfiguration() {
   // Format "AAAA-M-J", comme cleJourPour() — cf. anniversaireAujourdhui()/
   // ageDepuis() plus bas, qui la reparsent.
   const naissance = configInitiale.naissanceAnnee + "-" + configInitiale.naissanceMois + "-" + configInitiale.naissanceJour;
-  const profil = { id, prefixe: id, prenom: configInitiale.prenom, naissance, dodo, sprites };
+  const profil = { id, prefixe: id, prenom: configInitiale.prenom, genre: configInitiale.genre, naissance, dodo, sprites };
 
   const perso = chargerProfilsPerso();
   perso.push(profil);
   sauverProfilsPerso(perso);
   try { localStorage.setItem("acolyte_enfant", id); } catch (e) {}
 
-  sauverRoutinesPerso(routinesDemarrage(profil.prenom, silhouette).map(r =>
+  sauverRoutinesPerso(routinesDemarrage(profil.prenom, silhouette, profil.genre).map(r =>
     (r.id === "shabiller" || r.id === "partir") ? Object.assign({ chainee: true }, r) : r
   ));
 
@@ -537,7 +554,7 @@ function finaliserPremiereConfiguration() {
 // rendreGlissable...) reste entièrement générique et partagé : il ne lit
 // jamais "shabiller" ou "calecon" en dur, seulement la structure
 // Routine/Tâche.
-function routinesDemarrage(prenom, silhouette) {
+function routinesDemarrage(prenom, silhouette, genre) {
   const enRobe = silhouette === "robe";
   const dessous = enRobe
     ? { id: "culotte",  texte: "Mets ta culotte.",  emoji: "🩲", zone: "zone-corps", calque: "calque-culotte" }
@@ -554,7 +571,7 @@ function routinesDemarrage(prenom, silhouette) {
       nom: "S'habiller",
       emoji: "👕",
       lieu: "chambre",
-      felicitation: "Bravo " + prenom + ", tu t'es habillé·e tout seul·e !",
+      felicitation: accorderAuGenre("Bravo " + prenom + ", tu t'es habillé·e tout seul·e !", genre),
       taches: [
         dessous,
         { id: "haut",        texte: "Mets ton haut.",        emoji: "👚", zone: "zone-corps",  calque: "calque-haut" },
@@ -567,7 +584,7 @@ function routinesDemarrage(prenom, silhouette) {
       nom: "Se préparer à partir",
       emoji: "🚪",
       lieu: "salon",
-      felicitation: "Bravo " + prenom + ", tu es prêt·e à partir !",
+      felicitation: accorderAuGenre("Bravo " + prenom + ", tu es prêt·e à partir !", genre),
       // Manteau et sac volontairement absents du gabarit de départ (pas
       // toujours utiles selon la saison) — un parent peut ajouter une
       // tâche "Mets ton manteau" (calque "calque-manteau") ou "Prends ton
@@ -581,7 +598,7 @@ function routinesDemarrage(prenom, silhouette) {
       nom: "Aller se coucher",
       emoji: "🌙",
       lieu: "chambre",
-      felicitation: "Bravo " + prenom + ", tu es prêt·e à dormir !",
+      felicitation: accorderAuGenre("Bravo " + prenom + ", tu es prêt·e à dormir !", genre),
       // Volontairement PAS chaînée après "S'habiller"/"Se préparer à
       // partir" (contrairement aux autres routines, cf. construireMenu()) :
       // le coucher n'a rien à voir avec le fait d'être habillé pour sortir,
@@ -2634,7 +2651,9 @@ function synchroniserMinuteurWidget(prochaine, routine) {
   const widget = document.getElementById("minuteur-widget");
   const btnFini = document.getElementById("btn-minuteur-widget-fini");
   const aMinuteur = !!(prochaine && prochaine.minuteurDuree);
-  const sansGeste = !!(prochaine && !prochaine.zone);
+  // L'avatar à tirer ou le mini-jeu sont déjà le geste de la tâche : sans
+  // eux, le bouton apparaissait sous la scène et permettait de les sauter.
+  const sansGeste = !!(prochaine && !prochaine.zone && !prochaine.avatarGlissable && !prochaine.miniJeu);
   if (!prochaine || (!aMinuteur && !sansGeste)) { widget.classList.add("hidden"); return; }
   widget.classList.remove("hidden");
   let enDecompte = false;
@@ -2885,10 +2904,11 @@ function majAffichageDents() {
 function finDeRoutine() {
   const routine = routineParId(routineActuelleId);
   const suite = "Maintenant va chercher papa ou maman pour obtenir ta récompense.";
-  document.getElementById("bravo-routine-titre").textContent = routine.felicitation;
+  const felicitation = accorderPourEnfant(routine.felicitation);
+  document.getElementById("bravo-routine-titre").textContent = felicitation;
   document.getElementById("bravo-routine-soustitre").textContent = suite;
   afficherEcran("screen-bravo-routine");
-  dire(routine.felicitation + " " + suite);
+  dire(felicitation + " " + suite);
 }
 
 // ---------------------------------------------------------------------
@@ -3061,10 +3081,10 @@ function ouvrirCoffreRoutine() {
     etat.routines[idRoutine].valide = true;
     etat.etoiles = (etat.etoiles || 0) + 1;
     sauverEtat(etat);
-    const routine = routineParId(idRoutine);
-    document.getElementById("coffre-texte").textContent = routine.felicitation;
+    const felicitation = accorderPourEnfant(routineParId(idRoutine).felicitation);
+    document.getElementById("coffre-texte").textContent = felicitation;
     document.getElementById("coffre-recompense-texte").textContent = "+ 1 ⭐ (" + etat.etoiles + " aujourd'hui)";
-    return { texteVoix: routine.felicitation, symbolesConfettis: ["⭐", "✨", "🎉"], emojiRevele: "⭐" };
+    return { texteVoix: felicitation, symbolesConfettis: ["⭐", "✨", "🎉"], emojiRevele: "⭐" };
   });
 }
 
@@ -3097,7 +3117,7 @@ function construireEspaceParent() {
   const options = [
     {
       emoji: "🔁", titre: "Relancer une routine",
-      soustitre: "Si l'état de " + profilActif().prenom + " a changé (ex. il/elle s'est redéshabillé·e)",
+      soustitre: accorderPourEnfant("Si l'état de " + profilActif().prenom + " a changé (ex. il/elle s'est redéshabillé·e)"),
       action: () => { construireParentRoutines(); afficherEcran("screen-parent-routines"); },
     },
     {
@@ -3197,7 +3217,7 @@ function changerProfilAppareil(id) {
 function construireParentRoutines() {
   const etat = chargerEtat();
   document.getElementById("parent-routines-intro").textContent =
-    "Si l'état de " + profilActif().prenom + " a changé (ex. il/elle s'est redéshabillé·e), choisis la routine à relancer.";
+    accorderPourEnfant("Si l'état de " + profilActif().prenom + " a changé (ex. il/elle s'est redéshabillé·e), choisis la routine à relancer.");
   const liste = document.getElementById("parent-routines-liste");
   liste.innerHTML = "";
   toutesLesRoutines().forEach(r => {
@@ -3297,7 +3317,7 @@ function texteReveilHistorique(reveil) {
   const parts = [];
   if (reveil.bienDormi !== null) parts.push(reveil.bienDormi ? "😊 A bien dormi" : "😞 N'a pas bien dormi");
   const h = reveil.humeur && EMOJI_HUMEUR.find(e => e.id === reveil.humeur);
-  if (h) parts.push(h.emoji + " " + h.texte);
+  if (h) parts.push(h.emoji + " " + accorderPourEnfant(h.texte));
   return parts.length ? `<span class="texte-journee-reveil">${parts.join(" · ")}</span>` : "";
 }
 
@@ -4349,11 +4369,11 @@ function etapeReveilDormi() {
 
 const EMOJI_HUMEUR = [
   { id: "malade", emoji: "🤒", texte: "Malade" },
-  { id: "fatigue", emoji: "😴", texte: "Fatigué" },
+  { id: "fatigue", emoji: "😴", texte: "Fatigué·e" },
   { id: "pleine-forme", emoji: "💪", texte: "En pleine forme" },
   { id: "normal", emoji: "🙂", texte: "Normal" },
   { id: "triste", emoji: "😢", texte: "Triste" },
-  { id: "content", emoji: "😄", texte: "Content" },
+  { id: "content", emoji: "😄", texte: "Content·e" },
 ];
 function construireGrilleHumeur() {
   const conteneur = document.getElementById("reveil-humeur-grille");
@@ -4361,7 +4381,7 @@ function construireGrilleHumeur() {
   EMOJI_HUMEUR.forEach(h => {
     const b = document.createElement("button");
     b.className = "btn-humeur";
-    b.innerHTML = `<span class="btn-humeur-emoji">${h.emoji}</span><span class="btn-humeur-texte">${h.texte}</span>`;
+    b.innerHTML = `<span class="btn-humeur-emoji">${h.emoji}</span><span class="btn-humeur-texte">${accorderPourEnfant(h.texte)}</span>`;
     b.onclick = () => finReveil(h.id);
     conteneur.appendChild(b);
   });
