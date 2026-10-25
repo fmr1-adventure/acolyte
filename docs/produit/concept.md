@@ -110,11 +110,14 @@ des options de l'espace parent.
 **Le planning est la seule source de vérité pour ce qui est accessible
 aujourd'hui** : une activité apparaît dans "Partir à l'aventure" si et
 seulement si elle est dans le planning du jour — pas via un champ date
-séparé qu'il faudrait aussi penser à mettre à jour. Concrètement : créer
-une activité l'ajoute immédiatement au planning (donc à "Partir à
-l'aventure") ; la retirer du planning la retire aussi des sorties
-possibles. Les deux écrans (aperçu du jour, sorties jouables) sont deux
-vues du même état, pas deux systèmes à synchroniser à la main.
+séparé qu'il faudrait aussi penser à mettre à jour. Le planning du jour
+lui-même vient de la **semaine type** : chaque matin, la journée part du
+modèle de son jour de la semaine (ou du jour préparé à l'avance s'il a
+été modifié). Ce qui revient chaque semaine se règle donc une fois dans
+la semaine type ; une exception se règle sur le jour concerné. Retirer
+une activité du planning la retire aussi des sorties possibles. Les deux
+écrans (aperçu du jour, sorties jouables) sont deux vues du même état,
+pas deux systèmes à synchroniser à la main.
 
 ## Entourage : qui est là
 

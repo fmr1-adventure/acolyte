@@ -53,9 +53,14 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
 - **« Ma journée »** : planning chronologique des routines, sorties et
   repas, modifiable par un parent, ajout rapide par phrase tapée ou
   dictée.
-- **Espace parent** (code) : relancer une routine, historique des
-  journées, notes des séances, planning, création/modification des
-  routines et activités, entourage, profils de l'appareil.
+- **Semaine type** : un modèle pour chaque jour de la semaine, d'où part
+  chaque journée ; les exceptions se règlent sur les prochains jours
+  (« Comme d'habitude » / « Modifié »). Une sortie ou une séance se crée
+  directement depuis le jour qu'on prépare.
+- **Espace parent** (code), en quatre blocs : la journée (planning,
+  relancer une routine), la bibliothèque (activités, routines,
+  entourage), le suivi (historique, notes des séances), les réglages
+  (code parent, profils de l'appareil).
 - **Reprise automatique** : quittée en pleine routine ou sortie, l'app
   rouvre là où on en était plutôt que de revenir au menu.
 
@@ -208,7 +213,8 @@ enfants :
    personnalise ensuite : les tâches de chaque routine (et leur
    minuteur éventuel), les activités/sorties (dont une visite chez une
    praticienne, si besoin — "+ Nouvelle activité"), l'entourage
-   ("+ Nouvelle personne"), le planning du jour, ou ajoute un 2ᵉ enfant
+   ("+ Nouvelle personne"), la semaine type et les prochains jours
+   ("Planning"), ou ajoute un 2ᵉ enfant
    sur le même appareil ("Cet appareil" → "+ Nouvel enfant") si jamais
    deux enfants partagent exceptionnellement une tablette.
 

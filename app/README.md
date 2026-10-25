@@ -228,7 +228,10 @@ Séquence :
    gauche, sur tous les écrans — symétrique du reset, mais un simple tap
    suffit : rien ici n'est destructif) — hub protégé par le code parent,
    **directement lié à l'espace enfant** (même `app.js`, même état,
-   aucun outil séparé) :
+   aucun outil séparé). Rangé en quatre blocs (`construireEspaceParent()`) :
+   LA JOURNÉE (Planning, Relancer une routine), LA BIBLIOTHÈQUE
+   (Activités, Routines, Mon entourage), LE SUIVI (Historique, Notes des
+   séances), RÉGLAGES (Code parent, Cet appareil) :
    - **Relancer une routine** — pour corriger l'état si l'enfant a changé
      entre-temps (ex. redéshabillé après une routine validée). Réutilise
      l'écran de correction déjà existant (`construireCorrection()`,
@@ -244,20 +247,24 @@ Séquence :
      d'enregistrer, réutilise le même pavé numérique que la vérification
      (généralisé, cf. "Points d'entrée" plus bas). Partagé par
      **appareil**, pas par enfant (`acolyte_code_parent`, cf. "Profils").
-   - **Planning des journées** — une seule liste : aujourd'hui puis les
-     `JOURS_PLANNING_FUTUR` (7) prochains jours
-     (`construireParentPlanningJournees()`). Chaque ligne ouvre le même
-     écran d'édition que "Ma journée", sans redemander le code. Un jour
-     futur modifié est gardé dans `cle("planning_futur")` et devient le
-     planning du jour quand ce jour arrive.
+   - **Planning** (`construireParentPlanningJournees()`, onglet courant
+     dans `ongletPlanning`) — onglet « Semaine type » : les 7 jours du
+     modèle (`cle("semaine_type")`), avec les emojis de leurs activités ;
+     onglet « Prochains jours » : aujourd'hui puis les
+     `JOURS_PLANNING_FUTUR` (7) prochains jours, « Comme d'habitude » ou
+     « Modifié ». Chaque ligne ouvre le même écran d'édition que "Ma
+     journée" (cf. `planningCible`), sans redemander le code ; ← y ramène.
+     Un jour futur modifié est gardé dans `cle("planning_futur")` et
+     devient le planning du jour quand ce jour arrive. En édition, « +
+     Nouvelle sortie » / « + Nouvelle séance » ouvrent le formulaire
+     d'activité (`ouvrirNouvelleAventure({ nature, depuisPlanning })`) et
+     ajoutent l'activité créée au jour édité.
    - **Activités** — liste toutes les activités (`toutesLesAventures()`),
-     chacune tapable pour l'ajouter/retirer du planning du jour
-     (`basculerActivitePlanning()`) — donc de "Partir à l'aventure".
-     Bouton "+ Nouvelle activité" → formulaire (nom, icône, texte du
-     trajet, texte de l'arrivée, 3 étapes sur place, pièce à la fin
-     oui/non), ajoutée directement au planning du jour à la création
-     (`creerNouvelleAventure()`) — c'est ce qui la rend accessible dans
-     "Partir à l'aventure" tout de suite, pas un champ date à renseigner.
+     chacune modifiable (✏️). Bouton "+ Nouvelle activité" → formulaire
+     (nom, icône, texte du trajet, texte de l'arrivée, 3 étapes sur place,
+     pièce à la fin oui/non, entourage ; pour une séance, la personne
+     avec qui elle a lieu). Créée depuis la bibliothèque, elle n'entre
+     qu'au catalogue : "AJOUTER À LA JOURNÉE" la place sur un jour.
      Persistée à part (`cle("aventures_perso")`), fusionnée avec le
      catalogue commun (`AVENTURES_COMMUNES`) via `toutesLesAventures()`
      partout où le code cherche une aventure — pas de distinction entre
@@ -557,27 +564,37 @@ le mécanisme principal.
   (3 lignes), `personne` optionnelle (`{ emoji, nom }`, affiche un 2ᵉ
   sprite à l'arrivée à côté du vrai avatar de l'enfant actif — c'est ce
   champ qui distingue une visite chez une praticienne d'une sortie
-  ordinaire, cf. "Ce qui n'est volontairement pas couvert"), `date`
-  optionnelle (format `cleJour()`, ex. `"2026-8-27"` — sert uniquement à
-  ensemencer le planning d'une nouvelle journée via `planningParDefaut()`,
-  cf. plus bas ; absente pour une activité créée depuis l'espace parent,
-  qui est ajoutée directement au planning à la création), `apres`
-  optionnelle (`{ type, id }` d'un autre item du planning — où l'insérer
-  dans `PLANNING_DEFAUT` quand elle est programmée ; absente = ajoutée en
-  fin de journée) et `recompensePieces` (0 = pas de récompense propre,
+  ordinaire, cf. "Ce qui n'est volontairement pas couvert" ; une séance
+  créée depuis le planning le reçoit de la personne choisie dans
+  l'entourage) et `recompensePieces` (0 = pas de récompense propre,
   sinon une pièce sort du coffre une fois le retour à la maison
   confirmé). Ajouter une aventure commune = ajouter une entrée à ce
-  tableau. **Ce qui la rend accessible dans "Partir à l'aventure" n'est
-  plus `date` mais sa présence dans `etat.planning` du jour**
-  (`aventuresPlanifieesAujourdhui()`, utilisée par `construireMissions()`)
-  — `date` ne fait que la faire entrer dans ce planning la première fois
-  qu'un jour est ensemencé, après quoi le planning (édité par un parent
-  ou peuplé à la création d'une activité) fait foi.
-- `PLANNING_DEFAUT` (`app.js`) — le squelette de journée type utilisé par
-  `planningParDefaut()` pour initialiser `etat.planning` à chaque
-  nouveau jour (avant édition éventuelle par un parent, cf. plus haut).
-  Référence les ids `shabiller`/`partir`/`soir` du gabarit de départ —
-  cf. `routinesDemarrage()` ci-dessus.
+  tableau. **Ce qui la rend accessible dans "Partir à l'aventure" est sa
+  présence dans `etat.planning` du jour** (`aventuresPlanifieesAujourdhui()`,
+  utilisée par `construireMissions()`). L'ancien champ `date` n'est plus
+  lu : `migrerDatesUneFois()` recopie une seule fois les aventures datées
+  d'aujourd'hui ou d'un jour à venir dans le planning de ce jour-là.
+- `semaine.js` — logique pure de la **semaine type** (`creerSemaineType`,
+  `planningDuJour`, `ajouterAuxSeptJours`, `insererActivite`,
+  `migrerActivitesDatees`, `NOMS_JOURS`), chargée avant `app.js` et
+  testée sans navigateur : `node --test tests/*.test.js` depuis la racine
+  du dépôt (Node 18 ou plus récent).
+- `chargerSemaineType()`/`sauverSemaineType()` (`app.js`) —
+  `cle("semaine_type")`, un planning par jour de la semaine ("1" = lundi
+  … "7" = dimanche). `planningParDefaut(dateKey)` renvoie le jour de la
+  semaine type correspondant : c'est lui qui initialise `etat.planning`
+  à chaque nouveau jour (sauf jour déjà modifié dans `planning_futur`).
+  Créée au premier lancement depuis `journeeTypeHistorique()`
+  (`PLANNING_DEFAUT` + routines sur mesure), recopiée sur les 7 jours.
+- `planningCible` (`app.js`) — ce que l'éditeur de "Ma journée" modifie :
+  `null` (aujourd'hui), `{ date }` (un jour à venir) ou `{ jourSemaine }`
+  (un jour de la semaine type), via `chargerPlanningCible()`/
+  `sauverPlanningCible()`. Entrées : `ciblerAujourdhui()`,
+  `ouvrirJourneeFuture(dateKey)`, `ouvrirJourSemaineType(jour)`.
+- `PLANNING_DEFAUT` (`app.js`) — le squelette de journée historique,
+  recopié dans la semaine type à sa création. Référence les ids
+  `shabiller`/`partir`/`soir` du gabarit de départ — cf.
+  `routinesDemarrage()` ci-dessus.
 - `synchroniserAvatar()` — recalcule les calques/badges visibles à partir
   de **toutes** les routines (pas seulement la routine en cours), pour
   que l'avatar reste cohérent entre le menu et l'écran de routine.

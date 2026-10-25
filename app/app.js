@@ -657,11 +657,9 @@ const REPAS = [
 
 // Aventures : sorties, sur le même principe que le trajet/arrivée d'une
 // visite chez une praticienne (route en voiture -> programme annoncé à
-// l'arrivée -> "C'est parti"). `date` (même format que `cleJour()`, ex.
-// "2026-8-27") sert de filtre pour `aventuresDuJour()` — une aventure
-// sans date (ex. une praticienne récurrente) n'apparaît jamais toute
-// seule dans les sorties du jour, elle attend d'être reprogrammée
-// explicitement le moment venu.
+// l'arrivée -> "C'est parti"). Une aventure n'apparaît un jour que si elle
+// est dans le planning de ce jour (semaine type ou jour préparé) ; l'ancien
+// champ `date` n'est plus lu qu'une fois, par migrerDatesUneFois().
 // `personne` (emoji + nom) affiche un 2ᵉ sprite à l'arrivée quand
 // l'aventure se passe chez quelqu'un ; absent pour une sortie sans
 // praticien (magasin, école...).
@@ -735,15 +733,8 @@ function toutesLesAventures() {
 }
 
 function aventureParId(id) { return toutesLesAventures().find(a => a.id === id); }
-// Généralisée pour semer le planning d'une date future (cf.
-// planningParDefaut(dateKey) plus bas) — comportement inchangé pour
-// aujourd'hui, aventuresDuJour() n'est qu'un raccourci sur la date du jour.
-function aventuresPourDate(dateKey) { return toutesLesAventures().filter(a => a.date === dateKey); }
-function aventuresDuJour() { return aventuresPourDate(cleJour()); }
 // Une aventure est accessible aujourd'hui dans "Partir à l'aventure" si
-// et seulement si elle est dans le planning du jour (`etat.planning`) —
-// pas directement via son champ `date`, qui ne sert qu'à l'y insérer une
-// première fois (cf. `planningParDefaut()`). Ça lie directement les
+// et seulement si elle est dans le planning du jour (`etat.planning`). Ça lie directement les
 // deux, comme demandé : ajouter/retirer une activité du planning
 // l'ajoute/la retire de "Partir à l'aventure", que ce soit via "Ajouter
 // à la journée" ou en créant une nouvelle activité.
@@ -755,13 +746,9 @@ function aventuresPlanifieesAujourdhui() {
     .filter(Boolean);
 }
 
-// Planning par défaut d'une journée type (écran "Ma journée") : une
-// suite d'items `{ type: "routine"|"aventure"|"repas", id }`, dans
-// l'ordre chronologique attendu. Les aventures du jour (`aventuresDuJour()`)
-// s'y insèrent à la position indiquée par leur champ `apres` (fin de
-// journée si absent). C'est cette liste, recalculée à chaque nouvelle
-// journée puis copiée dans `etat.planning`, qui sert de point de départ
-// éditable par un parent (cf. `construireJournee()`).
+// Journée par défaut d'origine : une suite d'items `{ type:
+// "routine"|"aventure"|"repas", id }` dans l'ordre chronologique attendu,
+// qui sert à initialiser la semaine type (cf. journeeTypeHistorique()).
 const PLANNING_DEFAUT = [
   { type: "repas", id: "petit-dej" },
   { type: "routine", id: "shabiller" },
@@ -771,17 +758,10 @@ const PLANNING_DEFAUT = [
   { type: "repas", id: "diner" },
   { type: "routine", id: "soir" },
 ];
-// `heureDefaut` (REPAS/aventures) n'est copié dans `heure` qu'ICI, au
-// moment où une nouvelle journée est semée — ne touche jamais un
-// `etat.planning` déjà en cours. `heure` reste ensuite un champ
-// d'affichage libre, modifiable/effaçable par un parent (mode édition de
-// "Ma journée"), jamais relu par la logique de déblocage des routines.
-// `dateKey` optionnel ("YYYY-M-D") : sème le planning par défaut d'une
-// date PRÉCISE plutôt que forcément aujourd'hui — utilisé par
-// `chargerPlanningCible()` pour une date du planning à venir pas encore
-// personnalisée. Comportement inchangé sans argument (= cleJour()).
-function planningParDefaut(dateKey) {
-  const cible = dateKey || cleJour();
+// Journée par défaut d'avant la semaine type : sert uniquement à
+// initialiser la semaine type d'un appareil, pour que rien ne change à
+// la mise à jour. `heureDefaut` des repas n'est copié dans `heure` qu'ici.
+function journeeTypeHistorique() {
   const items = PLANNING_DEFAUT.map(ref => {
     const entree = { ...ref };
     if (ref.type === "repas") {
@@ -797,13 +777,48 @@ function planningParDefaut(dateKey) {
   chargerRoutinesPerso().forEach(r => {
     if (!items.some(it => it.type === "routine" && it.id === r.id)) items.push({ type: "routine", id: r.id });
   });
-  aventuresPourDate(cible).forEach(a => {
-    const entree = { type: "aventure", id: a.id };
-    if (a.heureDefaut) entree.heure = a.heureDefaut;
-    const pos = a.apres ? items.findIndex(it => it.type === a.apres.type && it.id === a.apres.id) : -1;
-    if (pos === -1) items.push(entree); else items.splice(pos + 1, 0, entree);
-  });
   return items;
+}
+
+// Semaine type (cf. semaine.js) : `{ "1": items, …, "7": items }`, lundi = 1.
+function chargerSemaineType() {
+  try {
+    const st = JSON.parse(localStorage.getItem(cle("semaine_type")));
+    if (st && Array.isArray(st["1"])) return st;
+  } catch (e) {}
+  const st = creerSemaineType(journeeTypeHistorique());
+  sauverSemaineType(st);
+  return st;
+}
+function sauverSemaineType(st) {
+  try { localStorage.setItem(cle("semaine_type"), JSON.stringify(st)); } catch (e) {}
+}
+
+// Planning d'une journée qui n'a pas été préparée à l'avance : celui de
+// son jour dans la semaine type. `dateKey` absent = aujourd'hui.
+function planningParDefaut(dateKey) {
+  return planningDuJour(chargerSemaineType(), dateKey || cleJour());
+}
+
+// Les activités portaient autrefois une `date` unique : à la première
+// ouverture après la semaine type, chaque date à venir est recopiée dans le
+// planning de ce jour, puis le champ n'est plus lu.
+function migrerDatesUneFois() {
+  try { if (localStorage.getItem(cle("migration_dates")) === "1") return; } catch (e) { return; }
+  const aujourdhui = cleJour();
+  const { planningFutur, pourAujourdhui } = migrerActivitesDatees(toutesLesAventures(), chargerPlanningFutur(), aujourdhui, planningParDefaut);
+  let journee = null;
+  try { journee = JSON.parse(localStorage.getItem(cle("journee"))); } catch (e) {}
+  if (pourAujourdhui.length && journee && journee.jour === aujourdhui && Array.isArray(journee.planning)) {
+    pourAujourdhui.forEach(a => { journee.planning = insererActivite(journee.planning, a); });
+    sauverEtat(journee);
+  } else if (pourAujourdhui.length) {
+    let base = planningFutur[aujourdhui] || planningParDefaut(aujourdhui);
+    pourAujourdhui.forEach(a => { base = insererActivite(base, a); });
+    planningFutur[aujourdhui] = base;
+  }
+  sauverPlanningFutur(planningFutur);
+  try { localStorage.setItem(cle("migration_dates"), "1"); } catch (e) {}
 }
 // Résout un item de planning en `{ emoji, nom }` à afficher — toujours
 // dérivé des catalogues (ROUTINES/AVENTURES/REPAS), jamais dupliqué dans
@@ -1226,10 +1241,10 @@ function construireMenu() {
   // le code parent protège l'entrée en édition, pas juste un aller simple.
   journeeEnEdition = false;
   // Filet de sécurité : un retour au menu affiche forcément "aujourd'hui"
-  // ensuite, jamais un jour futur resté ciblé (cf. planningCibleDate,
+  // ensuite, jamais un jour futur resté ciblé (cf. planningCible,
   // "Ma journée" plus bas) — au cas où un point d'entrée l'aurait laissé
   // sur une date passée.
-  planningCibleDate = null;
+  ciblerAujourdhui();
 
   // Déclenché par "Aller se coucher" spécifiquement, pas par le fait que
   // toutes les routines du jour soient validées : un enfant peut très bien
@@ -1424,9 +1439,8 @@ function allerVersDepart() {
 }
 
 // Écran des sorties du jour : liste les aventures du planning
-// (`aventuresPlanifieesAujourdhui()` — pas `aventuresDuJour()`, qui ne
-// sert qu'à l'ensemencement initial d'une nouvelle journée), sinon
-// garde le texte d'origine "Rien de prévu aujourd'hui !".
+// (`aventuresPlanifieesAujourdhui()`), sinon garde le texte d'origine
+// "Rien de prévu aujourd'hui !".
 function construireMissions() {
   const duJour = aventuresPlanifieesAujourdhui();
   const emoji = document.getElementById("missions-emoji");
@@ -1464,32 +1478,32 @@ function demarrerAventure(id) {
 // remis en lecture seule en quittant vers le menu (cf. `construireMenu()`).
 let journeeEnEdition = false;
 
-// Planning à venir (cf. construireParentPlanningJournees() plus bas) :
-// `null` = "Ma journée" pointe sur aujourd'hui, `etat.planning` en
-// direct — sinon une clé "YYYY-M-D" et l'écran devient "Planning du
-// [date]", pointé sur `cle("planning_futur")[planningCibleDate]`.
-// Variable de module, jamais persistée : chaque point d'entrée qui
-// affiche explicitement AUJOURD'HUI (construireMenu(), la ligne
-// "Aujourd'hui" de "Planning des journées", le bouton "Afficher ma
-// journée" du menu, le raccourci debug correspondant) la remet à `null`
-// avant de construire l'écran — les appels internes à "Ma journée"
-// (édition, mutateurs, tick d'horloge) ne la touchent jamais, ils continuent
-// d'afficher la cible déjà en cours.
-let planningCibleDate = null;
-function planningCibleEstAujourdhui() { return planningCibleDate === null; }
-// Retourne toujours le tableau nu (même contrat que chargerEtat().planning
-// avant ce changement) — une date future jamais encore personnalisée est
-// simplement son planning par défaut, pas encore écrit dans
-// cle("planning_futur") (cf. sauverPlanningCible()).
+// Ce que l'écran "Ma journée" affiche et modifie : `null` = aujourd'hui
+// (`etat.planning` en direct), `{ date: "AAAA-M-J" }` = un jour à venir
+// (`cle("planning_futur")`), `{ jourSemaine: 1…7 }` = un jour de la semaine
+// type. Jamais persistée : chaque entrée qui affiche aujourd'hui passe par
+// ciblerAujourdhui() ; les appels internes (édition, tick) gardent la cible.
+let planningCible = null;
+function planningCibleEstAujourdhui() { return planningCible === null; }
+function ciblerAujourdhui() { planningCible = null; }
+// Une date jamais personnalisée renvoie son planning par défaut, sans
+// l'écrire dans cle("planning_futur") (cf. sauverPlanningCible()).
 function chargerPlanningCible() {
   if (planningCibleEstAujourdhui()) return chargerEtat().planning;
+  if (planningCible.jourSemaine) return chargerSemaineType()[String(planningCible.jourSemaine)];
   const futur = chargerPlanningFutur();
-  return Array.isArray(futur[planningCibleDate]) ? futur[planningCibleDate] : planningParDefaut(planningCibleDate);
+  return Array.isArray(futur[planningCible.date]) ? futur[planningCible.date] : planningParDefaut(planningCible.date);
 }
 function sauverPlanningCible(liste) {
   if (planningCibleEstAujourdhui()) { const etat = chargerEtat(); etat.planning = liste; sauverEtat(etat); return; }
+  if (planningCible.jourSemaine) {
+    const st = chargerSemaineType();
+    st[String(planningCible.jourSemaine)] = liste;
+    sauverSemaineType(st);
+    return;
+  }
   const futur = chargerPlanningFutur();
-  futur[planningCibleDate] = liste;
+  futur[planningCible.date] = liste;
   sauverPlanningFutur(futur);
 }
 // "Mercredi 3 septembre" — même formatage que majHorloge(), capitalisé.
@@ -1539,7 +1553,9 @@ function construireJournee() {
   const { courantIdx, suivantIdx } = reperesJournee(planning);
 
   document.getElementById("titre-journee").textContent =
-    planningCibleEstAujourdhui() ? "Ma journée" : "Planning du " + dateLisible(planningCibleDate);
+    planningCibleEstAujourdhui() ? "Ma journée"
+      : planningCible.jourSemaine ? "Chaque " + NOMS_JOURS[planningCible.jourSemaine - 1]
+      : "Planning du " + dateLisible(planningCible.date);
 
   const liste = document.createElement("div");
   liste.className = "liste-planning";
@@ -1686,19 +1702,32 @@ function construireAjoutPlanning(planning) {
     vide.className = "recompenses-vide";
     vide.textContent = "Tout est déjà dans la journée.";
     bloc.appendChild(vide);
-    return bloc;
+  } else {
+    const grille = document.createElement("div");
+    grille.className = "grille-ajout-planning";
+    candidats.forEach(c => {
+      const b = document.createElement("button");
+      b.className = "btn-ajout-planning";
+      b.innerHTML = `<span>${c.emoji}</span><span>${c.nom}</span>`;
+      b.onclick = () => ajouterItemPlanning(c.type, c.id);
+      grille.appendChild(b);
+    });
+    bloc.appendChild(grille);
   }
 
-  const grille = document.createElement("div");
-  grille.className = "grille-ajout-planning";
-  candidats.forEach(c => {
+  // Une activité qui n'existe pas encore se crée sans quitter le jour
+  // édité : elle y est ajoutée à la création (cf. formulaireDepuisPlanning).
+  const creer = document.createElement("div");
+  creer.className = "creer-depuis-planning";
+  [["sortie", "+ Nouvelle sortie"], ["seance", "+ Nouvelle séance"]].forEach(([nature, texte]) => {
     const b = document.createElement("button");
-    b.className = "btn-ajout-planning";
-    b.innerHTML = `<span>${c.emoji}</span><span>${c.nom}</span>`;
-    b.onclick = () => ajouterItemPlanning(c.type, c.id);
-    grille.appendChild(b);
+    b.type = "button";
+    b.className = "btn-secondaire";
+    b.textContent = texte;
+    b.onclick = () => ouvrirNouvelleAventure({ nature, depuisPlanning: true });
+    creer.appendChild(b);
   });
-  bloc.appendChild(grille);
+  bloc.appendChild(creer);
   return bloc;
 }
 
@@ -1904,20 +1933,30 @@ function construireAjoutTexteLibre() {
 }
 
 // ---------------------------------------------------------------------
-// Planning des journées (espace parent) — UNE liste, aujourd'hui d'abord
+// Planning (espace parent) — deux onglets. « Semaine type » : les 7 jours
+// qui servent de modèle (cf. chargerSemaineType()), chacun avec les emojis
+// de ses activités. « Prochains jours » : UNE liste, aujourd'hui d'abord
 // puis les JOURS_PLANNING_FUTUR prochains jours (demandé explicitement :
 // deux boutons séparés pour "aujourd'hui" et "les jours suivants" dans
 // l'espace parent gênait plus qu'autre chose). Chaque ligne ouvre "Ma
-// journée" (devenue "Planning du [date]" pour un jour futur, cf.
+// journée" (devenue "Chaque [jour]" ou "Planning du [date]", cf.
 // construireJournee()) — même écran, mêmes outils (heures, entourage,
 // catalogue, texte libre), juste pointés ailleurs qu'aujourd'hui via
-// `planningCibleDate`. Calcul sur l'heure réelle (`new Date()`), jamais
+// `planningCible`. Calcul sur l'heure réelle (`new Date()`), jamais
 // `dateActuelle()` — cohérent avec `cleJour()`, qui ignore déjà
 // délibérément l'heure forcée du panneau debug (cf. son commentaire).
 // ---------------------------------------------------------------------
 const JOURS_PLANNING_FUTUR = 7;
+// Onglet affiché, gardé d'une visite à l'autre de l'écran (on revient d'un
+// jour modifié sur l'onglet d'où on l'a ouvert).
+let ongletPlanning = "semaine";
 
 function construireParentPlanningJournees() {
+  [["btn-onglet-semaine", "semaine"], ["btn-onglet-jours", "jours"]].forEach(([id, onglet]) => {
+    const bouton = document.getElementById(id);
+    bouton.classList.toggle("actif", ongletPlanning === onglet);
+    bouton.setAttribute("aria-selected", String(ongletPlanning === onglet));
+  });
   const liste = document.getElementById("parent-planning-journees-liste");
   liste.innerHTML = "";
   // Petit constructeur de carte partagé plutôt que dupliqué entre la
@@ -1940,8 +1979,21 @@ function construireParentPlanningJournees() {
     liste.appendChild(carte);
   };
 
+  if (ongletPlanning === "semaine") {
+    const semaineType = chargerSemaineType();
+    NOMS_JOURS.forEach((nom, i) => {
+      const emojis = (semaineType[String(i + 1)] || [])
+        .filter(item => item.type === "aventure")
+        .map(item => libelleItemPlanning(item))
+        .filter(Boolean)
+        .map(l => l.emoji);
+      ajouterCarte(nom.charAt(0).toUpperCase() + nom.slice(1), emojis.join(" ") || "—", false, () => ouvrirJourSemaineType(i + 1));
+    });
+    return;
+  }
+
   ajouterCarte("Aujourd'hui", "En cours", true, () => {
-    planningCibleDate = null;
+    ciblerAujourdhui();
     journeeEnEdition = true;
     construireJournee();
     afficherEcran("screen-journee");
@@ -1953,12 +2005,19 @@ function construireParentPlanningJournees() {
     const d = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + i);
     const dateKey = cleJourPour(d);
     const personnalise = Array.isArray(futur[dateKey]);
-    ajouterCarte(dateLisible(dateKey), personnalise ? "Planning personnalisé" : "Planning par défaut", personnalise, () => ouvrirJourneeFuture(dateKey));
+    ajouterCarte(dateLisible(dateKey), personnalise ? "Modifié" : "Comme d'habitude", personnalise, () => ouvrirJourneeFuture(dateKey));
   }
 }
 
 function ouvrirJourneeFuture(dateKey) {
-  planningCibleDate = dateKey;
+  planningCible = { date: dateKey };
+  journeeEnEdition = true;
+  construireJournee();
+  afficherEcran("screen-journee");
+}
+
+function ouvrirJourSemaineType(jour) {
+  planningCible = { jourSemaine: jour };
   journeeEnEdition = true;
   construireJournee();
   afficherEcran("screen-journee");
@@ -3114,60 +3173,88 @@ function ouvrirEspaceParent() {
 function construireEspaceParent() {
   const conteneur = document.getElementById("parent-contenu");
   conteneur.innerHTML = "";
-  const options = [
+  // Quatre blocs : ce qui se passe (la journée), ce qui existe (la
+  // bibliothèque), ce qui s'est passé (le suivi), et l'appareil.
+  const blocs = [
     {
-      emoji: "🔁", titre: "Relancer une routine",
-      soustitre: accorderPourEnfant("Si l'état de " + profilActif().prenom + " a changé (ex. il/elle s'est redéshabillé·e)"),
-      action: () => { construireParentRoutines(); afficherEcran("screen-parent-routines"); },
+      titre: "LA JOURNÉE",
+      options: [
+        {
+          emoji: "🗓️", titre: "Planning",
+          soustitre: "La semaine type, et les jours qui changent",
+          action: () => { construireParentPlanningJournees(); afficherEcran("screen-parent-planning-journees"); },
+        },
+        {
+          emoji: "🔁", titre: "Relancer une routine",
+          soustitre: accorderPourEnfant("Si l'état de " + profilActif().prenom + " a changé (ex. il/elle s'est redéshabillé·e)"),
+          action: () => { construireParentRoutines(); afficherEcran("screen-parent-routines"); },
+        },
+      ],
     },
     {
-      emoji: "🗓️", titre: "Planning des journées",
-      soustitre: "Aujourd'hui et les prochains jours — réordonner, ajouter, planifier à l'avance",
-      action: () => { construireParentPlanningJournees(); afficherEcran("screen-parent-planning-journees"); },
+      titre: "LA BIBLIOTHÈQUE",
+      options: [
+        {
+          emoji: "🗺️", titre: "Activités",
+          soustitre: "Voir toutes les sorties, ou en créer une nouvelle",
+          action: () => { construireParentActivites(); afficherEcran("screen-parent-activites"); },
+        },
+        {
+          emoji: "🧩", titre: "Routines",
+          soustitre: "Voir toutes les routines, ou en créer une nouvelle",
+          action: () => { construireRoutinesCatalogue(); afficherEcran("screen-parent-routines-catalogue"); },
+        },
+        {
+          emoji: "👪", titre: "Mon entourage",
+          soustitre: "Voir qui entoure " + profilActif().prenom + ", ou ajouter une nouvelle personne",
+          action: () => { construireParentEntourage(); afficherEcran("screen-parent-entourage"); },
+        },
+      ],
     },
     {
-      emoji: "📅", titre: "Historique des journées",
-      soustitre: "Revoir les jours précédents",
-      action: () => { construireHistorique(); afficherEcran("screen-parent-historique"); },
+      titre: "LE SUIVI",
+      options: [
+        {
+          emoji: "📅", titre: "Historique des journées",
+          soustitre: "Revoir les jours précédents",
+          action: () => { construireHistorique(); afficherEcran("screen-parent-historique"); },
+        },
+        {
+          emoji: "🧑‍⚕️", titre: "Notes des séances",
+          soustitre: "Relire les notes laissées par les praticiennes",
+          action: () => { construireParentSeances(); afficherEcran("screen-parent-seances"); },
+        },
+      ],
     },
     {
-      emoji: "🧑‍⚕️", titre: "Notes des séances",
-      soustitre: "Relire les notes laissées par les praticiennes",
-      action: () => { construireParentSeances(); afficherEcran("screen-parent-seances"); },
-    },
-    {
-      emoji: "🔑", titre: "Changer le code parent",
-      soustitre: "Code à 4 chiffres, actuellement " + codeParentActuel().replace(/./g, "•"),
-      action: () => { demarrerChangementCode(); },
-    },
-    {
-      emoji: "🗺️", titre: "Activités",
-      soustitre: "Voir toutes les sorties, ou en créer une nouvelle",
-      action: () => { construireParentActivites(); afficherEcran("screen-parent-activites"); },
-    },
-    {
-      emoji: "🧩", titre: "Routines",
-      soustitre: "Voir toutes les routines, ou en créer une nouvelle",
-      action: () => { construireRoutinesCatalogue(); afficherEcran("screen-parent-routines-catalogue"); },
-    },
-    {
-      emoji: "👪", titre: "Mon entourage",
-      soustitre: "Voir qui entoure " + profilActif().prenom + ", ou ajouter une nouvelle personne",
-      action: () => { construireParentEntourage(); afficherEcran("screen-parent-entourage"); },
-    },
-    {
-      emoji: "📱", titre: "Cet appareil",
-      soustitre: "Affiche " + profilActif().prenom + " — changer l'enfant de cet appareil",
-      action: () => { construireParentAppareil(); afficherEcran("screen-parent-appareil"); },
+      titre: "RÉGLAGES",
+      options: [
+        {
+          emoji: "🔑", titre: "Changer le code parent",
+          soustitre: "Code à 4 chiffres, actuellement " + codeParentActuel().replace(/./g, "•"),
+          action: () => { demarrerChangementCode(); },
+        },
+        {
+          emoji: "📱", titre: "Cet appareil",
+          soustitre: "Affiche " + profilActif().prenom + " — changer l'enfant de cet appareil",
+          action: () => { construireParentAppareil(); afficherEcran("screen-parent-appareil"); },
+        },
+      ],
     },
   ];
-  options.forEach(o => {
-    const carte = document.createElement("div");
-    carte.className = "carte-routine carte-parent" + (o.action ? "" : " verrouillee");
-    carte.innerHTML =
-      `<div class="carte-routine-nom">${o.emoji} ${o.titre}<div class="carte-parent-soustitre">${o.soustitre}</div></div>`;
-    if (o.action) carte.onclick = o.action;
-    conteneur.appendChild(carte);
+  blocs.forEach(bloc => {
+    const titre = document.createElement("div");
+    titre.className = "groupe-journee-titre groupe-parent-titre";
+    titre.textContent = bloc.titre;
+    conteneur.appendChild(titre);
+    bloc.options.forEach(o => {
+      const carte = document.createElement("div");
+      carte.className = "carte-routine carte-parent" + (o.action ? "" : " verrouillee");
+      carte.innerHTML =
+        `<div class="carte-routine-nom">${o.emoji} ${o.titre}<div class="carte-parent-soustitre">${o.soustitre}</div></div>`;
+      if (o.action) carte.onclick = o.action;
+      conteneur.appendChild(carte);
+    });
   });
 }
 
@@ -3431,7 +3518,7 @@ function demarrerChangementCode() {
 // Liste de toutes les activités (catalogue en dur + créées par un
 // parent) — accès + création, cf. carte "Activités" du hub. Simple
 // catalogue à consulter/éditer : programmer une activité pour un jour
-// (aujourd'hui ou à venir) se fait depuis "Planning des journées" (cf.
+// (aujourd'hui ou à venir) se fait depuis "Planning" (cf.
 // construireParentPlanningJournees()) — rien ici à sélectionner ni à
 // mettre en surbrillance, une carte ne fait qu'ouvrir son édition.
 function construireParentActivites() {
@@ -3506,20 +3593,83 @@ let entourageChoisiActivite = [];
 // finale de creerNouvelleAventure() change (mise à jour en place plutôt
 // que nouvelle entrée).
 let aventureEnEditionId = null;
+// "sortie" | "seance" — une séance est une aventure qui porte `personne`
+// (cf. terminerVisite()) : le formulaire demande alors avec qui.
+let natureFormulaireActivite = "sortie";
+// Formulaire ouvert depuis l'éditeur de journée (cf. construireAjoutPlanning())
+// plutôt que depuis la bibliothèque : l'activité créée est ajoutée au jour
+// édité, et ← comme la création ramènent à ce jour.
+let formulaireDepuisPlanning = false;
+// Personne de l'entourage choisie pour une séance (choix unique), ou `null`.
+let personneSeanceId = null;
 
-function ouvrirNouvelleAventure() {
+// Choix unique, contrairement à construireChoixEntourage() (choix multiple).
+function construireChoixPersonneSeance() {
+  const grille = document.getElementById("na-seance-grille");
+  grille.innerHTML = "";
+  const personnes = toutesLesPersonnes();
+  if (!personnes.length) {
+    const vide = document.createElement("div");
+    vide.className = "recompenses-vide";
+    vide.textContent = "Ajoute d'abord la personne dans « Mon entourage ».";
+    grille.appendChild(vide);
+    return;
+  }
+  personnes.forEach(p => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip-entourage" + (p.id === personneSeanceId ? " choisi" : "");
+    b.textContent = p.emoji + " " + p.nom;
+    b.onclick = () => { personneSeanceId = p.id; construireChoixPersonneSeance(); };
+    grille.appendChild(b);
+  });
+}
+
+function afficherNatureFormulaireActivite() {
+  const seance = natureFormulaireActivite === "seance";
+  document.getElementById("na-seance-bloc").classList.toggle("hidden", !seance);
+  if (seance) construireChoixPersonneSeance();
+}
+
+function ouvrirNouvelleAventure(options = {}) {
   aventureEnEditionId = null;
-  document.getElementById("nouvelle-aventure-titre").textContent = "Nouvelle activité";
-  document.getElementById("btn-creer-aventure").textContent = "Créer et ajouter à aujourd'hui";
+  natureFormulaireActivite = options.nature || "sortie";
+  formulaireDepuisPlanning = !!options.depuisPlanning;
+  personneSeanceId = null;
+  const seance = natureFormulaireActivite === "seance";
+  document.getElementById("nouvelle-aventure-titre").textContent =
+    seance ? "Nouvelle séance" : formulaireDepuisPlanning ? "Nouvelle sortie" : "Nouvelle activité";
+  document.getElementById("btn-creer-aventure").textContent = "Créer l'activité";
   ["na-nom", "na-trajet", "na-arrivee", "na-etape1", "na-etape2", "na-etape3", "na-mots-cles"]
     .forEach(id => { document.getElementById(id).value = ""; });
+  if (seance) {
+    document.getElementById("na-etape1").value = "On dit bonjour";
+    document.getElementById("na-etape2").value = "On fait la séance";
+    document.getElementById("na-etape3").value = "On dit au revoir";
+  }
   document.getElementById("na-piece").checked = true;
   document.getElementById("na-erreur").textContent = "";
   emojiChoisiActivite = EMOJI_ACTIVITE[0];
   construireDeclencheurEmoji("na-emoji-trigger", emojiChoisiActivite);
   entourageChoisiActivite = [];
   construireChoixEntourage(document.getElementById("na-entourage-grille"), entourageChoisiActivite);
+  afficherNatureFormulaireActivite();
   afficherEcran("screen-parent-nouvelle-aventure");
+}
+
+// Sortie du formulaire (création, modification ou ←) : vers le jour édité
+// s'il a été ouvert depuis le planning, sinon vers la bibliothèque.
+function quitterFormulaireActivite() {
+  aventureEnEditionId = null;
+  if (formulaireDepuisPlanning) {
+    formulaireDepuisPlanning = false;
+    journeeEnEdition = true;
+    construireJournee();
+    afficherEcran("screen-journee");
+    return;
+  }
+  construireParentActivites();
+  afficherEcran("screen-parent-activites");
 }
 
 // Retire le préfixe numérique ("1. ", "2. "...) ajouté par
@@ -3537,6 +3687,13 @@ function ouvrirEditionAventure(id) {
   const a = aventureParId(id);
   if (!a) return;
   aventureEnEditionId = id;
+  formulaireDepuisPlanning = false;
+  natureFormulaireActivite = a.personne ? "seance" : "sortie";
+  // Retrouvée par son nom : `personne` ne garde que { emoji, nom }. Une
+  // praticienne absente de l'entourage n'est simplement pas présélectionnée
+  // — sa `personne` est conservée telle quelle (cf. creerNouvelleAventure()).
+  const personneConnue = a.personne && toutesLesPersonnes().find(p => p.nom === a.personne.nom);
+  personneSeanceId = personneConnue ? personneConnue.id : null;
   document.getElementById("nouvelle-aventure-titre").textContent = "Modifier l'activité";
   document.getElementById("btn-creer-aventure").textContent = "Enregistrer les modifications";
   document.getElementById("na-nom").value = a.lieu;
@@ -3552,6 +3709,7 @@ function ouvrirEditionAventure(id) {
   construireDeclencheurEmoji("na-emoji-trigger", emojiChoisiActivite);
   entourageChoisiActivite = a.entourageIds ? [...a.entourageIds] : [];
   construireChoixEntourage(document.getElementById("na-entourage-grille"), entourageChoisiActivite);
+  afficherNatureFormulaireActivite();
   afficherEcran("screen-parent-nouvelle-aventure");
 }
 
@@ -3575,6 +3733,17 @@ function creerNouvelleAventure() {
   const e2 = document.getElementById("na-etape2").value.trim();
   const e3 = document.getElementById("na-etape3").value.trim();
   const pieceOui = document.getElementById("na-piece").checked;
+  const personneSeance = toutesLesPersonnes().find(p => p.id === personneSeanceId) || null;
+
+  // Création d'une séance : une personne est obligatoire (c'est elle qui
+  // bascule l'arrivée vers l'écran de séance). En modification, une
+  // séance sans personne rechoisie garde la sienne.
+  if (natureFormulaireActivite === "seance" && !aventureEnEditionId && !personneSeance) {
+    document.getElementById("na-erreur").textContent = toutesLesPersonnes().length
+      ? "Choisis avec qui a lieu la séance."
+      : "Ajoute d'abord la personne dans « Mon entourage ».";
+    return;
+  }
 
   if (!nom || !texteTrajet || !texteArrivee || !e1 || !e2 || !e3) {
     document.getElementById("na-erreur").textContent = "Remplis tous les champs avant de créer l'activité.";
@@ -3603,6 +3772,7 @@ function creerNouvelleAventure() {
     });
     if (entourageChoisiActivite.length) maj.entourageIds = [...entourageChoisiActivite]; else delete maj.entourageIds;
     if (motsCles) maj.motsCles = motsCles.split(",").map(m => m.trim()).filter(Boolean); else delete maj.motsCles;
+    if (personneSeance) attacherPersonneSeance(maj, personneSeance);
 
     const perso = chargerAventuresPerso();
     const pos = perso.findIndex(x => x.id === maj.id);
@@ -3610,20 +3780,15 @@ function creerNouvelleAventure() {
     sauverAventuresPerso(perso);
 
     dire("Activité modifiée : " + nom + ".");
-    aventureEnEditionId = null;
-    construireParentActivites();
-    afficherEcran("screen-parent-activites");
+    quitterFormulaireActivite();
     return;
   }
 
-  // Créer une activité ne l'ajoute qu'au CATALOGUE (demandé
-  // explicitement) — jamais au planning d'un jour précis, aujourd'hui ou
-  // futur : `apres` n'a donc plus lieu d'être ici, il ne servait qu'à
-  // positionner cette injection immédiate (seules les aventures à `date`
-  // fixe, ex. "Le magasin de bricolage", l'utilisent encore, cf.
-  // `planningParDefaut()`). C'est "AJOUTER À LA JOURNÉE" (déjà existant,
-  // sur n'importe quelle journée, aujourd'hui ou à venir) qui place
-  // ensuite une activité du catalogue sur un jour précis.
+  // Depuis la bibliothèque, créer une activité ne l'ajoute qu'au
+  // CATALOGUE (demandé explicitement) — c'est "AJOUTER À LA JOURNÉE" qui
+  // la place ensuite sur un jour. Depuis l'éditeur de journée (« + Nouvelle
+  // sortie/séance », cf. formulaireDepuisPlanning), elle est ajoutée au
+  // jour édité — aujourd'hui, un jour à venir ou un jour de la semaine type.
   const nouvelle = {
     id: "perso-" + Date.now(),
     lieu: nom,
@@ -3636,19 +3801,29 @@ function creerNouvelleAventure() {
   };
   // Champs optionnels omis (plutôt que mis à `[]`/`""`) si vides : garde
   // une activité sans entourage/mots-clés indistinguable d'une activité
-  // créée avant l'existence de ces champs. Jamais de champ `personne`
-  // ici (cf. avertissement sur chargerEntouragePerso()) — seules les 3
-  // aventures praticienne codées en dur en ont un.
+  // créée avant l'existence de ces champs. `personne` seulement pour une
+  // séance créée comme telle (cf. avertissement sur chargerEntouragePerso()).
   if (entourageChoisiActivite.length) nouvelle.entourageIds = [...entourageChoisiActivite];
   if (motsCles) nouvelle.motsCles = motsCles.split(",").map(m => m.trim()).filter(Boolean);
+  if (natureFormulaireActivite === "seance") attacherPersonneSeance(nouvelle, personneSeance);
 
   const perso = chargerAventuresPerso();
   perso.push(nouvelle);
   sauverAventuresPerso(perso);
 
   dire("Nouvelle activité créée : " + nom + ".");
-  construireParentActivites();
-  afficherEcran("screen-parent-activites");
+  if (formulaireDepuisPlanning) ajouterItemPlanning("aventure", nouvelle.id);
+  quitterFormulaireActivite();
+}
+
+// Une séance porte `personne` (affichage + bascule vers l'écran de
+// séance) ET compte cette personne dans son entourage, pour que la ligne
+// de planning la montre comme les autres.
+function attacherPersonneSeance(aventure, personne) {
+  aventure.personne = { emoji: personne.emoji, nom: personne.nom };
+  const ids = aventure.entourageIds ? [...aventure.entourageIds] : [];
+  if (!ids.includes(personne.id)) ids.push(personne.id);
+  aventure.entourageIds = ids;
 }
 
 // Catalogue des routines (accès + création, carte "Routines" du hub).
@@ -3913,12 +4088,13 @@ function creerNouvelleRoutine() {
   // Ajoutée tout de suite à l'état du jour (etat.routines) et au
   // planning d'aujourd'hui — sinon `toutesLesRoutines()` la connaîtrait
   // déjà, mais un `etat.routines`/`etat.planning` chargé avant sa
-  // création ne l'aurait pas. `planningParDefaut()` s'occupe des jours
-  // suivants (routine récurrente, cf. sa définition).
+  // création ne l'aurait pas. Les jours suivants la tiennent de la
+  // semaine type, où elle est ajoutée aux 7 jours.
   const etat = chargerEtat();
   etat.routines[nouvelle.id] = { fait: [], valide: false };
   etat.planning.push({ type: "routine", id: nouvelle.id });
   sauverEtat(etat);
+  sauverSemaineType(ajouterAuxSeptJours(chargerSemaineType(), { type: "routine", id: nouvelle.id }));
 
   dire("Nouvelle routine créée : " + nom + ".");
   construireRoutinesCatalogue();
@@ -4566,11 +4742,8 @@ function prochaineAventureSansEscale(id) {
 // et son sens (`sensTrajet`). Pas de minuteur/barre de progression : le
 // trajet est un simple temps d'attente, et c'est un parent qui confirme
 // "On est arrivés" (bouton -> code, cf. allerValidationArrivee) — pas
-// l'enfant tout seul, et pas une horloge. Une aventure sans `date` (ex.
-// une praticienne récurrente) reste accessible via ce même mécanisme mais
-// n'est jamais programmée automatiquement ; pour le moment seules les
-// aventures listées dans `aventuresDuJour()` sont atteignables depuis
-// l'écran des sorties.
+// l'enfant tout seul, et pas une horloge. Seules les aventures du
+// planning du jour sont atteignables depuis l'écran des sorties.
 // ---------------------------------------------------------------------
 function allerAuTrajet() {
   const a = aventureParId(aventureActuelleId);
@@ -4987,8 +5160,14 @@ document.getElementById("btn-retour-validation").onclick = () => afficherEcran(e
 document.getElementById("btn-depart").onclick = allerVersDepart;
 document.getElementById("btn-retour-menu").onclick = construireMenu;
 
-document.getElementById("btn-journee").onclick = () => { planningCibleDate = null; construireJournee(); afficherEcran("screen-journee"); };
-document.getElementById("btn-retour-menu-journee").onclick = construireMenu;
+document.getElementById("btn-journee").onclick = () => { ciblerAujourdhui(); construireJournee(); afficherEcran("screen-journee"); };
+// Un jour à venir ou de la semaine type s'ouvre depuis l'écran Planning : on
+// y revient, plutôt que de sauter au menu de l'enfant.
+document.getElementById("btn-retour-menu-journee").onclick = () => {
+  if (planningCibleEstAujourdhui()) { construireMenu(); return; }
+  construireParentPlanningJournees();
+  afficherEcran("screen-parent-planning-journees");
+};
 document.getElementById("btn-modifier-journee").onclick = basculerEditionJournee;
 
 document.getElementById("btn-mes-recompenses").onclick = () => { construireRecompenses(); afficherEcran("screen-recompenses"); };
@@ -5004,9 +5183,9 @@ document.getElementById("na-nom").addEventListener("blur", suggererTextesActivit
 document.getElementById("na-emoji-trigger").onclick = () =>
   ouvrirSelecteurEmoji(EMOJI_ACTIVITE, emojiChoisiActivite, (e) => { emojiChoisiActivite = e; construireDeclencheurEmoji("na-emoji-trigger", e); });
 document.getElementById("btn-creer-aventure").onclick = creerNouvelleAventure;
-document.getElementById("btn-retour-parent-nouvelle-aventure").onclick = () => { aventureEnEditionId = null; construireParentActivites(); afficherEcran("screen-parent-activites"); };
+document.getElementById("btn-retour-parent-nouvelle-aventure").onclick = quitterFormulaireActivite;
 
-document.getElementById("btn-nouvelle-activite").onclick = ouvrirNouvelleAventure;
+document.getElementById("btn-nouvelle-activite").onclick = () => ouvrirNouvelleAventure();
 document.getElementById("btn-retour-parent-activites").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
 
 document.getElementById("btn-nouvelle-routine").onclick = ouvrirNouvelleRoutine;
@@ -5027,6 +5206,8 @@ document.getElementById("btn-retour-parent-nouvelle-routine").onclick = () => { 
 document.getElementById("btn-nouvelle-personne").onclick = ouvrirNouvellePersonne;
 document.getElementById("btn-retour-parent-entourage").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
 document.getElementById("btn-retour-parent-planning-journees").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
+document.getElementById("btn-onglet-semaine").onclick = () => { ongletPlanning = "semaine"; construireParentPlanningJournees(); };
+document.getElementById("btn-onglet-jours").onclick = () => { ongletPlanning = "jours"; construireParentPlanningJournees(); };
 document.getElementById("np-emoji-trigger").onclick = () =>
   ouvrirSelecteurEmoji(EMOJI_PERSONNE, emojiChoisiPersonne, (e) => { emojiChoisiPersonne = e; construireDeclencheurEmoji("np-emoji-trigger", e); });
 document.getElementById("btn-creer-personne").onclick = creerNouvellePersonne;
@@ -5088,7 +5269,7 @@ document.getElementById("btn-debug-humeur").onclick = puisFermerDebug(() => etap
 
 document.getElementById("btn-debug-menu").onclick = puisFermerDebug(construireMenu);
 document.getElementById("btn-debug-missions").onclick = puisFermerDebug(() => { construireMissions(); afficherEcran("screen-missions"); });
-document.getElementById("btn-debug-journee").onclick = puisFermerDebug(() => { planningCibleDate = null; construireJournee(); afficherEcran("screen-journee"); });
+document.getElementById("btn-debug-journee").onclick = puisFermerDebug(() => { ciblerAujourdhui(); construireJournee(); afficherEcran("screen-journee"); });
 document.getElementById("btn-debug-recompenses").onclick = puisFermerDebug(() => { construireRecompenses(); afficherEcran("screen-recompenses"); });
 document.getElementById("btn-debug-coffre").onclick = puisFermerDebug(allerFinDeJournee);
 
@@ -5162,6 +5343,7 @@ setInterval(tickMinuteurGlobal, 1000);
     // (dodo ou menu) en dépendent déjà (synchroniserAvatar() ne fait que
     // basculer la visibilité de calques qui doivent déjà exister).
     appliquerProfilAuDom();
+    migrerDatesUneFois();
     // Encore en sommeil (tablette rouverte en pleine nuit) : reste sur
     // l'écran dodo, avant même de toucher à l'état du jour — pas
     // d'interaction possible avant `dortEncore()` == false (cf. `endormir`).

@@ -100,7 +100,7 @@
       <button class="btn-debug-item" id="btn-debug-parent-activites">🗺️ Activités</button>
       <button class="btn-debug-item" id="btn-debug-parent-routines-catalogue">🧩 Routines</button>
       <button class="btn-debug-item" id="btn-debug-parent-entourage">👪 Mon entourage</button>
-      <button class="btn-debug-item" id="btn-debug-parent-planning-journees">🗓️ Planning des journées</button>
+      <button class="btn-debug-item" id="btn-debug-parent-planning-journees">🗓️ Planning</button>
       <button class="btn-debug-item" id="btn-debug-parent-appareil">📱 Cet appareil</button>
       <button class="btn-debug-item" id="btn-debug-nouvelle-activite">➕ Nouvelle activité</button>
       <button class="btn-debug-item" id="btn-debug-nouvelle-routine">➕ Nouvelle routine</button>
@@ -669,8 +669,12 @@
   <div id="screen-parent-planning-journees" class="screen">
     <div class="barre-haut">
       <button class="btn-retour-ecran" id="btn-retour-parent-planning-journees" aria-label="Retour à l'espace parent">←</button>
-      <div class="prenom-actif">Planning des journées</div>
+      <div class="prenom-actif">Planning</div>
       <div></div>
+    </div>
+    <div class="onglets-planning" role="tablist">
+      <button class="onglet-planning" id="btn-onglet-semaine" role="tab">Semaine type</button>
+      <button class="onglet-planning" id="btn-onglet-jours" role="tab">Prochains jours</button>
     </div>
     <div id="parent-planning-journees-liste"></div>
   </div>
@@ -860,6 +864,10 @@
       <div></div>
     </div>
     <div id="nouvelle-aventure-contenu">
+      <div class="champ-parent hidden" id="na-seance-bloc">
+        <span>Avec qui a lieu la séance ?</span>
+        <div id="na-seance-grille" class="grille-entourage"></div>
+      </div>
       <label class="champ-parent">
         <span>Nom de l'activité</span>
         <input type="text" id="na-nom" placeholder="Ex : La piscine" maxlength="40">
@@ -902,7 +910,7 @@
       </div>
       <div id="na-erreur" class="texte-erreur"></div>
     </div>
-    <button class="btn-continuer" id="btn-creer-aventure">Créer et ajouter à aujourd'hui</button>
+    <button class="btn-continuer" id="btn-creer-aventure">Créer l'activité</button>
   </div>
 
   <!-- ============ Espace parent : nouvelle personne (entourage) ============ -->
@@ -1114,6 +1122,7 @@
   </div>
 
 </div>
+<script src="semaine.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

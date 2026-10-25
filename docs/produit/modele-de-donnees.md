@@ -42,19 +42,28 @@ Une **Aventure** est une sortie programmée (ex. "chez le/la praticien·ne",
 "le magasin de bricolage") — cf. distinction Routine/Mission dans
 `concept.md`. Dans le prototype (`AVENTURES_COMMUNES`/`aventures_perso`
 dans `app.js`), une aventure porte : `lieu`, les textes du trajet et de
-l'arrivée, le `programme` (3 lignes annoncées à l'arrivée), une
-`personne` optionnelle (pour une sortie chez quelqu'un) et une `date`
-optionnelle (filtre pour savoir si elle apparaît dans les sorties du jour
-— une aventure sans date, comme une visite récurrente chez une
-praticienne, n'apparaît jamais toute seule).
+l'arrivée, le `programme` (3 lignes annoncées à l'arrivée) et une
+`personne` optionnelle `{ emoji, nom }`. Une aventure avec `personne` est
+une **séance** : à l'arrivée, c'est l'écran de séance (code de la
+praticienne) qui prend le relais. Une séance créée depuis le planning
+porte la personne choisie dans l'entourage, qui figure aussi dans ses
+`entourageIds`.
 
-Créer une activité (espace parent) ne l'ajoute qu'au **catalogue** —
-jamais à un planning précis, ni aujourd'hui ni un jour futur. La placer
-sur un jour donné est une action séparée, volontaire, depuis "AJOUTER À
-LA JOURNÉE" sur ce jour-là (aujourd'hui ou à venir). Une routine, elle,
-reste ajoutée à aujourd'hui dès sa création : structurellement
-récurrente par nature (contrairement à une activité), elle apparaît de
-toute façon tous les jours suivants sans action supplémentaire.
+L'ancien champ `date` (une aventure qui n'apparaissait qu'un jour précis)
+n'est plus lu : au premier lancement après la mise à jour, chaque
+aventure datée d'aujourd'hui ou d'un jour à venir est recopiée dans le
+planning de ce jour-là (aujourd'hui ou `planning_futur`), une seule fois
+(drapeau `cle("migration_dates")`). Ce qui revient chaque semaine se met
+désormais dans la semaine type.
+
+Créer une activité depuis la **bibliothèque** ne l'ajoute qu'au
+catalogue — la placer sur un jour est une action séparée, depuis
+"AJOUTER À LA JOURNÉE". Créer une sortie ou une séance **depuis un jour
+en cours de préparation** (« + Nouvelle sortie/séance ») l'ajoute à ce
+jour-là, quel qu'il soit (aujourd'hui, un jour à venir, un jour de la
+semaine type). Une routine, elle, est ajoutée dès sa création à
+aujourd'hui et aux 7 jours de la semaine type : structurellement
+récurrente par nature, elle apparaît ensuite tous les jours.
 
 ## Pièce (aspect données) — monnaie distincte de l'étoile
 
@@ -79,16 +88,30 @@ principe déjà appliqué à l'aventure/la pièce). Un champ optionnel `heure`
 regroupement "maintenant/ensuite", jamais lu par la logique de déblocage
 des routines — deux mécanismes volontairement séparés (cf. `concept.md`).
 
+**Semaine type** — `cle("semaine_type")`, map `{ "1": [items...], …,
+"7": [items...] }` (1 = lundi … 7 = dimanche, même forme d'item). C'est
+le modèle de chaque jour : une nouvelle journée (et un jour à venir non
+modifié) part de la liste de son jour de la semaine. Créée au premier
+lancement en recopiant sur les 7 jours l'ancienne journée par défaut
+(repas, routines de départ et routines sur mesure). Logique pure dans
+`app/semaine.js`, testée par `tests/semaine.test.js`.
+
 **Planning à venir** — `etat.planning` reste strictement "aujourd'hui" ;
 un carnet séparé (`cle("planning_futur")`, map `{ "YYYY-M-D":
 [items...] }`, même forme d'item) porte les jours **futurs** qu'un
-parent a préparés à l'avance depuis l'espace parent ("Planning des
-prochains jours", les 7 jours suivants). Une date n'y entre qu'à sa
-première vraie modification — l'avoir seulement consultée ne fige rien
-contre les routines récurrentes ajoutées ensuite. Quand ce jour-là
-devient "aujourd'hui" (changement de date détecté au chargement de
-l'état), son entrée est retirée du carnet et sert de graine à la
-nouvelle journée, à la place du squelette générique.
+parent a modifiés à l'avance (onglet « Prochains jours » de l'écran
+Planning, les 7 jours suivants). Une date n'y entre qu'à sa première
+vraie modification — tant qu'elle n'y est pas, elle suit la semaine
+type (« Comme d'habitude ») ; une fois dedans, elle est « Modifié » et ne
+suit plus les changements de la semaine type. Quand ce jour-là devient
+"aujourd'hui" (changement de date détecté au chargement de l'état), son
+entrée est retirée du carnet et sert de graine à la nouvelle journée, à
+la place du jour de la semaine type.
+
+**Cible de l'éditeur** — l'écran "Ma journée" en mode édition modifie
+l'un de ces trois plannings selon `planningCible` : `null` (aujourd'hui,
+`etat.planning`), `{ date }` (un jour de `planning_futur`) ou
+`{ jourSemaine }` (un jour de la semaine type). Jamais persistée.
 
 ## Entourage / Personne (aspect données)
 

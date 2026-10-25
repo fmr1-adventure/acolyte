@@ -706,6 +706,8 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .btn-mini-edition:active:not(:disabled) { transform: translate(1px, 1px); }
 .btn-retirer { color: #E8867A; }
 .grille-ajout-planning { display: flex; flex-wrap: wrap; gap: 10px; }
+.creer-depuis-planning { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.creer-depuis-planning .btn-secondaire { margin: 0; flex: 1; }
 .btn-ajout-planning {
   display: flex; align-items: center; gap: 8px; padding: 10px 14px;
   background: var(--surface-active); border: 2px solid var(--surface-high); color: var(--text);
@@ -770,6 +772,15 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 }
 
 /* ---------- Espace parent ---------- */
+/* Onglets de l'écran Planning (semaine type / prochains jours) : même
+   famille que .btn-secondaire, l'onglet affiché passe en --accent. */
+.onglets-planning { display: flex; gap: 8px; margin-bottom: 12px; }
+.onglet-planning {
+  flex: 1; padding: 12px 10px; background: var(--surface-active);
+  border: 3px solid var(--surface-high); color: var(--text); font-size: 15px; font-weight: 700;
+}
+.onglet-planning.actif { background: var(--accent); border-color: var(--accent-edge); color: var(--deep); }
+.onglet-planning:active { transform: translate(2px, 2px); }
 #parent-contenu, #parent-routines-liste, #parent-historique-liste, #parent-seances-liste, #parent-planning-journees-liste {
   display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px;
 }
@@ -783,6 +794,10 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
   display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px;
 }
 .carte-parent-soustitre { font-size: 13px; font-weight: 500; color: var(--text-faint); margin-top: 3px; }
+/* Titres des quatre blocs de l'espace parent (cf. construireEspaceParent()) :
+   même style que les groupes de "Ma journée", rapprochés de leurs cartes. */
+.groupe-parent-titre { margin: 12px 0 -4px; }
+.groupe-parent-titre:first-child { margin-top: 0; }
 /* option pas encore construite : même style "verrouillee" que le menu,
    mais sans le cadenas — juste moins mis en avant, pas cliquable. */
 .carte-parent.verrouillee { cursor: default; }

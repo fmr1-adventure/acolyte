@@ -202,8 +202,26 @@ confirmer une par une.
 
 Protégé par un code, accessible en permanence depuis un bouton
 discret, directement connecté à ce que voit l'enfant (rien à
-synchroniser séparément) :
+synchroniser séparément). Il est rangé en quatre blocs : **la journée**
+(le planning, relancer une routine), **la bibliothèque** (activités,
+routines, entourage), **le suivi** (historique, notes des séances) et
+**les réglages** (code parent, cet appareil).
 
+- **Préparer le planning**, en deux onglets :
+  - **Semaine type** — un modèle pour chaque jour de la semaine (le
+    lundi, le mardi...) : on y met une fois pour toutes ce qui revient
+    chaque semaine (l'école, une séance chez une praticienne...). Chaque
+    journée de l'enfant se prépare toute seule à partir de son jour de
+    la semaine type.
+  - **Prochains jours** — aujourd'hui et les 7 jours suivants, pour les
+    exceptions : un jour qu'on modifie (une sortie en plus, un rendez-vous
+    déplacé) devient « Modifié » et ne bouge plus ensuite, même si la
+    semaine type change ; les autres restent « Comme d'habitude ».
+
+  Depuis n'importe quel jour en cours de préparation, on peut créer
+  directement une **nouvelle sortie** ou une **nouvelle séance** (on
+  choisit alors avec qui, dans « Mon entourage ») : elle est ajoutée au
+  jour qu'on prépare, sans passer par la bibliothèque.
 - **Relancer une routine** si la situation a changé (ex. l'enfant
   s'est redéshabillé après coup).
 - **Historique des journées** — chaque jour archivé avec ses étoiles,
@@ -213,8 +231,6 @@ synchroniser séparément) :
   praticiennes, les plus récentes d'abord, sans avoir à les chercher
   jour par jour dans l'historique.
 - **Changer le code parent.**
-- **Préparer le planning** du jour et des 7 prochains jours, dans une
-  même liste.
 - **Créer et modifier des activités et des routines sur mesure**, sans
   toucher au code — y compris les routines de départ (S'habiller...),
   pas seulement celles créées après coup. Pour chaque tâche : une icône
