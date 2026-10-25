@@ -1,0 +1,28 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+.vscode/
+.idea/
+
+# Python (scripts/)
+__pycache__/
+*.pyc
+
+# Secrets / config locale — rien pour l'instant, mais évite qu'un fichier
+# de ce genre parte par erreur dans un futur commit.
+.env
+.env.*
+*.local
+
+# Packs tiers sous licence Bitglow (assets/external/) : la licence
+# interdit explicitement la redistribution en fichiers autonomes et le
+# partage hors de l'équipe du projet (cf. license.txt de chaque pack) —
+# incompatible avec un dépôt GitHub public. Pas utilisés par l'app
+# déployée (app/) de toute façon, cf. README.md. Gardés en local
+# uniquement pour l'exploration de direction artistique.
+assets/external/
+
+# Notes internes, jamais publiées
+TODO.md

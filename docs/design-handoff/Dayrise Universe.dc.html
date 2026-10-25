@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #EDE6DA; color: #221F1A; font-family: "Atkinson Hyperlegible", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #2F6E6B; text-decoration: none; }
+  a:hover { color: #1F4D4B; text-decoration: underline; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  @keyframes blink { 0%,45% { opacity: 1; } 50%,100% { opacity: .3; } }
+  @keyframes wave { 0%,100% { transform: scaleY(.4); } 50% { transform: scaleY(1); } }
+</style>
+</helmet>
+
+<div style="padding: 72px 72px 120px; display: flex; flex-direction: column; gap: 96px; min-width: 3200px; max-width: 4200px">
+
+  <section style="display: flex; flex-direction: column; gap: 40px">
+    <div style="display: flex; align-items: flex-end; gap: 32px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-family: Silkscreen, monospace; font-size: 13px; letter-spacing: 2px; color: #8A7F6C">BIBLE D'UNIVERS &nbsp;/&nbsp; V2 &nbsp;/&nbsp; JEU DE VIE EN PIXEL ART</div>
+        <div style="font-family: Silkscreen, monospace; font-size: 76px; line-height: .95; letter-spacing: -1px">LE MATIN</div>
+        <div style="font-size: 21px; line-height: 1.5; max-width: 820px; color: #4A4437; text-wrap: pretty">Une maison en pixel art où Iris et Théo se réveillent, s'habillent, rangent leur chambre et mettent la table. Rien de magique n'arrive. C'est justement le sujet : leur vraie matinée, dessinée avec soin, une étape à la fois. Tout est dit à voix haute — ils n'ont pas besoin de savoir lire pour jouer.</div>
+      </div>
+      <div style="margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; max-width: 480px">
+        <div style="font-family: Silkscreen, monospace; font-size: 11px; padding: 10px 14px; background: #DCD3C3; border: 2px solid #221F1A">SPRITES 32PX</div>
+        <div style="font-family: Silkscreen, monospace; font-size: 11px; padding: 10px 14px; background: #DCD3C3; border: 2px solid #221F1A">100% AUDIO FR</div>
+        <div style="font-family: Silkscreen, monospace; font-size: 11px; padding: 10px 14px; background: #DCD3C3; border: 2px solid #221F1A">2 UNIVERS</div>
+        <div style="font-family: Silkscreen, monospace; font-size: 11px; padding: 10px 14px; background: #DCD3C3; border: 2px solid #221F1A">CODE PARENT</div>
+        <div style="font-family: Silkscreen, monospace; font-size: 11px; padding: 10px 14px; background: #DCD3C3; border: 2px solid #221F1A">MOUVEMENT DOUX</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px">
+
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; letter-spacing: 1px; color: #8A7F6C">01 &nbsp;LA BOUCLE</div>
+        <div style="font-size: 26px; line-height: 1.2; font-weight: 700">Chambre → Héros → Maison → Coffre</div>
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 16px; line-height: 1.55; color: #4A4437">
+          <div><strong style="color:#221F1A">Se réveiller.</strong> L'app ouvre sur sa propre chambre, rideaux encore fermés. Une voix dit bonjour et annonce la première chose à faire.</div>
+          <div><strong style="color:#221F1A">S'habiller.</strong> Première quête, un vêtement à la fois, chacun annoncé à voix haute.</div>
+          <div><strong style="color:#221F1A">Sortir.</strong> La maison s'ouvre : salle de bain, cuisine, salon, entrée.</div>
+          <div><strong style="color:#221F1A">Le coffre.</strong> Tout est fait : un coffre fermé apparaît. Il ne s'ouvre qu'avec le code du parent.</div>
+        </div>
+        <div style="margin-top: auto; font-size: 14px; line-height: 1.5; color: #6B6353; border-top: 2px solid #DCD3C3; padding-top: 14px">Jeu au rythme libre : ne pas jouer ne fait rien perdre. La maison attend.</div>
+      </div>
+
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; letter-spacing: 1px; color: #8A7F6C">02 &nbsp;LES PERSONNAGES</div>
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; gap: 14px; align-items: flex-start">
+            <div style="width: 48px; height: 48px; flex: none; border: 2px solid #221F1A; background: repeating-linear-gradient(45deg, #E7C9D6 0 6px, #DCB9C8 6px 12px)"></div>
+            <div><div style="font-weight: 700; font-size: 17px">Iris, 5 ans</div><div style="font-size: 15px; line-height: 1.45; color: #4A4437">Robes, gilets doux, un manteau qu'elle refuse de changer. Trois étapes par tâche, jamais plus.</div></div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: flex-start">
+            <div style="width: 48px; height: 48px; flex: none; border: 2px solid #221F1A; background: repeating-linear-gradient(45deg, #9FB6D6 0 6px, #8AA3C6 6px 12px)"></div>
+            <div><div style="font-weight: 700; font-size: 17px">Théo, 8 ans</div><div style="font-size: 15px; line-height: 1.45; color: #4A4437">Veste de sport, casquette, une paire de baskets porte-bonheur. Six étapes, et il aime savoir combien de temps ça lui a pris.</div></div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: flex-start">
+            <div style="width: 48px; height: 48px; flex: none; border: 2px solid #221F1A; background: repeating-linear-gradient(45deg, #E0D2AE 0 6px, #D2C29B 6px 12px)"></div>
+            <div><div style="font-weight: 700; font-size: 17px">Biscuit, le chat</div><div style="font-size: 15px; line-height: 1.45; color: #4A4437">Dort sur ce qui vient d'être rangé. Suit celui qui est en avance. Ne parle pas.</div></div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: flex-start">
+            <div style="width: 48px; height: 48px; flex: none; border: 2px solid #221F1A; background: repeating-linear-gradient(45deg, #CFC7B6 0 6px, #C0B7A4 6px 12px)"></div>
+            <div><div style="font-weight: 700; font-size: 17px">La Voix</div><div style="font-size: 15px; line-height: 1.45; color: #4A4437">Le narrateur. Synthèse vocale française, calme, un débit lent. Dit quoi faire, jamais ce qui n'a pas été fait.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; letter-spacing: 1px; color: #8A7F6C">03 &nbsp;RÈGLES AUDIO</div>
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 16px; line-height: 1.55; color: #4A4437">
+          <div><strong style="color:#221F1A">Rien ne dépend de la lecture.</strong> Chaque écran est jouable les yeux sur les images et les oreilles sur la voix.</div>
+          <div><strong style="color:#221F1A">Une lecture automatique, puis à la demande.</strong> La consigne se joue à l'ouverture de l'écran, et le gros bouton haut-parleur la rejoue autant de fois que voulu.</div>
+          <div><strong style="color:#221F1A">Picto d'abord, mot ensuite.</strong> Le dessin est grand, le mot écrit est petit, juste dessous, toujours au même endroit. À force, ils le reconnaîtront.</div>
+          <div><strong style="color:#221F1A">Une phrase courte.</strong> Sujet, verbe, objet. « Mets ton pantalon. » Jamais deux consignes dans la même phrase.</div>
+          <div><strong style="color:#221F1A">Le son ne surprend jamais.</strong> Pas de son sans qu'un doigt ait touché l'écran ou qu'un écran vienne de s'ouvrir. Coupure du son en un appui, depuis n'importe où.</div>
+        </div>
+      </div>
+
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; letter-spacing: 1px; color: #8A7F6C">04 &nbsp;IMAGE ET CALME</div>
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 16px; line-height: 1.55; color: #4A4437">
+          <div><strong style="color:#221F1A">Sprites 32px, une seule lumière.</strong> Lumière du matin venant de la gauche, ombres longues et douces. Pas de contour sur les meubles, contour foncé sur les personnages seulement.</div>
+          <div><strong style="color:#221F1A">Deux palettes, un seul moteur.</strong> Rose poudré et crème chez Iris, bleu nuit et orange chez Théo. Rien de saturé, aucun blanc pur.</div>
+          <div><strong style="color:#221F1A">Le mouvement est minuscule.</strong> Un rideau qui respire, la vapeur d'un bol, la queue du chat. Jamais d'animation plein écran, jamais de secousse ni de flash.</div>
+          <div><strong style="color:#221F1A">Une seule tâche à l'écran.</strong> Les sous-étapes se dévoilent, elles ne se listent pas. Rien n'est chronométré, rien n'expire, rien n'est rouge.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 36px">
+    <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap">
+      <div style="font-family: Silkscreen, monospace; font-size: 30px">LA CHAMBRE DE THÉO</div>
+      <div style="font-size: 17px; color: #6B6353; max-width: 900px">Croquis de cadrage, pas du pixel art fini : chaque forme est un bloc, aligné sur une grille de 16 px, pour fixer la composition, la palette et la lumière avant qu'un artiste dessine les vrais sprites.</div>
+    </div>
+
+    <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start">
+
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="position: relative; width: 1280px; height: 880px; border: 4px solid #221F1A; background: #1E2740; overflow: hidden; box-shadow: 12px 12px 0 #D2C8B5">
+
+          <div style="position: absolute; left: 0; top: 0; width: 1280px; height: 640px; background: repeating-linear-gradient(90deg, #212B47 0 96px, #1E2740 96px 192px)"></div>
+          <div style="position: absolute; left: 0; top: 608px; width: 1280px; height: 32px; background: #141C33"></div>
+          <div style="position: absolute; left: 0; top: 640px; width: 1280px; height: 240px; background: repeating-linear-gradient(0deg, #6B4A2E 0 40px, #5E4028 40px 80px)"></div>
+
+          <div style="position: absolute; left: 96px; top: 96px; width: 288px; height: 240px; background: #141C33; border: 16px solid #8C9BBC"></div>
+          <div style="position: absolute; left: 128px; top: 128px; width: 224px; height: 176px; background: #F3C98B"></div>
+          <div style="position: absolute; left: 232px; top: 128px; width: 16px; height: 176px; background: #8C9BBC"></div>
+          <div style="position: absolute; left: 128px; top: 208px; width: 224px; height: 16px; background: #8C9BBC"></div>
+          <div style="position: absolute; left: 96px; top: 336px; width: 288px; height: 16px; background: #C3CEE6"></div>
+
+          <div style="position: absolute; left: 96px; top: 336px; width: 800px; height: 512px; background: rgba(255,196,120,.16); clip-path: polygon(0 0, 288px 0, 800px 512px, 176px 512px)"></div>
+
+          <div style="position: absolute; left: 480px; top: 112px; width: 176px; height: 224px; background: #F0952F; border: 8px solid #C97622"></div>
+          <div style="position: absolute; left: 512px; top: 192px; width: 112px; height: 48px; background: #1E2740"></div>
+          <div style="position: absolute; left: 528px; top: 176px; width: 64px; height: 24px; background: #1E2740"></div>
+          <div style="position: absolute; left: 528px; top: 240px; width: 32px; height: 24px; background: #141C33"></div>
+          <div style="position: absolute; left: 592px; top: 240px; width: 32px; height: 24px; background: #141C33"></div>
+
+          <div style="position: absolute; left: 704px; top: 128px; width: 144px; height: 176px; background: #33406A; border: 8px solid #4A5880"></div>
+          <div style="position: absolute; left: 752px; top: 168px; width: 48px; height: 96px; background: #E8B54C"></div>
+
+          <div style="position: absolute; left: 912px; top: 352px; width: 320px; height: 24px; background: #8A6039"></div>
+          <div style="position: absolute; left: 944px; top: 376px; width: 24px; height: 32px; background: #6B4A2E"></div>
+          <div style="position: absolute; left: 1176px; top: 376px; width: 24px; height: 32px; background: #6B4A2E"></div>
+          <div style="position: absolute; left: 944px; top: 272px; width: 128px; height: 80px; background: #F0952F"></div>
+          <div style="position: absolute; left: 944px; top: 304px; width: 128px; height: 32px; background: #141C33"></div>
+          <div style="position: absolute; left: 960px; top: 256px; width: 96px; height: 16px; background: #C97622"></div>
+          <div style="position: absolute; left: 1136px; top: 288px; width: 32px; height: 40px; background: #7FA6A1"></div>
+          <div style="position: absolute; left: 1128px; top: 328px; width: 48px; height: 24px; background: #E8B54C"></div>
+
+          <div style="position: absolute; left: 912px; top: 448px; width: 320px; height: 24px; background: #8A6039"></div>
+          <div style="position: absolute; left: 928px; top: 472px; width: 24px; height: 168px; background: #6B4A2E"></div>
+          <div style="position: absolute; left: 1192px; top: 472px; width: 24px; height: 168px; background: #6B4A2E"></div>
+          <div style="position: absolute; left: 1120px; top: 392px; width: 16px; height: 56px; background: #4A5880"></div>
+          <div style="position: absolute; left: 1088px; top: 368px; width: 80px; height: 32px; background: #C3CEE6"></div>
+          <div style="position: absolute; left: 944px; top: 408px; width: 96px; height: 40px; background: #E8EDF7"></div>
+          <div style="position: absolute; left: 944px; top: 408px; width: 96px; height: 8px; background: #C3CEE6"></div>
+
+          <div style="position: absolute; left: 96px; top: 384px; width: 32px; height: 256px; background: #8A6039"></div>
+          <div style="position: absolute; left: 128px; top: 424px; width: 416px; height: 32px; background: #C3CEE6"></div>
+          <div style="position: absolute; left: 128px; top: 456px; width: 288px; height: 88px; background: #F0952F"></div>
+          <div style="position: absolute; left: 128px; top: 456px; width: 288px; height: 16px; background: #C97622"></div>
+          <div style="position: absolute; left: 432px; top: 440px; width: 104px; height: 72px; background: #E8EDF7"></div>
+          <div style="position: absolute; left: 128px; top: 544px; width: 416px; height: 48px; background: #6B4A2E"></div>
+          <div style="position: absolute; left: 144px; top: 592px; width: 32px; height: 48px; background: #5E4028"></div>
+          <div style="position: absolute; left: 496px; top: 592px; width: 32px; height: 48px; background: #5E4028"></div>
+
+          <div style="position: absolute; left: 288px; top: 656px; width: 704px; height: 192px; box-sizing: border-box; border: 32px solid #3A3A44"></div>
+          <div style="position: absolute; left: 400px; top: 672px; width: 64px; height: 8px; background: #E8EDF7"></div>
+          <div style="position: absolute; left: 560px; top: 672px; width: 64px; height: 8px; background: #E8EDF7"></div>
+          <div style="position: absolute; left: 800px; top: 672px; width: 64px; height: 8px; background: #E8EDF7"></div>
+          <div style="position: absolute; left: 400px; top: 828px; width: 64px; height: 8px; background: #E8EDF7"></div>
+          <div style="position: absolute; left: 640px; top: 828px; width: 64px; height: 8px; background: #E8EDF7"></div>
+          <div style="position: absolute; left: 848px; top: 828px; width: 64px; height: 8px; background: #E8EDF7"></div>
+
+          <div style="position: absolute; left: 400px; top: 704px; width: 464px; height: 96px; box-sizing: border-box; background: #33406A; border: 8px solid #4A5880"></div>
+
+          <div style="position: absolute; left: 656px; top: 632px; width: 96px; height: 40px; background: #F0952F"></div>
+          <div style="position: absolute; left: 680px; top: 616px; width: 48px; height: 24px; background: #C3CEE6"></div>
+          <div style="position: absolute; left: 664px; top: 664px; width: 24px; height: 16px; background: #141C33"></div>
+          <div style="position: absolute; left: 720px; top: 664px; width: 24px; height: 16px; background: #141C33"></div>
+
+          <div style="position: absolute; left: 128px; top: 768px; width: 144px; height: 64px; background: #E0D2AE"></div>
+          <div style="position: absolute; left: 128px; top: 752px; width: 32px; height: 24px; background: #E0D2AE"></div>
+          <div style="position: absolute; left: 176px; top: 752px; width: 32px; height: 24px; background: #E0D2AE"></div>
+          <div style="position: absolute; left: 144px; top: 792px; width: 16px; height: 8px; background: #C2AF80"></div>
+          <div style="position: absolute; left: 272px; top: 784px; width: 64px; height: 16px; background: #E0D2AE"></div>
+
+          <div style="position: absolute; left: 96px; top: 640px; width: 448px; height: 24px; background: rgba(10,14,26,.35)"></div>
+          <div style="position: absolute; left: 912px; top: 640px; width: 320px; height: 24px; background: rgba(10,14,26,.35)"></div>
+
+          <div style="position: absolute; right: 24px; bottom: 24px; font-family: Silkscreen, monospace; font-size: 14px; padding: 10px 14px; background: #141C33; border: 3px solid #8C9BBC; color: #C3CEE6">CROQUIS · GRILLE 16 PX</div>
+        </div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 1280px; line-height: 1.5">Une seule source de lumière, la fenêtre à gauche : le faisceau traverse la pièce en diagonale et se pose sur le tapis. Les meubles n'ont pas de contour, seulement une ombre au sol. Le contour foncé sera réservé aux personnages, pour qu'ils se détachent toujours du décor.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 20px; width: 460px">
+        <div style="font-family: Silkscreen, monospace; font-size: 20px">CE QU'IL Y A DANS LA PIÈCE</div>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; gap: 14px; align-items: flex-start; padding: 16px; background: #F6F1E7; border: 2px solid #221F1A">
+            <div style="width: 34px; height: 34px; flex: none; border: 2px solid #221F1A; background: #F3C98B"></div>
+            <div style="font-size: 16px; line-height: 1.5"><strong>La fenêtre.</strong> Le seul élément animé : le rideau respire, très lentement. Coupé si le curseur mouvement est sur « aucun ».</div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: flex-start; padding: 16px; background: #F6F1E7; border: 2px solid #221F1A">
+            <div style="width: 34px; height: 34px; flex: none; border: 2px solid #221F1A; background: #F0952F"></div>
+            <div style="font-size: 16px; line-height: 1.5"><strong>Le lit.</strong> Point de départ de chaque matin. La couverture orange est l'accent de sa palette, et c'est aussi la couleur de l'étape en cours dans son interface.</div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: flex-start; padding: 16px; background: #F6F1E7; border: 2px solid #221F1A">
+            <div style="width: 34px; height: 34px; flex: none; border: 2px solid #221F1A; background: #3A3A44"></div>
+            <div style="font-size: 16px; line-height: 1.5"><strong>Le circuit au sol.</strong> Décor, pas mini-jeu. Une voiture posée dessus se déplace d'un cran chaque matin validé : une progression qu'il voit sans avoir à lire un chiffre.</div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: flex-start; padding: 16px; background: #F6F1E7; border: 2px solid #221F1A">
+            <div style="width: 34px; height: 34px; flex: none; border: 2px solid #221F1A; background: #8A6039"></div>
+            <div style="font-size: 16px; line-height: 1.5"><strong>L'étagère.</strong> Le casque, la médaille : c'est là que les objets débloqués se posent. Une étagère qui se remplit sur des mois, jamais un inventaire à faire défiler.</div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: flex-start; padding: 16px; background: #F6F1E7; border: 2px solid #221F1A">
+            <div style="width: 34px; height: 34px; flex: none; border: 2px solid #221F1A; background: #E0D2AE"></div>
+            <div style="font-size: 16px; line-height: 1.5"><strong>Biscuit.</strong> Sur le tapis, endormi. Il se déplace d'un endroit à l'autre entre deux ouvertures de l'app, sans jamais rien demander.</div>
+          </div>
+        </div>
+        <div style="padding: 20px; background: #DCD3C3; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>La palette, six couleurs.</strong> Bleu nuit du mur, bleu profond des ombres, bois, crème, orange, et l'or des récompenses. Toute couleur en plus doit remplacer une des six, pas s'ajouter.</div>
+        <div style="display: flex; gap: 0; border: 2px solid #221F1A">
+          <div style="flex: 1; height: 56px; background: #1E2740"></div>
+          <div style="flex: 1; height: 56px; background: #141C33"></div>
+          <div style="flex: 1; height: 56px; background: #6B4A2E"></div>
+          <div style="flex: 1; height: 56px; background: #C3CEE6"></div>
+          <div style="flex: 1; height: 56px; background: #F0952F"></div>
+          <div style="flex: 1; height: 56px; background: #E8B54C"></div>
+        </div>
+        <div style="padding: 20px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55">Je ne génère pas d'images : ce croquis est fait de blocs de couleur, donc les formes restent grossières (le casque, le chat). Il sert de plan à suivre — dimensions, placement, lumière, palette — pas de rendu final.</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 36px">
+    <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap">
+      <div style="font-family: Silkscreen, monospace; font-size: 30px">LA JOURNÉE ENTIÈRE</div>
+      <div style="font-size: 17px; color: #6B6353; max-width: 940px">Le planning visuel et le jeu ne font qu'un objet : la journée est la carte, les lieux sont les niveaux, les routines sont les phases d'action et les trajets sont des phases d'attente. Écrans montrés dans la peau de Théo, contraste élevé.</div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px">
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; color: #8A7F6C">ACTION / ATTENTE</div>
+        <div style="font-size: 20px; font-weight: 700; line-height: 1.25">Deux rythmes, jamais mélangés</div>
+        <div style="font-size: 16px; line-height: 1.55; color: #4A4437">En <strong>phase d'action</strong> — une routine — l'écran demande quelque chose, une étape à la fois, et le chrono tourne si l'enfant l'a activé. En <strong>phase d'attente</strong> — le trajet, la salle d'attente, le temps chez Papi et Mamie — l'écran ne demande rien du tout : l'avatar est simplement là, dans le décor, et respire. Le passage de l'un à l'autre est toujours annoncé à voix haute.</div>
+      </div>
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; color: #8A7F6C">LE CHRONO</div>
+        <div style="font-size: 20px; font-weight: 700; line-height: 1.25">Visible, mais réglable et jamais punitif</div>
+        <div style="font-size: 16px; line-height: 1.55; color: #4A4437">Chrono en minutes pour Théo, masqué pour Iris : c'est un cinquième curseur du calibrage. Il compte le temps écoulé, il ne décompte pas un temps restant. Aucune couleur ne change quand il dépasse, aucun son ne se déclenche.</div>
+        <div style="margin-top: auto; font-size: 14px; line-height: 1.5; color: #6B6353; border-top: 2px solid #DCD3C3; padding-top: 14px">Le temps dépassé n'enlève rien. Il appelle un adulte.</div>
+      </div>
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; color: #8A7F6C">TROIS MONNAIES</div>
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 16px; line-height: 1.5; color: #4A4437">
+          <div style="display: flex; gap: 12px; align-items: flex-start"><div style="width: 28px; height: 28px; flex: none; border: 2px solid #221F1A; background: #E8B54C"></div><div><strong style="color:#221F1A">Étoiles.</strong> Se gagnent aux routines, se dépensent en prix. Le seul compteur qui descend.</div></div>
+          <div style="display: flex; gap: 12px; align-items: flex-start"><div style="width: 28px; height: 28px; flex: none; border: 2px solid #221F1A; background: #7FA6A1"></div><div><strong style="color:#221F1A">Expérience.</strong> Se gagne aux aventures. Ne se dépense jamais, ne redescend jamais.</div></div>
+          <div style="display: flex; gap: 12px; align-items: flex-start"><div style="width: 28px; height: 28px; flex: none; border: 2px solid #221F1A; background: #B98BA4"></div><div><strong style="color:#221F1A">Objets.</strong> Se trouvent, se posent dans la chambre. Ni gagnés ni achetés : offerts.</div></div>
+        </div>
+      </div>
+      <div style="background: #DCD3C3; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #C0B7A4; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; color: #6B6353">MONDE PARTAGÉ</div>
+        <div style="font-size: 20px; font-weight: 700; line-height: 1.25">Une maison, deux chambres fermées</div>
+        <div style="font-size: 16px; line-height: 1.55; color: #4A4437">Cuisine, salon, entrée, voiture, cabinet : communs, et on y voit l'avatar de l'autre quand il y est aussi. Les chambres sont privées — décor, objets et garde-robe n'appartiennent qu'à leur occupant, l'autre ne peut pas entrer.</div>
+        <div style="margin-top: auto; font-size: 14px; line-height: 1.5; color: #6B6353; border-top: 2px solid #C0B7A4; padding-top: 14px">Aucun compteur commun, aucun classement : les étoiles et l'expérience ne sont jamais visibles d'un profil à l'autre.</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start">
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #1E2740; display: flex; flex-direction: column; color: #E8EDF7">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8C9BBC">
+              <span>MA JOURNÉE</span>
+              <span>MARDI</span>
+              <span>NIV. 6</span>
+            </div>
+            <div style="margin: 0 16px; padding: 10px 12px; background: #2A3556; border: 2px solid #0E1424; display: flex; justify-content: space-between; align-items: center">
+              <div style="display: flex; align-items: center; gap: 7px"><div style="width: 20px; height: 20px; border: 2px solid #0E1424; background: #E8B54C"></div><span style="font-size: 15px; font-weight: 700">14</span></div>
+              <div style="display: flex; align-items: center; gap: 7px"><div style="width: 20px; height: 20px; border: 2px solid #0E1424; background: #7FA6A1"></div><span style="font-size: 15px; font-weight: 700">320</span></div>
+              <div style="display: flex; align-items: center; gap: 7px"><div style="width: 20px; height: 20px; border: 2px solid #0E1424; background: #B98BA4"></div><span style="font-size: 15px; font-weight: 700">9</span></div>
+            </div>
+            <div style="padding: 14px 16px 0; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow: hidden">
+              <div style="display: flex; gap: 12px; align-items: center; padding: 10px; background: #263050; border: 2px solid #0E1424; opacity: .55">
+                <div style="width: 44px; height: 44px; flex: none; border: 2px solid #0E1424; background: repeating-linear-gradient(45deg, #3A4770 0 5px, #33406A 5px 10px)"></div>
+                <div style="flex: 1"><div style="font-size: 16px; font-weight: 700">ma chambre</div><div style="font-size: 13px; color: #8C9BBC">routine du matin · 6 min</div></div>
+                <div style="width: 20px; height: 20px; border: 2px solid #7FA6A1; background: #7FA6A1"></div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center; padding: 10px; background: #263050; border: 2px solid #0E1424; opacity: .55">
+                <div style="width: 44px; height: 44px; flex: none; border: 2px solid #0E1424; background: repeating-linear-gradient(45deg, #3A4770 0 5px, #33406A 5px 10px)"></div>
+                <div style="flex: 1"><div style="font-size: 16px; font-weight: 700">l'entrée</div><div style="font-size: 13px; color: #8C9BBC">chaussures · prêt à partir</div></div>
+                <div style="width: 20px; height: 20px; border: 2px solid #7FA6A1; background: #7FA6A1"></div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center; padding: 12px; background: #F0952F; border: 4px solid #FFF6E8; color: #221F1A">
+                <div style="width: 48px; height: 48px; flex: none; border: 3px solid #221F1A; background: repeating-linear-gradient(45deg, #1E2740 0 5px, #263050 5px 10px)"></div>
+                <div style="flex: 1"><div style="font-size: 17px; font-weight: 700">la voiture</div><div style="font-size: 14px">on va chez Camille</div></div>
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; animation: blink 2.4s steps(1) infinite">ICI</div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center; padding: 10px; background: #33406A; border: 2px solid #8C9BBC">
+                <div style="width: 44px; height: 44px; flex: none; border: 2px solid #0E1424; background: repeating-linear-gradient(45deg, #4A5880 0 5px, #435073 5px 10px)"></div>
+                <div style="flex: 1"><div style="font-size: 16px; font-weight: 700">chez Camille</div><div style="font-size: 13px; color: #C3CEE6">aventure · orthophonie</div></div>
+                <div style="display: flex; align-items: center; gap: 5px"><div style="width: 16px; height: 16px; border: 2px solid #7FA6A1; background: #7FA6A1"></div><span style="font-size: 13px; font-weight: 700">+30</span></div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center; padding: 10px; background: #263050; border: 2px solid #0E1424">
+                <div style="width: 44px; height: 44px; flex: none; border: 2px solid #0E1424; background: repeating-linear-gradient(45deg, #3A4770 0 5px, #33406A 5px 10px)"></div>
+                <div style="flex: 1"><div style="font-size: 16px; font-weight: 700">l'école</div><div style="font-size: 13px; color: #8C9BBC">jusqu'à 16 h 30</div></div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center; padding: 10px; background: #2A3556; border: 2px dashed #B98BA4">
+                <div style="width: 44px; height: 44px; flex: none; border: 2px solid #0E1424; background: repeating-linear-gradient(45deg, #6B5A78 0 5px, #5F5069 5px 10px)"></div>
+                <div style="flex: 1"><div style="font-size: 16px; font-weight: 700">chez Papi et Mamie</div><div style="font-size: 13px; color: #D3B8C8">rien à faire là-bas</div></div>
+              </div>
+            </div>
+            <div style="display: flex; border-top: 3px solid #0E1424; background: #263050">
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; border-right: 2px solid #0E1424"><div style="width: 26px; height: 26px; border: 2px solid #8C9BBC; background: #263050"></div></div>
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; border-right: 2px solid #0E1424"><div style="width: 26px; height: 26px; border: 2px solid #8C9BBC; background: #263050"></div></div>
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; background: #33406A"><div style="width: 26px; height: 26px; border: 2px solid #E8EDF7; background: #F0952F"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">08 &nbsp;LA CARTE DE LA JOURNÉE</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Le planning visuel devient la carte du jeu. Ce qui est passé s'éteint, l'endroit où il est se surligne, ce qui vient reste lisible. « Rien à faire là-bas » est écrit noir sur blanc pour les zones libres.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #1E2740; display: flex; flex-direction: column; color: #E8EDF7">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8C9BBC">
+              <span>&lt; LA JOURNÉE</span>
+              <span>EN ROUTE</span>
+              <span>8:12</span>
+            </div>
+            <div style="position: relative; height: 330px; margin: 0 16px; border: 2px solid #0E1424; background: repeating-linear-gradient(0deg, #2A3556 0 8px, #263050 8px 16px); overflow: hidden">
+              <div style="position: absolute; inset: 0; background: linear-gradient(105deg, rgba(255,190,120,.22) 0%, rgba(255,190,120,0) 60%)"></div>
+              <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); text-align: center; font-family: Silkscreen, monospace; font-size: 11px; color: #8C9BBC; line-height: 1.9">
+                <div>[ INTÉRIEUR DE VOITURE ]</div>
+                <div>vue de côté, siège arrière</div>
+                <div>paysage qui défile lentement</div>
+                <div>avatar assis, ceinture mise</div>
+              </div>
+            </div>
+            <div style="padding: 20px 16px 0; display: flex; align-items: center; gap: 14px">
+              <div style="width: 60px; height: 60px; flex: none; border: 3px solid #0E1424; background: #E08A3C; box-shadow: 4px 4px 0 #8A4E1C; display: flex; align-items: center; justify-content: center; gap: 4px">
+                <div style="width: 5px; height: 12px; background: #1E2740; animation: wave 1s ease-in-out infinite"></div>
+                <div style="width: 5px; height: 22px; background: #1E2740; animation: wave 1s ease-in-out .2s infinite"></div>
+                <div style="width: 5px; height: 16px; background: #1E2740; animation: wave 1s ease-in-out .4s infinite"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <div style="font-size: 22px; font-weight: 700; line-height: 1.2">On roule vers chez Camille.</div>
+                <div style="font-size: 15px; color: #A9B6D4; line-height: 1.4">Tu n'as rien à faire. Tu peux regarder dehors.</div>
+              </div>
+            </div>
+            <div style="padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; flex: 1">
+              <div style="padding: 16px; background: #263050; border: 2px solid #0E1424; display: flex; flex-direction: column; gap: 10px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #8C9BBC">LE TRAJET</div>
+                <div style="height: 14px; border: 2px solid #0E1424; background: #1E2740; padding: 2px">
+                  <div style="height: 100%; width: 40%; background: #F0952F"></div>
+                </div>
+                <div style="font-size: 15px; color: #C3CEE6">Encore un peu. La barre se remplit toute seule.</div>
+              </div>
+              <div style="padding: 16px; background: #2A3556; border: 2px dashed #8C9BBC; display: flex; gap: 12px; align-items: center">
+                <div style="width: 40px; height: 40px; flex: none; border: 2px solid #0E1424; background: repeating-linear-gradient(45deg, #4A5880 0 5px, #435073 5px 10px)"></div>
+                <div style="font-size: 15px; line-height: 1.4; color: #C3CEE6">Iris est dans la voiture aussi. Tu la vois assise à côté.</div>
+              </div>
+              <div style="margin-top: auto; padding: 14px; background: #263050; border: 2px solid #0E1424; font-size: 15px; line-height: 1.45; color: #A9B6D4">Phase d'attente : aucun chrono, aucun bouton à appuyer, aucune étoile à gagner. L'écran peut rester allumé ou s'éteindre, ça ne change rien.</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">09 &nbsp;LA TRANSITION</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Le trajet est un lieu, pas un temps mort. C'est aussi là que le monde partagé se voit : les deux avatars dans la même voiture, sans interaction ni compétition.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #1E2740; display: flex; flex-direction: column; color: #E8EDF7">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8C9BBC">
+              <span>&lt; LA JOURNÉE</span>
+              <span>AVENTURE</span>
+              <span>8:30</span>
+            </div>
+            <div style="position: relative; height: 300px; margin: 0 16px; border: 2px solid #0E1424; background: repeating-linear-gradient(0deg, #33406A 0 8px, #2E3A61 8px 16px); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; gap: 26px; padding-bottom: 20px">
+              <div style="width: 66px; height: 96px; border: 3px solid #0E1424; background: repeating-linear-gradient(45deg, #4A5880 0 5px, #435073 5px 10px); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px"><div style="font-family: Silkscreen, monospace; font-size: 8px; color: #C3CEE6">THÉO</div></div>
+              <div style="width: 66px; height: 110px; border: 3px solid #0E1424; background: repeating-linear-gradient(45deg, #7FA6A1 0 5px, #759995 5px 10px); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px"><div style="font-family: Silkscreen, monospace; font-size: 8px; color: #16241F">CAMILLE</div></div>
+              <div style="position: absolute; left: 12px; top: 12px; font-family: Silkscreen, monospace; font-size: 10px; padding: 6px 9px; background: #1E2740; border: 2px solid #8C9BBC">[ CABINET · 2 SPRITES ]</div>
+            </div>
+            <div style="padding: 20px 16px 0; display: flex; align-items: center; gap: 14px">
+              <div style="width: 60px; height: 60px; flex: none; border: 3px solid #0E1424; background: #E08A3C; box-shadow: 4px 4px 0 #8A4E1C; display: flex; align-items: center; justify-content: center; gap: 4px">
+                <div style="width: 5px; height: 12px; background: #1E2740; animation: wave 1s ease-in-out infinite"></div>
+                <div style="width: 5px; height: 22px; background: #1E2740; animation: wave 1s ease-in-out .2s infinite"></div>
+                <div style="width: 5px; height: 16px; background: #1E2740; animation: wave 1s ease-in-out .4s infinite"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <div style="font-size: 22px; font-weight: 700; line-height: 1.2">Camille est là.</div>
+                <div style="font-size: 15px; color: #A9B6D4; line-height: 1.4">Orthophoniste. Une demi-heure, comme mardi dernier.</div>
+              </div>
+            </div>
+            <div style="padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1">
+              <div style="padding: 14px; background: #263050; border: 2px solid #0E1424; display: flex; flex-direction: column; gap: 8px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #8C9BBC">CE QUI VA SE PASSER</div>
+                <div style="display: flex; gap: 10px; align-items: center"><div style="width: 26px; height: 26px; flex: none; border: 2px solid #8C9BBC; background: #33406A"></div><div style="font-size: 15px">on entre et on s'assoit</div></div>
+                <div style="display: flex; gap: 10px; align-items: center"><div style="width: 26px; height: 26px; flex: none; border: 2px solid #8C9BBC; background: #33406A"></div><div style="font-size: 15px">on travaille avec Camille</div></div>
+                <div style="display: flex; gap: 10px; align-items: center"><div style="width: 26px; height: 26px; flex: none; border: 2px solid #8C9BBC; background: #33406A"></div><div style="font-size: 15px">on repart</div></div>
+              </div>
+              <div style="min-height: 64px; display: flex; align-items: center; justify-content: center; gap: 14px; background: #F0952F; border: 4px solid #FFF6E8; color: #221F1A">
+                <div style="width: 28px; height: 28px; border: 3px solid #221F1A; background: #1E2740"></div>
+                <div style="font-size: 19px; font-weight: 700">C'est parti</div>
+              </div>
+              <div style="margin-top: auto; padding: 14px; background: #2A3556; border: 2px dashed #8C9BBC; font-size: 15px; line-height: 1.45; color: #C3CEE6">Pendant la séance, l'app se met en veille : rien à toucher, rien qui vibre. Elle ne se réveille qu'à la fin.</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">10 &nbsp;L'ARRIVÉE CHEZ LA PRATICIENNE</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Trois étapes annoncées avant d'entrer, toujours les mêmes : c'est ça qui rend le rendez-vous prévisible. Camille a un avatar de métier avec son prénom, pas un portrait — voir la note à droite.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #EDE6DA; display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 10px; font-family: Silkscreen, monospace; font-size: 11px; color: #6B6353; border-bottom: 2px solid #221F1A">
+              <span>ÉCRAN PRATICIENNE</span>
+              <span>THÉO · 9:02</span>
+              <span>FERMER</span>
+            </div>
+            <div style="padding: 18px 16px 0; display: flex; flex-direction: column; gap: 6px">
+              <div style="font-size: 23px; font-weight: 700; line-height: 1.2">Fin de la séance</div>
+              <div style="font-size: 15px; color: #5A5344; line-height: 1.45">Orthophonie · 30 min · mardi 25 août. Cet écran est celui de l'adulte : l'enfant ne voit pas la note, seulement l'expérience gagnée.</div>
+            </div>
+            <div style="padding: 20px 16px; display: flex; flex-direction: column; gap: 18px; flex: 1">
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #6B6353">COMMENT ÇA S'EST PASSÉ</div>
+                <div style="display: flex; gap: 8px">
+                  <div style="flex: 1; aspect-ratio: 1; border: 2px solid #221F1A; background: #F6F1E7; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700">1</div>
+                  <div style="flex: 1; aspect-ratio: 1; border: 2px solid #221F1A; background: #F6F1E7; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700">2</div>
+                  <div style="flex: 1; aspect-ratio: 1; border: 2px solid #221F1A; background: #F6F1E7; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700">3</div>
+                  <div style="flex: 1; aspect-ratio: 1; border: 3px solid #221F1A; background: #7FA6A1; box-shadow: 3px 3px 0 #C0B7A4; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #F6F1E7">4</div>
+                  <div style="flex: 1; aspect-ratio: 1; border: 2px solid #221F1A; background: #F6F1E7; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700">5</div>
+                </div>
+                <div style="font-size: 15px; color: #4A4437; line-height: 1.45">4 sur 5 — séance suivie, deux pauses demandées.</div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #6B6353">UN MOT (FACULTATIF)</div>
+                <div style="padding: 14px; min-height: 68px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 15px; line-height: 1.45; color: #6B6353">Il a fini l'exercice des sons tout seul aujourd'hui.</div>
+              </div>
+              <div style="padding: 16px; background: #221F1A; color: #F1E9DA; display: flex; flex-direction: column; gap: 10px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #B0A692">CE QUE THÉO VA VOIR</div>
+                <div style="display: flex; gap: 14px; align-items: center">
+                  <div style="width: 44px; height: 44px; flex: none; border: 2px solid #F1E9DA; background: #7FA6A1"></div>
+                  <div style="font-size: 17px; font-weight: 700">+ 30 expérience</div>
+                </div>
+                <div style="font-size: 14px; line-height: 1.45; color: #C9BFA9">Une note basse donne moins d'expérience, jamais zéro, et jamais de message négatif. L'enfant voit un gain, pas une évaluation.</div>
+              </div>
+              <div style="margin-top: auto; min-height: 56px; display: flex; align-items: center; justify-content: center; background: #7FA6A1; border: 2px solid #221F1A; font-family: Silkscreen, monospace; font-size: 12px; letter-spacing: 1px; color: #16241F">VALIDER LA SÉANCE</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">11 &nbsp;LA NOTE DE LA PRATICIENNE</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">La note sur 5 existe, saisie par la praticienne, mais elle reste côté adulte : elle module l'expérience gagnée et n'est jamais montrée à l'enfant. C'est la seule façon que je vois de la garder sans la transformer en jugement.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #1E2740; display: flex; flex-direction: column; color: #E8EDF7">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8C9BBC">
+              <span>MA CHAMBRE</span>
+              <span>ROUTINE</span>
+              <span>11 MIN</span>
+            </div>
+            <div style="position: relative; height: 280px; margin: 0 16px; border: 2px solid #0E1424; background: repeating-linear-gradient(0deg, #2A3556 0 8px, #263050 8px 16px); overflow: hidden; display: flex; align-items: center; justify-content: center">
+              <div style="text-align: center; font-family: Silkscreen, monospace; font-size: 11px; color: #8C9BBC; line-height: 1.9">
+                <div>[ AVATAR ASSIS PAR TERRE ]</div>
+                <div>pas d'animation d'échec</div>
+                <div>la lumière reste chaude</div>
+              </div>
+            </div>
+            <div style="padding: 20px 16px 0; display: flex; align-items: center; gap: 14px">
+              <div style="width: 60px; height: 60px; flex: none; border: 3px solid #0E1424; background: #E08A3C; box-shadow: 4px 4px 0 #8A4E1C; display: flex; align-items: center; justify-content: center; gap: 4px">
+                <div style="width: 5px; height: 12px; background: #1E2740; animation: wave 1s ease-in-out infinite"></div>
+                <div style="width: 5px; height: 22px; background: #1E2740; animation: wave 1s ease-in-out .2s infinite"></div>
+                <div style="width: 5px; height: 16px; background: #1E2740; animation: wave 1s ease-in-out .4s infinite"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <div style="font-size: 22px; font-weight: 700; line-height: 1.2">Ça bloque, c'est normal.</div>
+                <div style="font-size: 15px; color: #A9B6D4; line-height: 1.4">J'ai appelé du renfort.</div>
+              </div>
+            </div>
+            <div style="padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; flex: 1">
+              <div style="padding: 16px; background: #263050; border: 2px solid #0E1424; display: flex; gap: 14px; align-items: center">
+                <div style="width: 44px; height: 44px; flex: none; border: 2px solid #0E1424; background: repeating-linear-gradient(45deg, #4A5880 0 5px, #435073 5px 10px)"></div>
+                <div style="font-size: 16px; line-height: 1.4">Un adulte arrive pour t'aider avec les chaussettes.</div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #8C9BBC">CE QUI NE CHANGE PAS</div>
+                <div style="display: flex; gap: 10px; align-items: center; padding: 12px; background: #2A3556; border: 2px solid #0E1424"><div style="width: 24px; height: 24px; flex: none; border: 2px solid #0E1424; background: #E8B54C"></div><div style="font-size: 15px">tes étoiles restent les mêmes</div></div>
+                <div style="display: flex; gap: 10px; align-items: center; padding: 12px; background: #2A3556; border: 2px solid #0E1424"><div style="width: 24px; height: 24px; flex: none; border: 2px solid #0E1424; background: #7FA6A1"></div><div style="font-size: 15px">ton expérience ne baisse pas</div></div>
+                <div style="display: flex; gap: 10px; align-items: center; padding: 12px; background: #2A3556; border: 2px solid #0E1424"><div style="width: 24px; height: 24px; flex: none; border: 2px solid #0E1424; background: #B98BA4"></div><div style="font-size: 15px">la routine reste ouverte</div></div>
+              </div>
+              <div style="margin-top: auto; min-height: 56px; display: flex; align-items: center; justify-content: center; background: #33406A; border: 2px solid #8C9BBC; font-size: 17px; font-weight: 700">J'attends ici</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">12 &nbsp;LE RENFORT (TEMPS DÉPASSÉ)</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Le dépassement du chrono déclenche un appel à l'adulte, pas une sanction. L'écran nomme explicitement ce qui ne change pas — c'est ce que je regarderais en premier en test avec eux.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 20px; width: 420px">
+        <div style="font-family: Silkscreen, monospace; font-size: 20px">DÉCISIONS ET RÉSERVES</div>
+        <div style="padding: 22px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>Les praticiennes : avatar de métier + prénom.</strong> Tu n'as pas répondu, j'ai pris le choix le plus sûr : un sprite par métier, le prénom écrit et dit à voix haute. Pas de photo, pas de portrait ressemblant — ça t'évite de demander un accord à chaque soignante et de stocker leur image. Si l'une accepte un avatar dédié, on l'ajoute au cas par cas.</div>
+        <div style="padding: 22px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>La note reste côté adulte.</strong> Tu voulais une note sur 5 par la praticienne : elle existe et module l'expérience, mais l'enfant ne la voit jamais. Sinon un rendez-vous de soin devient un examen noté, et un enfant TSA retiendra le chiffre bien plus que le gain.</div>
+        <div style="padding: 22px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>Trois monnaies, dont une seule visible chez Iris.</strong> À 5 ans, les étoiles suffisent. L'expérience et les objets s'affichent quand tu les actives dans son profil : le système est le même pour les deux, l'affichage non.</div>
+        <div style="padding: 22px; background: #DCD3C3; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>Pas encore dessiné :</strong> l'animation de succès et l'attente dans l'entrée, l'écran adulte de composition de la journée, la boutique des prix, la routine du soir. Dis-moi lequel ensuite.</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 36px">
+    <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap">
+      <div style="font-family: Silkscreen, monospace; font-size: 30px">CALIBRAGE SENSORIEL</div>
+      <div style="font-size: 17px; color: #6B6353; max-width: 900px">Le contraste, la densité, le mouvement et le son ne sont pas des choix de style : ce sont des réglages de profil, posés à la création de l'univers de l'enfant et modifiables ensuite. Théo monte le contraste, Iris le baisse.</div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px">
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; color: #8A7F6C">CE QUE DIT LA RECHERCHE</div>
+        <div style="font-size: 20px; font-weight: 700; line-height: 1.25">Le contraste fort aide l'attention et peut blesser la sensibilité</div>
+        <div style="font-size: 16px; line-height: 1.55; color: #4A4437">Les recommandations autisme demandent d'éviter les couleurs vives et la forte luminance, et de préférer des tons sourds et naturels. Les recommandations TDAH demandent au contraire des cibles nettes et une hiérarchie franche pour ne pas perdre le fil. Les deux ne se règlent pas au même endroit : d'où un curseur par enfant, jamais une valeur unique pour l'app.</div>
+        <div style="margin-top: auto; font-size: 14px; line-height: 1.5; color: #6B6353; border-top: 2px solid #DCD3C3; padding-top: 14px">Plancher non négociable : 4,5:1 pour tout texte, 3:1 pour les pictos et les bordures, même en mode doux. Baisser le contraste ne veut pas dire devenir illisible.</div>
+      </div>
+
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; color: #8A7F6C">RÈGLES COMMUNES</div>
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 16px; line-height: 1.5; color: #4A4437">
+          <div><strong style="color:#221F1A">Jamais la couleur seule.</strong> Un état est toujours dit par au moins deux choses : couleur + forme, ou couleur + mot, ou couleur + voix.</div>
+          <div><strong style="color:#221F1A">Aucun blanc pur, aucun noir pur.</strong> Crème et encre chaude à la place, pour couper l'éblouissement.</div>
+          <div><strong style="color:#221F1A">Le fait sort du chemin.</strong> Une tâche terminée s'éteint doucement au lieu de rester en concurrence visuelle avec la suivante.</div>
+          <div><strong style="color:#221F1A">Rien ne se perd.</strong> Pas de série à tenir, pas de compte à rebours, pas d'urgence. Un matin manqué ne remet rien à zéro.</div>
+        </div>
+      </div>
+
+      <div style="background: #F6F1E7; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #D2C8B5; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; color: #8A7F6C">LES QUATRE CURSEURS</div>
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 16px; line-height: 1.5; color: #4A4437">
+          <div><strong style="color:#221F1A">Contraste.</strong> Doux · Moyen · Élevé. Change la palette, l'épaisseur des bordures et la force du surlignage de l'étape en cours.</div>
+          <div><strong style="color:#221F1A">Densité.</strong> Une seule tâche à l'écran, trois, ou toute la journée d'un coup.</div>
+          <div><strong style="color:#221F1A">Mouvement.</strong> Aucun, discret, ou vivant. « Aucun » coupe même la respiration des rideaux.</div>
+          <div><strong style="color:#221F1A">Voix.</strong> Débit lent ou normal, lecture automatique ou sur appui seulement.</div>
+        </div>
+        <div style="margin-top: auto; font-size: 14px; line-height: 1.5; color: #6B6353; border-top: 2px solid #DCD3C3; padding-top: 14px">Quatre curseurs, pas dix. Un réglage trop fin est un réglage que personne ne touche.</div>
+      </div>
+
+      <div style="background: #DCD3C3; border: 2px solid #221F1A; box-shadow: 6px 6px 0 #C0B7A4; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: Silkscreen, monospace; font-size: 12px; color: #6B6353">LEURS RÉGLAGES</div>
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <div style="padding: 14px; background: #F3E7E7; border: 2px solid #221F1A">
+            <div style="font-weight: 700; font-size: 17px; margin-bottom: 6px">Iris</div>
+            <div style="font-size: 15px; line-height: 1.5; color: #4A4437">Contraste doux · une tâche à l'écran · mouvement discret · voix lente et automatique. Rose poudré et crème, bordures fines, l'étape en cours signalée par une ombre portée plutôt que par une couleur qui claque.</div>
+          </div>
+          <div style="padding: 14px; background: #1E2740; border: 2px solid #0E1424; color: #E8EDF7">
+            <div style="font-weight: 700; font-size: 17px; margin-bottom: 6px">Théo</div>
+            <div style="font-size: 15px; line-height: 1.5; color: #C3CEE6">Contraste élevé · toute la journée visible · mouvement vivant · voix normale sur appui. Bleu nuit et orange, bordures épaisses, l'étape en cours en orange plein — mais sur fond sombre, jamais en blanc éclatant.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start">
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #EDE6DA; display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 10px; font-family: Silkscreen, monospace; font-size: 11px; color: #6B6353; border-bottom: 2px solid #221F1A">
+              <span>&lt; RETOUR</span>
+              <span>NOUVEAU PROFIL</span>
+              <span>3 / 4</span>
+            </div>
+            <div style="padding: 18px 18px 0; display: flex; flex-direction: column; gap: 6px">
+              <div style="font-size: 24px; font-weight: 700; line-height: 1.2">Comment Iris voit-elle le mieux ?</div>
+              <div style="font-size: 15px; color: #5A5344; line-height: 1.45">Réglable à tout moment. Ce que vous choisissez ici change son univers entier.</div>
+            </div>
+            <div style="padding: 18px; display: flex; flex-direction: column; gap: 16px; flex: 1">
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #6B6353">CONTRASTE</div>
+                <div style="display: flex; gap: 8px">
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #221F1A; color: #F1E9DA; font-size: 14px; font-weight: 700">doux</div>
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #F6F1E7; border: 2px solid #221F1A; font-size: 14px">moyen</div>
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #F6F1E7; border: 2px solid #221F1A; font-size: 14px">élevé</div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #6B6353">TÂCHES VISIBLES À L'ÉCRAN</div>
+                <div style="display: flex; gap: 8px">
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #221F1A; color: #F1E9DA; font-size: 14px; font-weight: 700">une</div>
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #F6F1E7; border: 2px solid #221F1A; font-size: 14px">trois</div>
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #F6F1E7; border: 2px solid #221F1A; font-size: 14px">tout</div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #6B6353">MOUVEMENT</div>
+                <div style="display: flex; gap: 8px">
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #F6F1E7; border: 2px solid #221F1A; font-size: 14px">aucun</div>
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #221F1A; color: #F1E9DA; font-size: 14px; font-weight: 700">discret</div>
+                  <div style="flex: 1; padding: 12px 6px; text-align: center; background: #F6F1E7; border: 2px solid #221F1A; font-size: 14px">vivant</div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #6B6353">APERÇU EN DIRECT</div>
+                <div style="padding: 14px; background: #F3E7E7; border: 2px solid #221F1A; display: flex; align-items: center; gap: 12px">
+                  <div style="width: 44px; height: 44px; flex: none; border: 2px solid #221F1A; background: #E7C9D6"></div>
+                  <div style="flex: 1; font-size: 16px; font-weight: 700">s'habiller</div>
+                  <div style="width: 20px; height: 20px; border: 2px solid #8A6F75; background: #EDDCDF"></div>
+                </div>
+              </div>
+              <div style="margin-top: auto; min-height: 56px; display: flex; align-items: center; justify-content: center; background: #221F1A; color: #F1E9DA; font-family: Silkscreen, monospace; font-size: 12px; letter-spacing: 1px">CONTINUER</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">07 &nbsp;CRÉATION DU PROFIL &mdash; CALIBRAGE</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Troisième étape de la création d'un univers, entre le prénom et le choix de la chambre. Un aperçu en direct sous les curseurs : vous voyez la carte de tâche changer pendant que vous réglez.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 20px; width: 700px">
+        <div style="font-family: Silkscreen, monospace; font-size: 14px">LA MÊME CARTE, TROIS RÉGLAGES</div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px">
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <div style="padding: 20px; background: #F3E7E7; display: flex; flex-direction: column; gap: 12px; border: 1px solid #C9AEB4">
+              <div style="padding: 14px; background: #FAF0F0; border: 2px solid #A88A90; display: flex; align-items: center; gap: 10px">
+                <div style="width: 36px; height: 36px; flex: none; border: 2px solid #A88A90; background: #E7C9D6"></div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700; color: #4A3A3D">les dents</div>
+              </div>
+              <div style="padding: 14px; background: #FFFBF6; border: 2px solid #6B5257; box-shadow: 3px 3px 0 #D9C3C7; display: flex; align-items: center; gap: 10px">
+                <div style="width: 36px; height: 36px; flex: none; border: 2px solid #6B5257; background: #BFD3D2"></div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700; color: #33272A">ranger</div>
+              </div>
+            </div>
+            <div style="font-size: 14px; line-height: 1.5; color: #6B6353"><strong>Doux.</strong> L'étape en cours se distingue par l'ombre et l'épaisseur du trait, pas par la couleur. Rien ne saute aux yeux, rien n'éblouit.</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <div style="padding: 20px; background: #E7E2D6; display: flex; flex-direction: column; gap: 12px; border: 1px solid #A99E8B">
+              <div style="padding: 14px; background: #F6F1E7; border: 2px solid #6B6353; display: flex; align-items: center; gap: 10px">
+                <div style="width: 36px; height: 36px; flex: none; border: 2px solid #6B6353; background: #D8CDB8"></div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700; color: #3A352C">les dents</div>
+              </div>
+              <div style="padding: 14px; background: #FFFDF7; border: 3px solid #221F1A; box-shadow: 4px 4px 0 #BDB29C; display: flex; align-items: center; gap: 10px">
+                <div style="width: 36px; height: 36px; flex: none; border: 2px solid #221F1A; background: #7FA6A1"></div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700">ranger</div>
+              </div>
+            </div>
+            <div style="font-size: 14px; line-height: 1.5; color: #6B6353"><strong>Moyen.</strong> Le réglage par défaut. Bordure noire sur l'étape en cours, accent de couleur sur le picto seulement.</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <div style="padding: 20px; background: #1E2740; display: flex; flex-direction: column; gap: 12px; border: 1px solid #0E1424">
+              <div style="padding: 14px; background: #2A3556; border: 2px solid #8C9BBC; display: flex; align-items: center; gap: 10px">
+                <div style="width: 36px; height: 36px; flex: none; border: 2px solid #8C9BBC; background: #4A5880"></div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700; color: #C3CEE6">les dents</div>
+              </div>
+              <div style="padding: 14px; background: #F0952F; border: 4px solid #FFF6E8; display: flex; align-items: center; gap: 10px">
+                <div style="width: 36px; height: 36px; flex: none; border: 3px solid #221F1A; background: #1E2740"></div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700; color: #221F1A">ranger</div>
+              </div>
+            </div>
+            <div style="font-size: 14px; line-height: 1.5; color: #6B6353"><strong>Élevé.</strong> Orange plein et bordure claire sur fond sombre : la cible est évidente à un mètre. Fort contraste sans luminance agressive.</div>
+          </div>
+        </div>
+        <div style="padding: 20px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55">Dans les trois cas, l'étape faite et l'étape en cours restent distinguables sans la couleur : trait plus épais, ombre portée, picto éteint. Un enfant qui perçoit mal les couleurs ou un écran en plein soleil ne cassent pas la lecture.</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 36px">
+    <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap">
+      <div style="font-family: Silkscreen, monospace; font-size: 30px">ÉCRANS &mdash; IRIS</div>
+      <div style="font-size: 17px; color: #6B6353">Téléphone 390pt. Les zones de sprite sont des repères ; le vrai pixel art viendra dessus.</div>
+    </div>
+
+    <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start">
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #F3E7E7; display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8A6F75">
+              <span>7:12</span>
+              <span>IRIS</span>
+              <span>SON ON</span>
+            </div>
+            <div style="position: relative; height: 290px; margin: 0 14px; border: 2px solid #221F1A; background: repeating-linear-gradient(0deg, #E9D3D6 0 8px, #E2CBCF 8px 16px); overflow: hidden">
+              <div style="position: absolute; inset: 0; background: linear-gradient(105deg, rgba(255,240,220,.6) 0%, rgba(255,240,220,0) 55%)"></div>
+              <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); text-align: center; font-family: Silkscreen, monospace; font-size: 11px; color: #8A6F75; line-height: 1.9">
+                <div>[ CHAMBRE DE IRIS ]</div>
+                <div>rideaux à volants · peluches</div>
+                <div>tissus · lit · tapis rond</div>
+              </div>
+              <div style="position: absolute; right: 14px; bottom: 14px; width: 34px; height: 34px; border: 2px solid #221F1A; background: #E0D2AE; animation: bob 4s ease-in-out infinite"></div>
+            </div>
+            <div style="padding: 20px 18px 0; display: flex; align-items: center; gap: 16px">
+              <div style="width: 76px; height: 76px; flex: none; border: 3px solid #221F1A; background: #F7B8CB; box-shadow: 4px 4px 0 #D9A3B4; display: flex; align-items: center; justify-content: center; gap: 4px">
+                <div style="width: 5px; height: 14px; background: #221F1A; animation: wave 1s ease-in-out infinite"></div>
+                <div style="width: 5px; height: 26px; background: #221F1A; animation: wave 1s ease-in-out .15s infinite"></div>
+                <div style="width: 5px; height: 20px; background: #221F1A; animation: wave 1s ease-in-out .3s infinite"></div>
+                <div style="width: 5px; height: 30px; background: #221F1A; animation: wave 1s ease-in-out .45s infinite"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <div style="font-size: 24px; font-weight: 700; line-height: 1.15">Bonjour Iris.</div>
+                <div style="font-size: 16px; color: #6B5257; line-height: 1.4">Appuie pour réécouter.</div>
+              </div>
+            </div>
+            <div style="padding: 18px 18px 0; display: flex; flex-direction: column; gap: 8px">
+              <div style="height: 16px; border: 2px solid #221F1A; background: #FAF0F0; padding: 2px; display: flex; gap: 3px">
+                <div style="flex: 1; background: #C88AA0"></div>
+                <div style="flex: 1; background: #EDDCDF"></div>
+                <div style="flex: 1; background: #EDDCDF"></div>
+              </div>
+              <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #8A6F75">1 / 3</div>
+            </div>
+            <div style="padding: 16px 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; flex: 1">
+              <div style="border: 2px solid #221F1A; background: #C88AA0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px">
+                <div style="width: 44px; height: 44px; border: 2px solid #221F1A; background: #F3E7E7"></div>
+                <div style="font-size: 13px; font-weight: 700; color: #FAF0F0; text-align: center">s'habiller</div>
+              </div>
+              <div style="border: 3px solid #221F1A; background: #FFFBF6; box-shadow: 4px 4px 0 #D9A3B4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px">
+                <div style="width: 44px; height: 44px; border: 2px solid #221F1A; background: #BFD3D2"></div>
+                <div style="font-size: 13px; font-weight: 700; text-align: center">les dents</div>
+              </div>
+              <div style="border: 2px solid #221F1A; background: #FAF0F0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px; opacity: .6">
+                <div style="width: 44px; height: 44px; border: 2px solid #221F1A; background: #E0D2AE"></div>
+                <div style="font-size: 13px; font-weight: 700; text-align: center">ranger</div>
+              </div>
+            </div>
+            <div style="display: flex; border-top: 3px solid #221F1A; background: #E4CFD3">
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; background: #FAF0F0; border-right: 2px solid #221F1A"><div style="width: 26px; height: 26px; border: 2px solid #221F1A; background: #C88AA0"></div></div>
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; border-right: 2px solid #221F1A"><div style="width: 26px; height: 26px; border: 2px solid #6B5257; background: #E4CFD3"></div></div>
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center"><div style="width: 26px; height: 26px; border: 2px solid #6B5257; background: #E4CFD3"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">01 &nbsp;LE RÉVEIL</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Trois tâches seulement pour une enfant de 5 ans, en pictos. La voix dit « Bonjour Iris. On va se brosser les dents. » Le gros bouton rose rejoue la phrase.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #F3E7E7; display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8A6F75">
+              <span>&lt; RETOUR</span>
+              <span>S'HABILLER</span>
+              <span>3 / 5</span>
+            </div>
+            <div style="position: relative; margin: 6px 14px 0; height: 280px; border: 2px solid #221F1A; background: repeating-linear-gradient(0deg, #EDDCDF 0 8px, #E6D4D8 8px 16px)">
+              <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); text-align: center; font-family: Silkscreen, monospace; font-size: 11px; color: #8A6F75; line-height: 1.9">
+                <div>[ SPRITE DE IRIS ]</div>
+                <div>vue de face, 3 couches</div>
+                <div>le vêtement se pose</div>
+              </div>
+              <div style="position: absolute; left: 12px; top: 12px; font-family: Silkscreen, monospace; font-size: 10px; padding: 6px 9px; background: #FAF0F0; border: 2px solid #221F1A">3 PORTÉS</div>
+            </div>
+            <div style="padding: 16px 18px 0; display: flex; align-items: center; gap: 14px">
+              <div style="width: 64px; height: 64px; flex: none; border: 3px solid #221F1A; background: #F7B8CB; box-shadow: 4px 4px 0 #D9A3B4; display: flex; align-items: center; justify-content: center; gap: 3px">
+                <div style="width: 4px; height: 12px; background: #221F1A; animation: wave 1s ease-in-out infinite"></div>
+                <div style="width: 4px; height: 22px; background: #221F1A; animation: wave 1s ease-in-out .15s infinite"></div>
+                <div style="width: 4px; height: 16px; background: #221F1A; animation: wave 1s ease-in-out .3s infinite"></div>
+              </div>
+              <div style="font-size: 22px; font-weight: 700; line-height: 1.2">Mets ton gilet.</div>
+            </div>
+            <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1">
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px">
+                <div style="aspect-ratio: 1; border: 2px solid #221F1A; background: #C88AA0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><div style="width: 30px; height: 30px; border: 2px solid #221F1A; background: #F3E7E7"></div><div style="font-size: 11px; font-weight: 700; color: #FAF0F0">culotte</div></div>
+                <div style="aspect-ratio: 1; border: 2px solid #221F1A; background: #C88AA0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><div style="width: 30px; height: 30px; border: 2px solid #221F1A; background: #F3E7E7"></div><div style="font-size: 11px; font-weight: 700; color: #FAF0F0">chaussettes</div></div>
+                <div style="aspect-ratio: 1; border: 2px solid #221F1A; background: #C88AA0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><div style="width: 30px; height: 30px; border: 2px solid #221F1A; background: #F3E7E7"></div><div style="font-size: 11px; font-weight: 700; color: #FAF0F0">robe</div></div>
+                <div style="aspect-ratio: 1; border: 3px solid #221F1A; background: #FFFBF6; box-shadow: 4px 4px 0 #D9A3B4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><div style="width: 30px; height: 30px; border: 2px solid #221F1A; background: #E7C9D6"></div><div style="font-size: 11px; font-weight: 700">gilet</div></div>
+                <div style="aspect-ratio: 1; border: 2px solid #221F1A; background: #FAF0F0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; opacity: .5"><div style="width: 30px; height: 30px; border: 2px solid #221F1A; background: #E6D4D8"></div><div style="font-size: 11px; font-weight: 700">chaussures</div></div>
+                <div style="aspect-ratio: 1; border: 2px solid #221F1A; background: #FAF0F0; display: flex; align-items: center; justify-content: center; opacity: .5"><div style="font-family: Silkscreen, monospace; font-size: 10px; color: #8A6F75">?</div></div>
+              </div>
+              <div style="margin-top: auto; min-height: 64px; display: flex; align-items: center; justify-content: center; gap: 14px; background: #221F1A; color: #FAF0F0">
+                <div style="width: 30px; height: 30px; border: 2px solid #FAF0F0; background: #C88AA0"></div>
+                <div style="font-size: 19px; font-weight: 700">Je l'ai mis</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">02 &nbsp;S'HABILLER</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Un vêtement à la fois, annoncé à voix haute, dévoilé dans l'ordre. Le mot écrit est là, petit, sous le picto. Sauter une étape est possible et silencieux.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #F3E7E7; display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8A6F75">
+              <span>LA MAISON</span>
+              <span>7:34</span>
+              <span>2 / 3</span>
+            </div>
+            <div style="padding: 8px 18px 0; display: flex; align-items: center; gap: 14px">
+              <div style="width: 56px; height: 56px; flex: none; border: 3px solid #221F1A; background: #F7B8CB; box-shadow: 3px 3px 0 #D9A3B4; display: flex; align-items: center; justify-content: center; gap: 3px">
+                <div style="width: 4px; height: 12px; background: #221F1A; animation: wave 1s ease-in-out infinite"></div>
+                <div style="width: 4px; height: 20px; background: #221F1A; animation: wave 1s ease-in-out .2s infinite"></div>
+                <div style="width: 4px; height: 15px; background: #221F1A; animation: wave 1s ease-in-out .4s infinite"></div>
+              </div>
+              <div style="font-size: 22px; font-weight: 700; line-height: 1.2">On va où ?</div>
+            </div>
+            <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; flex: 1">
+              <div style="display: flex; gap: 14px; align-items: center; padding: 12px; min-height: 44px; background: #FFFBF6; border: 3px solid #221F1A; box-shadow: 4px 4px 0 #D9A3B4">
+                <div style="width: 52px; height: 52px; flex: none; border: 2px solid #221F1A; background: repeating-linear-gradient(45deg, #BFD3D2 0 6px, #ADC5C4 6px 12px)"></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 19px; font-weight: 700">la salle de bain</div><div style="font-size: 15px; color: #6B5257">les dents</div></div>
+                <div style="width: 22px; height: 22px; border: 2px solid #221F1A; background: #C88AA0; animation: blink 2.4s steps(1) infinite"></div>
+              </div>
+              <div style="display: flex; gap: 14px; align-items: center; padding: 12px; min-height: 44px; background: #FAF0F0; border: 2px solid #221F1A">
+                <div style="width: 52px; height: 52px; flex: none; border: 2px solid #221F1A; background: repeating-linear-gradient(45deg, #E9D3D6 0 6px, #E2CBCF 6px 12px)"></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 19px; font-weight: 700">ma chambre</div><div style="font-size: 15px; color: #6B5257">ranger</div></div>
+              </div>
+              <div style="display: flex; gap: 14px; align-items: center; padding: 12px; min-height: 44px; background: #FAF0F0; border: 2px solid #221F1A">
+                <div style="width: 52px; height: 52px; flex: none; border: 2px solid #221F1A; background: repeating-linear-gradient(45deg, #E0D2AE 0 6px, #D2C29B 6px 12px)"></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 19px; font-weight: 700">la cuisine</div><div style="font-size: 15px; color: #6B5257">mettre la table</div></div>
+              </div>
+              <div style="display: flex; gap: 14px; align-items: center; padding: 12px; min-height: 44px; background: #FAF0F0; border: 2px solid #221F1A">
+                <div style="width: 52px; height: 52px; flex: none; border: 2px solid #221F1A; background: repeating-linear-gradient(45deg, #CFC7B6 0 6px, #C0B7A4 6px 12px)"></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 19px; font-weight: 700">le salon</div><div style="font-size: 15px; color: #6B5257">ranger</div></div>
+              </div>
+              <div style="display: flex; gap: 14px; align-items: center; padding: 12px; min-height: 44px; background: #EDDCDF; border: 2px dashed #B79AA0; opacity: .75">
+                <div style="width: 52px; height: 52px; flex: none; border: 2px solid #B79AA0; background: repeating-linear-gradient(45deg, #E2CBCF 0 6px, #DAC1C6 6px 12px)"></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 19px; font-weight: 700; color: #6B5257">l'entrée</div><div style="font-size: 15px; color: #8A6F75">à la fin</div></div>
+              </div>
+              <div style="margin-top: auto; padding: 12px; background: #221F1A; color: #F7E9EC; display: flex; gap: 12px; align-items: center">
+                <div style="width: 40px; height: 40px; flex: none; border: 2px solid #F7E9EC; background: repeating-linear-gradient(45deg, #4A4437 0 5px, #3A352C 5px 10px)"></div>
+                <div style="font-size: 15px; line-height: 1.4">Biscuit est dans la cuisine, assis là où vont les assiettes.</div>
+              </div>
+            </div>
+            <div style="display: flex; border-top: 3px solid #221F1A; background: #E4CFD3">
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; border-right: 2px solid #221F1A"><div style="width: 26px; height: 26px; border: 2px solid #6B5257; background: #E4CFD3"></div></div>
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; border-right: 2px solid #221F1A"><div style="width: 26px; height: 26px; border: 2px solid #6B5257; background: #E4CFD3"></div></div>
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; background: #FAF0F0"><div style="width: 26px; height: 26px; border: 2px solid #221F1A; background: #C88AA0"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">03 &nbsp;LA MAISON</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Chaque tâche est posée dans la pièce où elle se passe. Toucher une pièce fait dire son nom à voix haute. L'entrée est la seule chose verrouillée du jeu.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #F3E7E7; display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8A6F75">
+              <span>FIN DE ROUTINE</span>
+              <span>7:58</span>
+              <span>3 / 3</span>
+            </div>
+            <div style="position: relative; margin: 6px 14px 0; height: 250px; border: 2px solid #221F1A; background: repeating-linear-gradient(0deg, #EDDCDF 0 8px, #E6D4D8 8px 16px); display: flex; align-items: center; justify-content: center">
+              <div style="width: 130px; height: 100px; border: 3px solid #221F1A; background: #C89A6B; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 5px 5px 0 #A87E54">
+                <div style="width: 34px; height: 30px; border: 3px solid #221F1A; background: #E0C08B"></div>
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #3A2C1C">FERMÉ</div>
+              </div>
+              <div style="position: absolute; left: 12px; top: 12px; font-family: Silkscreen, monospace; font-size: 10px; padding: 6px 9px; background: #FAF0F0; border: 2px solid #221F1A">[ COFFRE 32PX ]</div>
+            </div>
+            <div style="padding: 18px 18px 0; display: flex; align-items: center; gap: 14px">
+              <div style="width: 56px; height: 56px; flex: none; border: 3px solid #221F1A; background: #F7B8CB; box-shadow: 3px 3px 0 #D9A3B4; display: flex; align-items: center; justify-content: center; gap: 3px">
+                <div style="width: 4px; height: 12px; background: #221F1A; animation: wave 1s ease-in-out infinite"></div>
+                <div style="width: 4px; height: 22px; background: #221F1A; animation: wave 1s ease-in-out .2s infinite"></div>
+                <div style="width: 4px; height: 15px; background: #221F1A; animation: wave 1s ease-in-out .4s infinite"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <div style="font-size: 22px; font-weight: 700; line-height: 1.2">Tu as tout fait, Iris.</div>
+                <div style="font-size: 15px; color: #6B5257; line-height: 1.4">Va chercher un grand pour ouvrir le coffre.</div>
+              </div>
+            </div>
+            <div style="padding: 20px 18px; display: flex; flex-direction: column; gap: 14px; flex: 1">
+              <div style="padding: 16px; background: #FAF0F0; border: 2px solid #221F1A; display: flex; flex-direction: column; gap: 12px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #8A6F75">CODE DU PARENT</div>
+                <div style="display: flex; gap: 10px">
+                  <div style="flex: 1; aspect-ratio: 1; border: 2px solid #221F1A; background: #FFFBF6; display: flex; align-items: center; justify-content: center"><div style="width: 14px; height: 14px; background: #221F1A"></div></div>
+                  <div style="flex: 1; aspect-ratio: 1; border: 2px solid #221F1A; background: #FFFBF6; display: flex; align-items: center; justify-content: center"><div style="width: 14px; height: 14px; background: #221F1A"></div></div>
+                  <div style="flex: 1; aspect-ratio: 1; border: 3px solid #221F1A; background: #FFFBF6; box-shadow: 3px 3px 0 #D9A3B4"></div>
+                  <div style="flex: 1; aspect-ratio: 1; border: 2px solid #221F1A; background: #FFFBF6"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px">
+                  <div style="min-height: 44px; border: 2px solid #221F1A; background: #EDDCDF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">1</div>
+                  <div style="min-height: 44px; border: 2px solid #221F1A; background: #EDDCDF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">2</div>
+                  <div style="min-height: 44px; border: 2px solid #221F1A; background: #EDDCDF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">3</div>
+                  <div style="min-height: 44px; border: 2px solid #221F1A; background: #EDDCDF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">4</div>
+                  <div style="min-height: 44px; border: 2px solid #221F1A; background: #EDDCDF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">5</div>
+                </div>
+              </div>
+              <div style="margin-top: auto; padding: 14px; background: #EDDCDF; border: 2px dashed #B79AA0; font-size: 15px; line-height: 1.45; color: #6B5257">Sans le code, l'écran reste ici. Rien ne clignote, rien ne presse : le coffre attend jusqu'à ce soir s'il faut.</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">04 &nbsp;LE COFFRE + CODE PARENT</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">La validation parentale : un coffre fermé, un code à 4 chiffres. La voix dit à l'enfant d'aller chercher un adulte — c'est la seule fois où le jeu lui demande quelque chose hors de l'écran.</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 36px">
+    <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap">
+      <div style="font-family: Silkscreen, monospace; font-size: 30px">ÉCRANS &mdash; THÉO &amp; PARENTS</div>
+      <div style="font-size: 17px; color: #6B6353">Même moteur, deuxième peau. L'écran Parents est le seul endroit avec du texte dense.</div>
+    </div>
+
+    <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start">
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #1E2740; display: flex; flex-direction: column; color: #E8EDF7">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; font-family: Silkscreen, monospace; font-size: 11px; color: #8C9BBC">
+              <span>7:04</span>
+              <span>THÉO</span>
+              <span>SON ON</span>
+            </div>
+            <div style="position: relative; height: 280px; margin: 0 14px; border: 2px solid #0E1424; background: repeating-linear-gradient(0deg, #2A3556 0 8px, #263050 8px 16px); overflow: hidden">
+              <div style="position: absolute; inset: 0; background: linear-gradient(105deg, rgba(255,190,120,.28) 0%, rgba(255,190,120,0) 55%)"></div>
+              <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); text-align: center; font-family: Silkscreen, monospace; font-size: 11px; color: #8C9BBC; line-height: 1.9">
+                <div>[ CHAMBRE DE THÉO ]</div>
+                <div>circuit au sol · posters</div>
+                <div>casque sur l'étagère</div>
+              </div>
+              <div style="position: absolute; right: 14px; bottom: 14px; width: 34px; height: 34px; border: 2px solid #0E1424; background: #E08A3C; animation: bob 4s ease-in-out infinite"></div>
+            </div>
+            <div style="padding: 18px 18px 0; display: flex; align-items: center; gap: 14px">
+              <div style="width: 68px; height: 68px; flex: none; border: 3px solid #0E1424; background: #E08A3C; box-shadow: 4px 4px 0 #8A4E1C; display: flex; align-items: center; justify-content: center; gap: 4px">
+                <div style="width: 5px; height: 13px; background: #1E2740; animation: wave 1s ease-in-out infinite"></div>
+                <div style="width: 5px; height: 25px; background: #1E2740; animation: wave 1s ease-in-out .15s infinite"></div>
+                <div style="width: 5px; height: 18px; background: #1E2740; animation: wave 1s ease-in-out .3s infinite"></div>
+                <div style="width: 5px; height: 28px; background: #1E2740; animation: wave 1s ease-in-out .45s infinite"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <div style="font-size: 23px; font-weight: 700; line-height: 1.15">Salut Théo.</div>
+                <div style="font-size: 15px; color: #A9B6D4; line-height: 1.4">Cinq choses avant la porte.</div>
+              </div>
+            </div>
+            <div style="padding: 18px 18px 0; display: flex; flex-direction: column; gap: 8px">
+              <div style="height: 16px; border: 2px solid #0E1424; background: #263050; padding: 2px; display: flex; gap: 3px">
+                <div style="flex: 1; background: #E08A3C"></div>
+                <div style="flex: 1; background: #E08A3C"></div>
+                <div style="flex: 1; background: #33406A"></div>
+                <div style="flex: 1; background: #33406A"></div>
+                <div style="flex: 1; background: #33406A"></div>
+              </div>
+              <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #8C9BBC">2 / 5 &nbsp;·&nbsp; HIER : 6 MIN</div>
+            </div>
+            <div style="padding: 14px 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex: 1">
+              <div style="border: 2px solid #0E1424; background: #E08A3C; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px"><div style="width: 34px; height: 34px; border: 2px solid #0E1424; background: #1E2740"></div><div style="font-size: 12px; font-weight: 700; color: #221F1A; text-align: center">s'habiller</div></div>
+              <div style="border: 2px solid #0E1424; background: #E08A3C; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px"><div style="width: 34px; height: 34px; border: 2px solid #0E1424; background: #1E2740"></div><div style="font-size: 12px; font-weight: 700; color: #221F1A; text-align: center">les dents</div></div>
+              <div style="border: 3px solid #E8EDF7; background: #33406A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px"><div style="width: 34px; height: 34px; border: 2px solid #0E1424; background: #9FB6D6"></div><div style="font-size: 12px; font-weight: 700; text-align: center">ma chambre</div></div>
+              <div style="border: 2px solid #0E1424; background: #263050; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px; opacity: .6"><div style="width: 34px; height: 34px; border: 2px solid #0E1424; background: #33406A"></div><div style="font-size: 12px; font-weight: 700; text-align: center">la table</div></div>
+              <div style="border: 2px solid #0E1424; background: #263050; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px; opacity: .6"><div style="width: 34px; height: 34px; border: 2px solid #0E1424; background: #33406A"></div><div style="font-size: 12px; font-weight: 700; text-align: center">le salon</div></div>
+              <div style="border: 2px dashed #5A6790; background: #212B47; display: flex; align-items: center; justify-content: center; opacity: .6"><div style="font-family: Silkscreen, monospace; font-size: 10px; color: #8C9BBC">COFFRE</div></div>
+            </div>
+            <div style="display: flex; border-top: 3px solid #0E1424; background: #263050">
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; background: #33406A; border-right: 2px solid #0E1424"><div style="width: 26px; height: 26px; border: 2px solid #E8EDF7; background: #E08A3C"></div></div>
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center; border-right: 2px solid #0E1424"><div style="width: 26px; height: 26px; border: 2px solid #8C9BBC; background: #263050"></div></div>
+              <div style="flex: 1; padding: 18px 0; display: flex; align-items: center; justify-content: center"><div style="width: 26px; height: 26px; border: 2px solid #8C9BBC; background: #263050"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">05 &nbsp;THÉO — DEUXIÈME PEAU</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Même écran, même code, autre monde : bleu nuit et orange, cinq tâches au lieu de trois, et le temps d'hier affiché — parce qu'il aime courir contre lui-même. Jamais contre sa sœur.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="width: 390px; height: 800px; box-sizing: border-box; background: #2A2621; border: 3px solid #221F1A; border-radius: 30px; padding: 10px; box-shadow: 10px 10px 0 #D2C8B5">
+          <div style="width: 100%; height: 100%; border-radius: 22px; overflow: hidden; background: #EDE6DA; display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 10px; font-family: Silkscreen, monospace; font-size: 11px; color: #6B6353; border-bottom: 2px solid #221F1A">
+              <span>PARENTS</span>
+              <span>SEMAINE 34</span>
+              <span>FERMER</span>
+            </div>
+            <div style="padding: 16px 18px 0; display: flex; gap: 8px">
+              <div style="flex: 1; padding: 12px; text-align: center; background: #221F1A; color: #F1E9DA; font-size: 15px; font-weight: 700">Iris</div>
+              <div style="flex: 1; padding: 12px; text-align: center; background: #DCD3C3; border: 2px solid #221F1A; font-size: 15px; font-weight: 700">Théo</div>
+            </div>
+            <div style="padding: 18px; display: flex; flex-direction: column; gap: 18px; flex: 1; overflow: hidden">
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #6B6353">LA SEMAINE</div>
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px">
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div style="width: 100%; aspect-ratio: .55; border: 2px solid #221F1A; background: linear-gradient(to top, #7FA6A1 100%, #EFE8D9 0)"></div><div style="font-size: 11px; color: #6B6353">L</div></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div style="width: 100%; aspect-ratio: .55; border: 2px solid #221F1A; background: linear-gradient(to top, #7FA6A1 66%, #EFE8D9 66%)"></div><div style="font-size: 11px; color: #6B6353">M</div></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div style="width: 100%; aspect-ratio: .55; border: 2px solid #221F1A; background: linear-gradient(to top, #7FA6A1 100%, #EFE8D9 0)"></div><div style="font-size: 11px; color: #6B6353">M</div></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div style="width: 100%; aspect-ratio: .55; border: 2px solid #221F1A; background: linear-gradient(to top, #7FA6A1 33%, #EFE8D9 33%)"></div><div style="font-size: 11px; color: #6B6353">J</div></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div style="width: 100%; aspect-ratio: .55; border: 3px solid #221F1A; background: linear-gradient(to top, #7FA6A1 100%, #EFE8D9 0)"></div><div style="font-size: 11px; font-weight: 700">V</div></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div style="width: 100%; aspect-ratio: .55; border: 2px dashed #A99E8B; background: #EFE8D9"></div><div style="font-size: 11px; color: #A99E8B">S</div></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: center"><div style="width: 100%; aspect-ratio: .55; border: 2px dashed #A99E8B; background: #EFE8D9"></div><div style="font-size: 11px; color: #A99E8B">D</div></div>
+                </div>
+                <div style="font-size: 15px; color: #4A4437; line-height: 1.45">Quatre matins validés sur cinq. Jeudi, elle a arrêté après les dents.</div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <div style="display: flex; justify-content: space-between; align-items: center"><div style="font-family: Silkscreen, monospace; font-size: 10px; color: #6B6353">SES TÂCHES</div><div style="font-family: Silkscreen, monospace; font-size: 10px; color: #2F6E6B">MODIFIER</div></div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #F6F1E7; border: 2px solid #221F1A"><div style="width: 24px; height: 24px; border: 2px solid #221F1A; background: #E7C9D6"></div><div style="flex: 1; font-size: 15px; font-weight: 700">S'habiller</div><div style="font-family: Silkscreen, monospace; font-size: 9px; color: #6B6353">5 ÉTAPES</div></div>
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #F6F1E7; border: 2px solid #221F1A"><div style="width: 24px; height: 24px; border: 2px solid #221F1A; background: #BFD3D2"></div><div style="flex: 1; font-size: 15px; font-weight: 700">Les dents</div><div style="font-family: Silkscreen, monospace; font-size: 9px; color: #6B6353">1 ÉTAPE</div></div>
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #F6F1E7; border: 2px solid #221F1A"><div style="width: 24px; height: 24px; border: 2px solid #221F1A; background: #E0D2AE"></div><div style="flex: 1; font-size: 15px; font-weight: 700">Ranger sa chambre</div><div style="font-family: Silkscreen, monospace; font-size: 9px; color: #6B6353">3 ÉTAPES</div></div>
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #EDE6DA; border: 2px dashed #A99E8B"><div style="width: 24px; height: 24px; border: 2px solid #A99E8B; background: #DED3BE"></div><div style="flex: 1; font-size: 15px; color: #6B6353">Ajouter une tâche</div></div>
+                </div>
+              </div>
+
+              <div style="margin-top: auto; padding: 14px; background: #221F1A; color: #F1E9DA; display: flex; flex-direction: column; gap: 10px">
+                <div style="font-family: Silkscreen, monospace; font-size: 10px; color: #B0A692">LE COFFRE DE CE SOIR</div>
+                <div style="display: flex; gap: 8px">
+                  <div style="flex: 1; padding: 12px 8px; text-align: center; background: #F1E9DA; color: #221F1A; font-size: 13px; font-weight: 700">un vêtement</div>
+                  <div style="flex: 1; padding: 12px 8px; text-align: center; border: 2px solid #6B6353; font-size: 13px">un objet</div>
+                  <div style="flex: 1; padding: 12px 8px; text-align: center; border: 2px solid #6B6353; font-size: 13px">à moi</div>
+                </div>
+                <div style="font-size: 14px; line-height: 1.4; color: #C9BFA9">Vêtement choisi : le manteau jaune. Elle le verra sur son héros demain matin.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family: Silkscreen, monospace; font-size: 12px">06 &nbsp;ÉCRAN PARENTS</div>
+        <div style="font-size: 15px; color: #6B6353; max-width: 390px; line-height: 1.5">Derrière le code : la semaine par enfant, la liste des tâches modifiable, et le choix du contenu du coffre. Neutre, sans pixel art, sans son — c'est votre écran, pas le leur.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 20px; max-width: 460px">
+        <div style="font-family: Silkscreen, monospace; font-size: 20px">DÉCISIONS QUE J'AI PRISES</div>
+        <div style="padding: 22px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>Le coffre contient un vêtement.</strong> Vous n'avez pas répondu, alors j'ai gardé la cohérence : la garde-robe est la monnaie du jeu, la récompense reste dedans. L'écran Parents permet quand même de basculer sur un objet de chambre ou une récompense réelle que vous écrivez.</div>
+        <div style="padding: 22px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>Aucune comparaison entre eux.</strong> Deux univers séparés, pas de classement, pas de score partagé. Théo se compare à son propre temps d'hier, et c'est tout.</div>
+        <div style="padding: 22px; background: #F6F1E7; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>Le pixel art reste à faire.</strong> Je ne dessine pas de sprites : chaque scène ici est un repère annoté. Soit on commande à un pixel artiste sur la base de cette bible, soit on achète un pack d'intérieurs cosy et je l'intègre.</div>
+        <div style="padding: 22px; background: #DCD3C3; border: 2px solid #221F1A; font-size: 16px; line-height: 1.55"><strong>Et la routine du soir ?</strong> Tout ceci ne couvre que le matin. Bain, pyjama, lecture : ce serait la même maison, en version plus sombre. Dites-moi si je la dessine.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

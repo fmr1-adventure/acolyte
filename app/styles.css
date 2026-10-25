@@ -1,0 +1,1026 @@
+:root {
+  --bg: #1E2740;
+  --bg-alt: #212B47;
+  --deep: #141C33;
+  --outline: #0E1424;
+  --surface: #263050;
+  --surface-raised: #2A3556;
+  --surface-active: #33406A;
+  --surface-high: #4A5880;
+  --accent: #F0952F;
+  --accent-shadow: #8A4E1C;
+  --accent-dark: #C97622;
+  --accent-edge: #FFF6E8;
+  --rouge: #E8867A;
+  --rouge-edge: #FFEFEA;
+  /* Code couleur par nature d'item sur "Ma journée" (cf. styles.css plus
+     bas, .type-*) — volontairement distincts de --accent (déjà "fait/
+     actif") et --rouge (déjà "retirer/danger") pour ne pas leur donner un
+     double sens ailleurs dans l'app. */
+  --type-routine: #6FA8DC;
+  --type-repas: #93C47D;
+  --type-aventure: #C58AF9;
+  /* Mini-jeu brossage de dents (cf. #bouche-ouverte/#bouche-fermee) —
+     tokens dédiés plutôt que réutiliser --skin/--rouge, pour ajuster
+     l'illustration sans toucher au reste de l'avatar. */
+  --bouche-levre: #C97064;
+  --bouche-interieur: #7A2E2E;
+  --dent: #F5F0E6;
+  --dent-trait: #C9BFA8;
+  --dent-brillance: rgba(240, 149, 47, .55);
+  --text: #E8EDF7;
+  --text-soft: #C3CEE6;
+  --text-mute: #A9B6D4;
+  --text-faint: #8C9BBC;
+  --skin: #D8A37A;
+  --hair: #2B2321;
+  --shadow-hard: 4px 4px 0 var(--outline);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; border-radius: 0; }
+html, body {
+  margin: 0; padding: 0; min-height: 100%; width: 100%; overflow-x: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: "Atkinson Hyperlegible", "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-user-select: none; user-select: none;
+  /* PAS `contain`/`none` : sur au moins un moteur Chromium testé, les
+     deux bloquent purement et simplement tout geste de scroll (molette
+     et tactile), pas juste le rebond/pull-to-refresh visé à l'origine —
+     confirmé en direct (retour d'usage "le scroll ne marche pas", cf.
+     TODO.md), `auto` est la seule valeur qui laisse vraiment défiler une
+     page qui déborde. */
+  overscroll-behavior: auto;
+}
+/* Taille de base fluide : optimisée tablette (viewport ~600-900px en
+   portrait sur une 11"), tout en restant raisonnable sur un écran plus
+   étroit. Tout le reste du fichier est en px, dérivés de cette base via
+   des tailles explicitement augmentées plutôt que des em en cascade. */
+html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
+#app { max-width: 620px; margin: 0 auto; position: relative; min-height: 100vh; }
+
+.screen {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity .2s ease; padding: 18px 18px 24px;
+}
+.screen.active { opacity: 1; pointer-events: auto; position: relative; }
+.hidden { display: none !important; }
+
+.barre-haut {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 4px 16px; flex-shrink: 0;
+}
+.prenom-actif { font-size: 25px; font-weight: 800; }
+.bloc-nom { display: flex; flex-direction: column; gap: 2px; }
+#nom-piece { font-size: 14px; font-weight: 700; color: var(--text-faint); letter-spacing: .5px; }
+
+/* barre de progression segmentée (un segment par étape) : plus lisible
+   d'un coup d'œil qu'un compteur "3/10" pour un enfant qui ne compte pas
+   encore vite. */
+#barre-etapes { display: flex; gap: 2px; flex-wrap: nowrap; flex-shrink: 0; }
+#barre-etapes > div {
+  width: 9px; height: 22px; background: var(--surface); border: 2px solid var(--surface-high);
+  transition: background .2s ease, border-color .2s ease;
+}
+#barre-etapes > div.fait { background: var(--accent); border-color: var(--accent-edge); }
+.btn-voix {
+  width: 60px; height: 60px; font-size: 26px; background: var(--accent);
+  border: 3px solid var(--accent-edge); box-shadow: var(--shadow-hard); color: var(--deep);
+}
+.btn-voix:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* Retour : flèche rouge dans le bandeau du haut, partagée par tous les
+   écrans qui ont une navigation arrière (retour au menu, à l'espace
+   parent, ou annulation d'un formulaire) — jamais un bouton texte en
+   bas d'écran, pour rester au même endroit et reconnaissable d'un coup
+   d'œil partout dans l'app. La couleur (rouge, plutôt que l'orange des
+   actions qui avancent) est ce qui la distingue de .btn-voix. */
+.btn-retour-ecran {
+  width: 48px; height: 48px; font-size: 22px; font-weight: 800; background: var(--rouge);
+  border: 3px solid var(--rouge-edge); box-shadow: var(--shadow-hard); color: var(--deep); flex-shrink: 0;
+}
+.btn-retour-ecran:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* ---------- Scène routine (avatar + zones) ---------- */
+#scene {
+  position: relative; height: 260px; flex-shrink: 0; margin-bottom: 12px;
+  background: linear-gradient(180deg, var(--bg-alt) 0%, var(--bg-alt) 62%, var(--deep) 62%, var(--deep) 100%);
+  background-position: center; background-size: cover;
+  border: 3px solid var(--surface-high);
+  transition: background .4s ease;
+}
+/* pièce "salon" : même palette, teinte plus claire/chaude pour signaler un
+   autre lieu sans vrai décor (pas de DA à ce stade) */
+#scene.scene-salon {
+  background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-raised) 62%, var(--surface) 62%, var(--surface) 100%);
+}
+/* .avatar-wrap : partagée entre le menu (#avatar-wrap-menu) et l'écran de
+   routine (#avatar-wrap) — même sprite, deux emplacements. */
+.avatar-wrap { position: absolute; left: 50%; bottom: 14px; width: 122px; height: 190px; transform: translateX(-50%); }
+.avatar-wrap.pop { animation: popPerso .3s ease; }
+@keyframes popPerso { 0%{transform:translateX(-50%) scale(1);} 40%{transform:translateX(-50%) scale(1.12);} 100%{transform:translateX(-50%) scale(1);} }
+/* Invite à tirer sur l'avatar (tâche `avatarGlissable`, ex. "enlève tes
+   vêtements") : respiration douce et continue, pas d'à-coup — ne doit
+   pas se confondre avec .pop (retour immédiat après validation) ni
+   fatiguer l'œil comme .clignote (alerte). prefers-reduced-motion la
+   coupe déjà via la règle générique `*` en bas de fichier. */
+.avatar-wrap.invite-glisser { animation: respirerAvatar 1.6s ease-in-out infinite; }
+@keyframes respirerAvatar { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } }
+/* Flèche "tire par ici" sous l'avatar, seule tant qu'une tâche
+   `avatarGlissable` est en cours (cf. app.js) — indique la direction du
+   geste avant même le premier essai, plutôt que de laisser deviner. */
+#fleche-detacher {
+  position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%);
+  font-size: 22px; opacity: 0; pointer-events: none; transition: opacity .2s ease;
+}
+#fleche-detacher.visible { opacity: .85; animation: rebondBas 1s ease-in-out infinite; }
+@keyframes rebondBas { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(7px); } }
+/* Poignée invisible superposée à l'avatar (#avatar-poignee dans
+   index.html, remplie par app.js) : mêmes dimensions/position que
+   .avatar-wrap pour capter le geste exactement là où l'enfant voit son
+   avatar — les calques de l'avatar ont pointer-events:none. */
+.poignee-glissable {
+  position: absolute; left: 50%; bottom: 14px; width: 122px; height: 190px; transform: translateX(-50%);
+  cursor: grab; touch-action: none;
+}
+/* Pile de vêtements (#pile-vetements dans index.html, remplie par
+   app.js pour une tâche `pileGlissable`) : posée au sol, à l'écart de
+   l'avatar et de #zone-panier (la cible), pour que le geste "ramasser
+   puis ranger" ait une vraie distance à parcourir plutôt que de partir
+   déjà sur la cible. */
+#pile-vetements { position: absolute; left: 16px; bottom: 12px; width: 60px; height: 60px; }
+/* Panier de linge : visible en permanence pendant "Aller se coucher"
+   (cf. app.js), pas juste au moment de "ranger" — repère fixe avant
+   même que les vêtements ne tombent. Même emplacement que #zone-panier
+   ci-dessous, purement visuel (pointer-events:none). */
+#panier-linge {
+  position: absolute; right: 16px; bottom: 12px; width: 60px; height: 60px;
+  display: flex; align-items: center; justify-content: center; font-size: 36px;
+  opacity: 0; transition: opacity .2s ease; pointer-events: none;
+}
+#panier-linge.visible { opacity: 1; }
+.pile-glissable {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  font-size: 32px; background: var(--surface-active); border: 3px solid var(--surface-high);
+  box-shadow: var(--shadow-hard); cursor: grab; touch-action: none;
+  animation: pileApparait .3s ease;
+}
+@keyframes pileApparait { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+.avatar-calque {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  image-rendering: pixelated; pointer-events: none; opacity: 1;
+  transition: opacity .25s ease, transform .25s ease; transform: scale(1);
+}
+/* les calques identifiés (haut, pantalon, chaussettes, chaussures, manteau)
+   ne se révèlent qu'une fois la tâche correspondante faite ; le calque de
+   base (pyjama, sans attribut) reste toujours visible en dessous. */
+.avatar-calque[data-calque] { opacity: 0; transform: scale(.94); }
+.avatar-calque[data-calque].visible { opacity: 1; transform: scale(1); }
+
+.badge-zone {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 30px; opacity: 0; transition: opacity .15s ease, transform .2s ease; transform: scale(.4);
+}
+.badge-zone.visible { opacity: 1; transform: scale(1); }
+.badge-visage { font-size: 18px; top: 6px; bottom: auto; height: 20px; }
+.badge-dos {
+  position: absolute; top: 90px; left: calc(50% + 46px); width: 34px; height: 34px; font-size: 26px;
+}
+
+/* ---------- Menu de la journée ---------- */
+/* `.bloc-monnaies` est un <button> (accès à l'écran "Mes récompenses",
+   cf. app.js) déguisé en simple bloc d'affichage — reset du chrome
+   natif du bouton. */
+.bloc-monnaies {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;
+  background: none; border: none; padding: 0; font: inherit; cursor: pointer;
+}
+.bloc-monnaies:active { opacity: .7; }
+#jauge-jour { display: flex; gap: 4px; flex-shrink: 0; }
+.etoile-jauge { font-size: 26px; opacity: .3; filter: grayscale(1); transition: opacity .2s ease, filter .2s ease; }
+.etoile-jauge.gagnee { opacity: 1; filter: none; }
+/* pièces : monnaie distincte des étoiles, ne se remet pas à zéro chaque
+   jour (cf. app.js) — reste discrète, n'affiche rien tant qu'il n'y en a
+   aucune (pas de "0 🪙" en permanence sous les yeux). */
+#pieces-total { font-size: 16px; font-weight: 800; color: var(--text-mute); }
+
+#scene-menu {
+  position: relative; height: 220px; flex-shrink: 0; margin-bottom: 14px;
+  background: linear-gradient(180deg, var(--bg-alt) 0%, var(--bg-alt) 62%, var(--deep) 62%, var(--deep) 100%);
+  border: 3px solid var(--surface-high);
+}
+#scene-menu .avatar-wrap { width: 104px; height: 162px; bottom: 10px; }
+
+#horloge { text-align: center; font-size: 15px; color: var(--text-faint); margin-bottom: 10px; }
+
+#titre-menu { text-align: center; font-size: 21px; font-weight: 700; margin-bottom: 12px; }
+
+#liste-routines { display: flex; flex-direction: column; gap: 12px; }
+.carte-routine {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 64px; padding: 12px 18px; background: var(--surface-active);
+  border: 3px solid var(--surface-high); box-shadow: var(--shadow-hard);
+}
+.carte-routine-nom { font-size: 19px; font-weight: 700; }
+.carte-routine-etat { font-size: 22px; }
+.carte-routine-droite { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.carte-routine.faite { background: rgba(240,149,47,.14); border-color: var(--accent); box-shadow: none; opacity: .85; }
+.carte-routine.verrouillee { opacity: .45; box-shadow: none; }
+/* attire l'attention sur la routine à faire avant de partir, sans
+   naviguer de force (l'enfant a pu appuyer sur la voiture par erreur) */
+.carte-routine.clignote { animation: clignoterCarte .6s ease-in-out 3; }
+@keyframes clignoterCarte {
+  0%, 100% { border-color: var(--surface-high); box-shadow: var(--shadow-hard); }
+  50% { border-color: var(--accent-edge); box-shadow: 0 0 0 4px rgba(240,149,47,.5); }
+}
+
+/* Bouton "partir à l'aventure" : volontairement différent des cartes de
+   routine (plus grand, centré, coloré) — c'est un vrai portail de sortie,
+   pas une simple ligne de liste, façon écran de niveau d'un jeu. */
+#btn-depart {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin: 20px auto 0; padding: 16px 28px; background: var(--accent);
+  border: 3px solid var(--accent-edge); box-shadow: var(--shadow-hard); color: var(--deep);
+}
+#btn-depart:active { transform: translate(2px, 2px); box-shadow: none; }
+#depart-icone { font-size: 44px; }
+#depart-texte { font-size: 17px; font-weight: 800; }
+
+/* Bouton secondaire générique : accès à un écran de consultation
+   (ex. "Ma journée"), moins mis en avant que le portail #btn-depart. */
+.btn-secondaire {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 10px auto 0; padding: 12px 20px; background: var(--surface-active);
+  border: 3px solid var(--surface-high); color: var(--text); font-size: 15px; font-weight: 700;
+}
+.btn-secondaire:active { transform: translate(2px, 2px); }
+
+#missions-emoji { font-size: 80px; }
+#seance-emoji { font-size: 80px; }
+#missions-liste { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 8px; }
+
+.zone-cible {
+  position: absolute; border: 3px dashed transparent; pointer-events: none;
+  transition: border-color .15s ease, background .15s ease;
+}
+.zone-cible.active { border-color: var(--accent); background: rgba(240, 149, 47, .18); }
+/* Une seule cible pour tout l'habillage, plutôt qu'une par endroit du
+   corps (visage/torse/bassin/jambes/pieds/dos) : viser un endroit précis
+   n'apportait rien à l'enfant, juste des essais en plus s'il ratait la
+   bonne zone — cf. index.html. Mêmes propriétés de position que
+   .avatar-wrap (`bottom`, pas `top`) et mêmes largeur/hauteur, pour
+   couvrir exactement la silhouette plutôt qu'un rectangle décalé (`top:0`
+   partait du haut de #scene, pas du haut de l'avatar — trop haut au-dessus
+   de la tête et ne descendait pas jusqu'aux pieds, retour de terrain). */
+#zone-corps   { left: 50%; margin-left: -61px; bottom: 14px; width: 122px; height: 190px; }
+/* cible du panier de linge (tâche "ranger", pileGlissable) : superposée
+   à #panier-linge, au sol à côté de l'avatar, à l'opposé de
+   #pile-vetements pour que le geste "ramasser puis ranger" ait une
+   vraie distance à parcourir. */
+#zone-panier  { right: 16px; bottom: 12px; width: 60px; height: 60px; }
+
+#etape-courante {
+  text-align: center; font-size: 23px; font-weight: 700; min-height: 32px; margin-bottom: 10px;
+}
+
+#btn-reset-test {
+  position: fixed; top: 8px; right: 8px; z-index: 999; width: 30px; height: 30px;
+  background: var(--surface-high); color: var(--text-soft); border: 2px solid var(--outline);
+  font-size: 15px; font-weight: 700; opacity: .5; overflow: hidden;
+}
+/* remplissage progressif pendant l'appui long, pour rendre visible qu'il
+   se passe quelque chose avant que le reset se déclenche vraiment */
+#btn-reset-test::after {
+  content: ""; position: absolute; inset: auto 0 0 0; height: 0%;
+  background: var(--accent); opacity: .8; transition: none;
+}
+#btn-reset-test.maintien { opacity: 1; }
+#btn-reset-test.maintien::after { height: 100%; transition: height .9s linear; }
+
+/* Symétrique du reset, côté gauche — simple tap (pas d'appui long) : pas
+   destructif, ouvre juste l'écran du code parent. */
+#btn-espace-parent {
+  position: fixed; top: 8px; left: 8px; z-index: 999; width: 30px; height: 30px;
+  background: var(--surface-high); color: var(--text-soft); border: 2px solid var(--outline);
+  font-size: 15px; opacity: .5;
+}
+#btn-espace-parent:active { opacity: 1; transform: translate(1px, 1px); }
+
+/* Mode debug (tests, jamais vu par l'enfant — cf. modeDebugActif() dans
+   app.js) : même famille visuelle que les deux boutons ci-dessus, mais
+   volontairement décalé pour ne pas les chevaucher. */
+#btn-debug {
+  position: fixed; top: 8px; left: 44px; z-index: 999; width: 30px; height: 30px;
+  background: var(--surface-high); color: var(--text-soft); border: 2px solid var(--outline);
+  font-size: 15px; opacity: .5;
+}
+#btn-debug:active { opacity: 1; transform: translate(1px, 1px); }
+
+/* Volontairement d'allure "outil", pas pixel art comme le reste — pour
+   qu'il n'y ait aucune ambiguïté entre un vrai écran et le panneau. */
+#debug-panel {
+  position: fixed; inset: 0; z-index: 1000; overflow-y: auto;
+  background: rgba(10, 13, 22, .97); color: #D7E0F5; font-family: monospace;
+  padding: 16px; box-sizing: border-box;
+}
+#debug-entete { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+#debug-entete strong { font-size: 16px; }
+#btn-debug-fermer {
+  width: 30px; height: 30px; background: var(--surface-high); color: var(--text-soft);
+  border: 2px solid var(--outline); font-family: monospace;
+}
+/* Sélecteur d'emoji recherchable (cf. app.js, ouvrirSelecteurEmoji) —
+   même pattern d'overlay plein écran que #debug-panel ci-dessus, mais
+   habillage "dans l'app" (mêmes tokens que le reste), pas l'allure
+   "outil" du panneau debug : c'est un écran destiné aux parents en usage
+   normal, pas un outil de test. */
+#emoji-picker {
+  position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column;
+  background: var(--bg); padding: 18px; box-sizing: border-box;
+}
+#emoji-picker-entete { display: flex; gap: 10px; margin-bottom: 14px; flex-shrink: 0; }
+#emoji-picker-recherche {
+  flex: 1; font: inherit; font-size: 17px; font-weight: 600; color: var(--text);
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 10px 12px;
+}
+#emoji-picker-recherche::placeholder { color: var(--text-faint); font-weight: 500; }
+#emoji-picker-recherche:focus { outline: none; border-color: var(--accent); }
+#emoji-picker-grille {
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px;
+  overflow-y: auto; flex: 1; min-height: 0;
+}
+#btn-emoji-picker-fermer {
+  width: 48px; height: 48px; font-size: 20px; font-weight: 800; flex-shrink: 0;
+  background: var(--rouge); border: 3px solid var(--rouge-edge); box-shadow: var(--shadow-hard); color: var(--deep);
+}
+#btn-emoji-picker-fermer:active { transform: translate(2px, 2px); box-shadow: none; }
+
+.debug-bloc { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-high); }
+.debug-bloc-titre { font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+.debug-ligne { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.debug-note { font-size: 12px; color: var(--text-soft); margin-top: 4px; }
+.btn-debug-item {
+  display: block; width: 100%; box-sizing: border-box; text-align: left; padding: 8px 10px; margin-bottom: 6px;
+  background: var(--surface); color: #D7E0F5; border: 1px solid var(--surface-high); font-family: monospace; font-size: 13px;
+}
+.btn-debug-item:active { background: var(--surface-active); }
+.btn-debug-item.btn-debug-inline { display: inline-block; width: auto; margin-bottom: 0; }
+#debug-heure-valeur { font-size: 14px; min-width: 48px; text-align: center; }
+#debug-code-parent { font-size: 16px; letter-spacing: 2px; color: var(--accent); }
+
+.btn-continuer.maintien { background: var(--accent-shadow); }
+
+#chemin { padding-bottom: 20px; overflow-y: auto; flex: 1; min-height: 0; }
+.noeud {
+  display: flex; align-items: center; gap: 14px; min-height: 58px; margin-bottom: 9px;
+  padding: 7px 16px 7px 11px; background: var(--surface); border: 2px solid var(--surface-high);
+  opacity: .8; transition: background .2s ease, border-color .2s ease, opacity .2s ease;
+}
+.noeud.fait { background: rgba(240,149,47,.14); border-color: var(--accent); opacity: 1; }
+/* étape en cours : pas cliquable (seule l'icône l'est, cf. .pastille-glissable
+   ci-dessous) — évite que l'enfant hésite entre taper la ligne et glisser
+   l'icône. La ligne grandit pour laisser la place à l'icône agrandie. */
+.noeud.en-cours { border-color: var(--accent-edge); border-width: 3px; opacity: 1; min-height: 88px; }
+/* relecture/correction parent : toutes les tâches sont cliquables (pas
+   seulement celle en cours comme pendant la routine), pour décocher ce
+   qui n'a pas été réellement fait avant de valider. */
+.noeud.correctible { opacity: 1; cursor: pointer; }
+.noeud.correctible:not(.fait) { border-color: var(--surface-high); }
+/* tâche `miniJeu` (ex. "Brosse-toi les dents.") : toute la ligne ouvre
+   l'écran dédié au tap, contrairement aux autres tâches en cours (pas
+   d'icône à glisser ici, cf. app.js). */
+.noeud.noeud-tapable { cursor: pointer; }
+.noeud.noeud-tapable:active { transform: translate(1px, 1px); }
+.pastille-mini { width: 38px; height: 38px; min-width: 38px; background: var(--surface-active); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.noeud.fait .pastille-mini { background: var(--accent); }
+/* icône de l'étape en cours : seule chose à glisser, nettement agrandie
+   par rapport aux pastilles inertes des autres lignes (retour de terrain :
+   trop petite, l'enfant tapait la ligne au lieu de glisser). Le texte
+   reste affiché à côté pendant le glisser (lecture globale). */
+.pastille-glissable {
+  width: 72px; height: 72px; min-width: 72px; font-size: 38px;
+  box-shadow: var(--shadow-hard); touch-action: none; cursor: grab;
+}
+.pastille-glissable.en-cours-glisse { box-shadow: 8px 10px 0 rgba(0,0,0,.3); }
+.texte-etape { font-size: 17px; font-weight: 600; flex: 1; color: var(--text-mute); }
+.noeud.fait .texte-etape { color: var(--accent-edge); }
+.coche-mini { font-size: 20px; color: var(--accent); opacity: 0; transition: opacity .2s ease; }
+.noeud.fait .coche-mini { opacity: 1; }
+
+/* ---------- Mini-jeu : brossage de dents ---------- */
+/* barre de progression globale (6 segments, une par zone) — même recette
+   que #barre-etapes, dupliquée plutôt que partagée : les deux vivent
+   dans des bandeaux différents avec des tailles de voisins différentes,
+   pas la peine de généraliser pour un seul autre usage. */
+#dents-barre { display: flex; gap: 2px; flex-wrap: nowrap; flex-shrink: 0; }
+#dents-barre > div {
+  width: 9px; height: 22px; background: var(--surface); border: 2px solid var(--surface-high);
+  transition: background .2s ease, border-color .2s ease;
+}
+#dents-barre > div.fait { background: var(--accent); border-color: var(--accent-edge); }
+
+#dents-consigne { margin-top: 4px; }
+
+/* Deux bouches superposées (une seule visible à la fois, cf.
+   changerPhaseDents() dans app.js) plutôt qu'une grille abstraite —
+   demandé explicitement : une vraie bouche illustrée, ouverte (dents du
+   haut ET du bas, phase "aaaa") puis fermée (dents serrées, lèvres
+   tirées en arrière, phase "iiii"). */
+#dents-bouche { display: flex; align-items: center; justify-content: center; height: 230px; margin: 10px 0; }
+.svg-bouche { width: 100%; max-width: 340px; height: 100%; overflow: visible; }
+
+.bouche-interieur, .bouche-langue, .bouche-levre, .bouche-levre-pleine { pointer-events: none; }
+.bouche-interieur { fill: var(--bouche-interieur); }
+.bouche-langue { fill: var(--bouche-levre); opacity: .55; }
+.bouche-levre { fill: none; stroke: var(--bouche-levre); stroke-width: 10; }
+.bouche-levre-pleine { fill: var(--bouche-levre); }
+
+.zone-dent-base { fill: var(--dent); stroke: var(--dent-trait); stroke-width: 2; transition: fill .2s ease; }
+.zone-dent-trait, .zone-dent-trait-h { stroke: var(--dent-trait); stroke-width: 1.5; opacity: .6; pointer-events: none; }
+/* Brillance progressive pendant qu'on brosse (même principe que l'ancien
+   remplissage bas→haut) : positionnée/dimensionnée par JS à partir du
+   rectangle de la dent (getBBox()), jamais codée en dur ici — commune
+   aux deux bouches malgré leurs coordonnées différentes. */
+.zone-dent-remplissage { fill: var(--dent-brillance); pointer-events: none; }
+.zone-dent.active .zone-dent-base { stroke: var(--accent-edge); stroke-width: 4; }
+.zone-dent.faite .zone-dent-base { stroke: var(--accent); }
+/* petit tremblement pendant qu'on brosse activement — retour visuel
+   immédiat que le geste "compte". transform-box: fill-box nécessaire
+   pour qu'un pourcentage ("center") se calcule sur la boîte du <g> lui-
+   même, pas sur tout le viewBox du SVG (comportement par défaut, très
+   différent du HTML). */
+.zone-dent.brossage-actif { transform-box: fill-box; transform-origin: center; animation: brosserDent .25s ease-in-out infinite; }
+@keyframes brosserDent { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+#dents-chrono {
+  text-align: center; font-size: 32px; font-weight: 800; font-family: monospace;
+  color: var(--accent-edge); margin: 4px 0 8px;
+}
+
+/* ---------- Histoire du soir ---------- */
+/* Même principe que #fenetre-voiture (cf. Trajet) : boîte à bords fixes,
+   image en fond plutôt qu'un <img>, pour rester cohérent avec les autres
+   scènes de l'app. */
+#histoire-image {
+  height: 260px; border: 3px solid var(--surface-high);
+  background: url("assets/scenes/histoire-soir.jpg") center / cover;
+  margin-bottom: 8px; flex-shrink: 0;
+}
+
+/* ---------- Minuteur générique (widget sur l'écran de routine) ---------- */
+/* Compact et posé sous la consigne (#etape-courante), jamais un écran à
+   part : le glisser-déposer d'une tâche à zone continue de fonctionner
+   normalement à côté (cf. index.html, synchroniserMinuteurWidget() dans
+   app.js). Style "jauge" (cf. dessinerMinuteur() dans app.js) : une
+   barre qui se vide, transition fluide entre deux ticks plutôt que des
+   sauts d'une seconde à l'autre. D'autres styles (cadran horaire,
+   sablier...) viendront réutiliser ce même widget sans toucher à celui-ci. */
+#minuteur-widget { flex-shrink: 0; margin: 6px 0 10px; display: flex; flex-direction: column; gap: 8px; }
+#minuteur-widget-jauge { width: 100%; height: 22px; background: var(--surface); border: 2px solid var(--surface-high); overflow: hidden; }
+#minuteur-widget-remplissage { height: 100%; background: var(--accent); transition: width 1s linear; }
+#minuteur-widget-ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#minuteur-widget-chrono {
+  font-size: 20px; font-weight: 800; font-family: monospace; color: var(--accent-edge);
+}
+.btn-mini-sos {
+  font: inherit; font-size: 13px; font-weight: 700; color: var(--text);
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 6px 10px; flex-shrink: 0;
+}
+.btn-mini-sos:active { transform: translate(1px, 1px); }
+.btn-minuteur-widget-fini { margin-top: 0; }
+
+/* Style "cadran" (routine.styleMinuteur === "cadran") — alternative à la
+   jauge ci-dessus, disque qui rétrécit en rotation horaire façon Time
+   Timer : repère visuel documenté pour un public TSA/TDAH (cf. le plan
+   de ce chantier). --pct = fraction de temps RESTANT (1 -> 0), posée par
+   dessinerMinuteur() dans app.js à chaque tick. conic-gradient plutôt
+   qu'un <svg> stroke-dasharray (envisagé au départ) : donne directement
+   le vrai disque plein qui rétrécit (pas un simple anneau), sans calcul
+   trigonométrique d'arc à maintenir pour un résultat équivalent. Pas de
+   transition CSS sur le gradient lui-même (ne s'anime pas nativement) —
+   un saut par seconde reste lisible pour ce style, contrairement à la
+   jauge qui a besoin de sa transition fluide. */
+.minuteur-cadran { flex-shrink: 0; width: 56px; height: 56px; margin: 0 auto; }
+.minuteur-cadran-disque {
+  width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--surface-high);
+  background: conic-gradient(var(--accent) calc(var(--pct, 1) * 360deg), var(--surface) 0);
+}
+
+/* Minuteur global de routine (`routine.dureeGlobale`) — même mécanique
+   que #minuteur-widget ci-dessus, réutilise .btn-mini-sos, mais posé en
+   haut de l'écran (avant #scene, cf. index.html) plutôt que sous la
+   consigne : c'est un repère pour toute la routine, pas pour la tâche en
+   cours. Plus fin (jauge 14px vs 22px) pour rester secondaire par
+   rapport au minuteur de tâche quand les deux sont visibles en même
+   temps. */
+#minuteur-routine-widget { flex-shrink: 0; margin: 0 0 8px; display: flex; flex-direction: column; gap: 6px; }
+#minuteur-routine-jauge { width: 100%; height: 14px; background: var(--surface); border: 2px solid var(--surface-high); overflow: hidden; }
+#minuteur-routine-remplissage { height: 100%; background: var(--accent-edge); transition: width 1s linear; }
+#minuteur-routine-ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.minuteur-routine-label { font-size: 12px; font-weight: 700; color: var(--text-soft); flex: 1; }
+#minuteur-routine-chrono { font-size: 15px; font-weight: 800; font-family: monospace; color: var(--accent-edge); }
+/* Cadran plus petit ici (34px vs 56px) — même raison que la jauge plus
+   fine ci-dessus : rester secondaire par rapport au minuteur de tâche. */
+.minuteur-cadran-routine { width: 34px; height: 34px; }
+.minuteur-cadran-routine .minuteur-cadran-disque { background: conic-gradient(var(--accent-edge) calc(var(--pct, 1) * 360deg), var(--surface) 0); }
+
+/* Alerte de fin de minuteur non résolue (cf. entrerBlocageMinuteur() dans
+   app.js) — pulsation continue, distincte de .pop-ouverture (ponctuelle) :
+   ici l'attente peut durer, le signal doit rester visible tant qu'un
+   parent n'a pas entré son code. */
+.pulse-alerte { font-size: 88px; animation: pulseAlerte 1s ease-in-out infinite; }
+@keyframes pulseAlerte { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.12); opacity: .75; } }
+
+/* ---------- Scènes centrées (coffre / fin) ---------- */
+.scene-centree { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; gap: 10px; position: relative; }
+/* #coffre-emoji est un <button> (pas juste un <div>) : pour une routine
+   verrouillée (cf. ouvrirCoffreRoutine() dans app.js), c'est LUI, le
+   coffre fermé (🎁, toujours le même emoji, jamais un cadenas séparé —
+   l'enfant doit voir un coffre à ouvrir, pas un symbole abstrait), que
+   l'enfant tape pour l'ouvrir. Reset des styles de bouton pour rester
+   visuellement identique à un simple emoji dans le cas non verrouillé
+   (fin de journée, aventures — jamais tapable, le tap ne fait rien,
+   cf. ouvrirCadenasCoffre()). */
+#coffre-emoji { font-size: 96px; background: none; border: none; padding: 0; }
+#coffre-emoji.pop-ouverture { animation: popOuverture .5s ease; }
+@keyframes popOuverture { 0%{transform:scale(1);} 45%{transform:scale(1.35) rotate(-4deg);} 100%{transform:scale(1);} }
+
+/* Coffre verrouillé, en attente du tap de l'enfant : respire doucement
+   pour inviter le geste, même principe que .avatar-wrap.invite-glisser. */
+#coffre-emoji.coffre-fermable { cursor: pointer; animation: respirerCoffre 1.6s ease-in-out infinite; }
+@keyframes respirerCoffre { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+#bravo-routine-emoji { font-size: 80px; animation: rebond 1s ease infinite; }
+#bravo-routine-titre { font-size: 24px; font-weight: 800; padding: 0 12px; }
+
+/* ---------- Validation parent / correction ---------- */
+#correction-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; flex: 1; overflow-y: auto; }
+#correction-note { text-align: center; font-size: 15px; color: var(--text-faint); }
+#correction-liste { width: 100%; }
+
+#coffre-particules { position: absolute; top: 50%; left: 50%; width: 0; height: 0; pointer-events: none; }
+.confetti {
+  position: absolute; top: 0; left: 0; font-size: 26px; opacity: 0;
+  animation: envolConfetti .9s ease-out forwards;
+}
+@keyframes envolConfetti {
+  0%   { transform: translate(-50%, -50%) scale(.4); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1); opacity: 0; }
+}
+#coffre-statut {
+  font-family: monospace; font-size: 16px; letter-spacing: 2px; font-weight: 800;
+  background: var(--deep); border: 2px solid var(--surface-high); padding: 7px 18px; color: var(--text-mute);
+}
+.texte-consigne { text-align: center; font-size: 21px; font-weight: 600; margin: 12px 0; color: var(--text-soft); }
+
+#pavecode-wrap { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+#pavecode-cases { display: flex; gap: 12px; }
+.case-code {
+  width: 42px; height: 42px; border: 3px solid var(--surface-high); background: var(--surface);
+}
+.case-code.rempli { background: var(--outline); border-color: var(--accent); }
+#pavecode-clavier { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 280px; }
+.touche-code {
+  min-height: 64px; font-size: 24px; font-weight: 800; background: var(--surface-active);
+  border: 3px solid var(--surface-high); color: var(--text); box-shadow: var(--shadow-hard);
+}
+.touche-code:active { transform: translate(2px, 2px); box-shadow: none; }
+.texte-erreur { color: #E8867A; font-size: 16px; font-weight: 700; min-height: 22px; }
+
+#coffre-recompense { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 10px; }
+#coffre-recompense-texte { font-size: 22px; font-weight: 800; color: var(--accent-edge); }
+
+/* Bouton d'action principal des formulaires/listes parent les plus
+   longs — fixé au viewport (position: fixed, pas juste "après le
+   contenu") : ces écrans défilent au niveau de la page entière plutôt
+   que dans une zone scrollable dédiée (cf. .screen, position: relative
+   une fois actif), donc un contenu qui grossit (ex. minuteur par
+   tâche, cf. .tache-parent-minuteur, ou simplement une longue liste
+   d'activités/routines/entourage) repoussait un bouton simplement "en
+   bas du flux" hors champ, sans qu'il soit évident qu'il suffisait de
+   défiler pour le retrouver (retour de terrain, formulaires ; même
+   souci relevé sur les catalogues "+ Nouveau X", cf. TODO.md). `position:
+   sticky` ne suffit pas ici (il faudrait déjà avoir défilé jusqu'à lui) :
+   `fixed` le rend visible dès l'ouverture de l'écran, quelle que soit la
+   longueur du contenu — les mêmes bornes que #app (max-width 620px,
+   centré) pour rester aligné avec le reste du contenu. Le padding-bottom
+   correspondant sur les .._contenu/.._liste (plus bas) évite que le
+   dernier champ/la dernière carte se retrouve caché derrière. */
+#btn-creer-routine, #btn-creer-aventure, #btn-creer-personne, #btn-continuer-premiere-configuration,
+#btn-nouvelle-activite, #btn-nouvelle-routine, #btn-nouvelle-personne {
+  position: fixed; left: 18px; right: 18px; bottom: 18px; max-width: 584px; margin: 0 auto; z-index: 5;
+}
+.btn-continuer {
+  background: var(--accent); color: var(--deep); border: 3px solid var(--accent-edge);
+  font-size: 21px; font-weight: 800; padding: 17px 34px; box-shadow: var(--shadow-hard);
+  margin-top: 8px;
+}
+.btn-continuer:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* ---------- Trajet ---------- */
+#scene-trajet {
+  height: 220px; border: 3px solid var(--surface-high); background: var(--surface);
+  position: relative; overflow: hidden; flex-shrink: 0; margin-bottom: 8px;
+}
+#fenetre-voiture {
+  position: absolute; inset: 0;
+  background: url("assets/scenes/fenetre-voiture.jpg") center / cover;
+}
+/* L'enfant (profil actif, cf. tousLesProfils() dans app.js) vu de
+   l'intérieur, tête de profil au premier plan devant la fenêtre —
+   silhouette plutôt qu'un sprite détaillé : à contre-jour devant la
+   vitre, un aplat sombre
+   suffit et évite de dessiner un visage de profil par enfant. Un seul
+   élément partagé, pas une variante par profil : une silhouette à
+   contre-jour n'a pas besoin de distinguer les deux. */
+#silhouette-enfant {
+  position: absolute; left: -14px; bottom: -10px; width: 150px; height: 200px;
+  fill: var(--outline);
+}
+/* trajet retour (vers la maison) : silhouette retournée, seul indice
+   visuel du changement de sens (cf. app.js, sensTrajet). */
+#scene-trajet.retour #silhouette-enfant { left: auto; right: -14px; transform: scaleX(-1); }
+.label-trajet { font-size: 14px; letter-spacing: 1.5px; font-weight: 800; color: var(--text-faint); margin-bottom: 8px; }
+.note-bas { text-align: center; font-size: 15px; color: var(--text-faint); margin-bottom: 10px; }
+
+/* ---------- Arrivée ---------- */
+#scene-arrivee {
+  height: 180px; border: 3px solid var(--surface-high); background: var(--surface-raised);
+  display: flex; align-items: flex-end; justify-content: center; gap: 40px; padding-bottom: 14px;
+  flex-shrink: 0; margin-bottom: 8px;
+}
+.sprite-simple { font-size: 56px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sprite-simple span { font-size: 14px; font-weight: 700; color: var(--text-mute); }
+/* L'enfant en vrai sprite (pas un emoji) sur l'écran d'arrivée : `.avatar-wrap`
+   est pensé pour un décor en `position:relative` de pleine hauteur
+   (#scene / #scene-menu) — ici il vit dans un `.sprite-simple` flex, donc
+   on retire le positionnement absolu et on réduit la taille en
+   conséquence plutôt que de dupliquer le composant. */
+#scene-arrivee .avatar-wrap { position: relative; left: auto; bottom: auto; transform: none; width: 90px; height: 148px; }
+.carte-programme { border: 3px solid var(--surface-high); background: var(--surface); padding: 14px; margin-bottom: 14px; }
+.ligne-programme { font-size: 18px; font-weight: 600; padding: 6px 0; color: var(--text-soft); }
+
+/* ---------- Ma journée (planning chronologique) ---------- */
+#journee-contenu { display: flex; flex-direction: column; gap: 18px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px; }
+.groupe-journee-titre { font-size: 14px; letter-spacing: 1.5px; font-weight: 800; color: var(--text-faint); margin-bottom: 8px; }
+.liste-planning { display: flex; flex-direction: column; }
+.ligne-journee {
+  display: flex; align-items: center; gap: 12px; min-height: 48px; margin-bottom: 8px;
+  padding: 10px 16px; background: var(--surface); border: 2px solid var(--surface-high);
+  font-size: 17px; font-weight: 600; color: var(--text-soft);
+}
+.emoji-journee { font-size: 22px; }
+.texte-journee { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.texte-journee-reveil { font-size: 14px; font-weight: 600; color: var(--text-faint); }
+
+/* Liseré de couleur par nature (cf. construireJournee() dans app.js) —
+   juste le bord gauche, pas le fond : reste lisible sans rivaliser avec
+   le repère "maintenant" ci-dessous. */
+.ligne-journee.type-routine { border-left: 5px solid var(--type-routine); }
+.ligne-journee.type-repas { border-left: 5px solid var(--type-repas); }
+.ligne-journee.type-aventure { border-left: 5px solid var(--type-aventure); }
+
+/* Repère "maintenant/ensuite" (cf. reperesJournee() dans app.js) : une
+   mise en avant visuelle, jamais une logique de blocage. */
+.ligne-journee.journee-maintenant { border-color: var(--accent); box-shadow: var(--shadow-hard); }
+.ligne-journee.journee-suivant { opacity: .82; }
+.badge-maintenant {
+  align-self: flex-start; font-size: 11px; font-weight: 800; letter-spacing: .5px;
+  color: var(--accent-edge); background: var(--accent); padding: 3px 8px; flex-shrink: 0;
+}
+
+/* Mode édition (protégé par le code parent, cf. app.js) : petits
+   boutons de réordonnancement/suppression accolés à chaque ligne, et
+   catalogue d'ajout en bas de liste. */
+.controles-edition-journee { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+.input-heure-journee {
+  width: 92px; flex-shrink: 0; font: inherit; font-size: 14px; font-weight: 600;
+  color: var(--text); background: var(--surface-active); border: 2px solid var(--surface-high);
+  padding: 4px 6px;
+}
+.btn-mini-edition {
+  width: 34px; height: 34px; font-size: 15px; font-weight: 800;
+  background: var(--surface-active); border: 2px solid var(--surface-high); color: var(--text);
+}
+.btn-mini-edition:disabled { opacity: .3; }
+.btn-mini-edition:active:not(:disabled) { transform: translate(1px, 1px); }
+.btn-retirer { color: #E8867A; }
+.grille-ajout-planning { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn-ajout-planning {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  background: var(--surface-active); border: 2px solid var(--surface-high); color: var(--text);
+  font-size: 15px; font-weight: 700;
+}
+.btn-ajout-planning:active { transform: translate(1px, 1px); }
+
+/* Ajout par texte libre + dictée (cf. construireAjoutTexteLibre() dans
+   app.js) — même esprit que le catalogue d'ajout ci-dessus, sous forme
+   de texte plutôt que de boutons à piocher. */
+#ajout-texte-libre {
+  width: 100%; min-height: 64px; font: inherit; font-size: 17px; font-weight: 500;
+  color: var(--text); background: var(--surface); border: 2px solid var(--surface-high);
+  padding: 10px 12px; resize: vertical; margin-bottom: 10px;
+}
+#ajout-texte-libre::placeholder { color: var(--text-faint); font-weight: 500; }
+#ajout-texte-libre:focus { outline: none; border-color: var(--accent); }
+.ligne-boutons-ajout-texte { display: flex; gap: 10px; margin-bottom: 10px; }
+.ligne-boutons-ajout-texte .btn-continuer { flex: 1; margin: 0; }
+/* Micro : rond, ne grandit pas à côté du bouton "Analyser" qui prend le
+   reste de la place. État "écoute" (classe posée/retirée par
+   demarrerDicteeAjout()) : léger halo doré, coupé net à la fin de la
+   reconnaissance (onend/onerror), jamais laissé allumé indéfiniment. */
+.btn-dictee {
+  width: 52px; height: 52px; flex-shrink: 0; font-size: 22px;
+  background: var(--surface-active); border: 2px solid var(--surface-high); color: var(--text);
+}
+.btn-dictee.ecoute { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(240,149,47,.25); }
+#resultats-ajout-texte .ligne-journee { margin-bottom: 8px; }
+
+/* ---------- Mes récompenses (étoiles + pièces à collectionner) ---------- */
+#recompenses-contenu { display: flex; flex-direction: column; gap: 26px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px; }
+.recompenses-vide { font-size: 15px; color: var(--text-faint); }
+.grille-recompenses { display: flex; flex-wrap: wrap; gap: 14px; }
+.recompense-item { width: 84px; height: 84px; cursor: pointer; }
+.recompense-item .visuel {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  font-size: 52px; animation: tourner 9s linear infinite;
+}
+/* toucher une récompense la fait briller (glow), sans interrompre sa
+   rotation continue — deux animations séparées sur des propriétés
+   différentes (transform / filter) pour ne pas se marcher dessus. */
+.recompense-item.briller .visuel { animation: tourner 9s linear infinite, briller .7s ease; }
+@keyframes tourner { to { transform: rotate(360deg); } }
+@keyframes briller {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent) brightness(1); }
+  40% { filter: drop-shadow(0 0 14px var(--accent)) brightness(1.6); }
+}
+/* Portrait de l'enfant sur la pièce : recadrage simple (pas de nouvel
+   asset) du sprite avatar existant sur la zone du visage, via un
+   positionnement approximatif plutôt qu'un détourage précis. Petit et
+   teinté dans le ton de la pièce (façon profil gravé, type tête sur une
+   pièce d'or) plutôt qu'une photo couleur qui prendrait toute la place. */
+.piece-visage {
+  width: 100%; height: 100%; border-radius: 50%; overflow: hidden; position: relative;
+  background: var(--accent); border: 3px solid var(--accent-dark);
+}
+.piece-visage img {
+  position: absolute; top: 20px; left: 9px; width: 66px; height: auto; image-rendering: pixelated;
+  filter: grayscale(1) brightness(1.25) sepia(1) saturate(4) hue-rotate(-15deg) contrast(1.1);
+  mix-blend-mode: multiply;
+}
+
+/* ---------- Espace parent ---------- */
+#parent-contenu, #parent-routines-liste, #parent-historique-liste, #parent-seances-liste, #parent-planning-journees-liste {
+  display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px;
+}
+/* Ces 3 catalogues ont un bouton "+ Nouveau X" fixé en bas d'écran
+   (#btn-nouvelle-activite/-routine/-personne, cf. règle position:fixed
+   plus haut) plutôt qu'à la suite de la liste — padding-bottom agrandi
+   (même valeur que les formulaires .._contenu plus bas) pour que la
+   dernière carte ne se retrouve pas cachée derrière, ce dont les listes
+   ci-dessus (pas de bouton fixe) n'ont pas besoin. */
+#parent-activites-liste, #parent-routines-catalogue-liste, #parent-entourage-liste {
+  display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px;
+}
+.carte-parent-soustitre { font-size: 13px; font-weight: 500; color: var(--text-faint); margin-top: 3px; }
+/* option pas encore construite : même style "verrouillee" que le menu,
+   mais sans le cadenas — juste moins mis en avant, pas cliquable. */
+.carte-parent.verrouillee { cursor: default; }
+
+/* ---------- Formulaires parent (nouvelle activité / nouvelle routine) ---------- */
+#nouvelle-aventure-contenu, #nouvelle-routine-contenu, #nouvelle-personne-contenu, #seance-note-contenu, #premiere-configuration-contenu { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px; }
+
+/* Grille de choix d'avatar (première configuration / "+ Nouvel enfant"),
+   même esprit que .etoile-note-btn (bouton "éteint" tant que non choisi) —
+   la vignette (sprite de base) porte le choix, pas un texte à côté. */
+/* Aperçu de la combinaison de traits en cours (genre/coupe/peau/cheveux/
+   yeux, cf. construireChoixApparenceInitiale() dans app.js) — jamais
+   cliquable, un simple retour visuel pendant que les vrais choix se font
+   via les menus (.nr-lieu-choix pour la coupe, .pc-swatches ci-dessous
+   pour les couleurs) plutôt qu'en parcourant des portraits. */
+#pc-avatar-apercu {
+  display: flex; justify-content: center; padding: 8px 0;
+  background: var(--surface); border: 2px solid var(--surface-high);
+}
+#pc-avatar-apercu-img { width: 96px; height: auto; image-rendering: pixelated; }
+/* Couleur de peau/cheveux/yeux : la pastille de couleur porte le choix
+   (même esprit que .pc-avatar-carte avant elle), pas un aperçu du
+   personnage entier — inutile de recomposer un portrait par couleur
+   quand la teinte seule suffit à choisir. */
+.pc-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.pc-swatch {
+  width: 40px; height: 40px; border: 3px solid var(--surface-high);
+  padding: 0;
+}
+.pc-swatch.choisi { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(240,149,47,.35) inset; }
+.pc-swatch:active { transform: translate(1px, 1px); }
+.champ-parent { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 700; color: var(--text-soft); }
+.champ-parent input[type="text"] {
+  font: inherit; font-size: 17px; font-weight: 600; color: var(--text);
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 10px 12px;
+}
+.champ-parent input[type="text"]::placeholder { color: var(--text-faint); font-weight: 500; }
+.champ-parent input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.champ-parent textarea {
+  font: inherit; font-size: 17px; font-weight: 500; color: var(--text);
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 10px 12px;
+  resize: vertical;
+}
+.champ-parent textarea::placeholder { color: var(--text-faint); font-weight: 500; }
+.champ-parent textarea:focus { outline: none; border-color: var(--accent); }
+
+/* Note de séance (praticienne) en étoiles à choisir, 1 à 5 — même esprit
+   que .emoji-choix-btn (bouton "éteint" tant que non choisi), mais
+   cumulatif : choisir la 4ᵉ étoile allume aussi les 3 précédentes,
+   cf. construireEtoilesNoteSeance() dans app.js. */
+#seance-note-etoiles { display: flex; gap: 6px; }
+.etoile-note-btn {
+  width: 52px; height: 52px; font-size: 28px; background: var(--surface);
+  border: 2px solid var(--surface-high); opacity: .35;
+}
+.etoile-note-btn.choisie { opacity: 1; border-color: var(--accent); background: rgba(240,149,47,.14); }
+.champ-parent-case { flex-direction: row; align-items: center; gap: 10px; }
+.champ-parent-case input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--accent); }
+/* Bouton "icône actuelle" des 3 formulaires (activité/routine/personne) —
+   ouvre le sélecteur partagé au tap (cf. #emoji-picker plus bas). Plus
+   grand qu'un simple .emoji-choix-btn : c'est maintenant le SEUL point
+   d'entrée visible vers l'icône, pas un choix parmi une grille déjà là. */
+.emoji-trigger {
+  width: 64px; height: 64px; font-size: 32px; background: var(--surface);
+  border: 2px solid var(--surface-high);
+}
+.emoji-trigger:active { transform: translate(1px, 1px); }
+
+.emoji-choix-btn {
+  width: 44px; height: 44px; font-size: 22px; background: var(--surface);
+  border: 2px solid var(--surface-high);
+}
+.emoji-choix-btn:active { background: var(--surface-active); transform: translate(1px, 1px); }
+
+/* lieu (chambre/salon) : même esprit que les boutons emoji, deux choix
+   mutuellement exclusifs plutôt qu'une grille. */
+.nr-lieu-choix { display: flex; gap: 8px; }
+.nr-lieu-btn {
+  flex: 1; padding: 10px; font-size: 15px; font-weight: 700; color: var(--text-soft);
+  background: var(--surface); border: 2px solid var(--surface-high); opacity: .6;
+}
+.nr-lieu-btn.choisi { opacity: 1; border-color: var(--accent); background: rgba(240,149,47,.14); color: var(--text); }
+
+/* Date de naissance : 3 roulettes qu'on fait défiler (jour/mois/année)
+   sur une seule ligne, plutôt que des grilles de pastilles empilées.
+   Bande centrale fixe (::before) qui indique la valeur retenue ; chaque
+   roulette est une colonne défilante avec accroche au centre
+   (scroll-snap) — cf. construireRoueDate() dans app.js, qui détecte
+   l'item centré une fois le défilement stabilisé. Le padding haut/bas
+   (une demi-hauteur de roulette) permet au premier et au dernier item
+   d'atteindre eux aussi le centre. */
+.pc-date-roues { display: flex; gap: 6px; position: relative; height: 120px; }
+.pc-date-roues::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: 40px; background: rgba(240,149,47,.14); border-top: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent); pointer-events: none;
+}
+.pc-date-roue {
+  flex: 1; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory;
+  padding: 40px 0; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+}
+.pc-date-roue::-webkit-scrollbar { display: none; }
+.pc-date-roue-item {
+  height: 40px; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: var(--text-faint); scroll-snap-align: center;
+}
+.pc-date-roue-item.choisi { color: var(--text); font-size: 19px; }
+
+/* Entourage ("qui est là ?") : chips à choix multiple, contrairement au
+   lieu (chambre/salon) ci-dessus — nombre variable de personnes, donc
+   dimensionnées à leur contenu et enveloppantes plutôt qu'étirées à
+   parts égales sur une seule ligne. */
+.grille-entourage { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-entourage {
+  padding: 9px 14px; font-size: 14px; font-weight: 700; color: var(--text-soft);
+  background: var(--surface); border: 2px solid var(--surface-high); opacity: .6;
+}
+.chip-entourage.choisi { opacity: 1; border-color: var(--accent); background: rgba(240,149,47,.14); color: var(--text); }
+
+/* une ligne de tâche = texte (large) + emoji (étroit) + zone (menu) sur
+   une même ligne, plutôt qu'un bloc par champ comme le reste du
+   formulaire — sinon 5 tâches rendraient le formulaire interminable.
+   flex-wrap : la ligne minuteur (.tache-parent-minuteur, largeur 100%)
+   passe seule à la ligne suivante plutôt que de comprimer le reste. */
+.tache-parent { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tache-parent-num {
+  width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: var(--text-faint); background: var(--surface); border: 2px solid var(--surface-high);
+}
+.tache-parent-texte { flex: 1; min-width: 0; }
+.tache-parent-emoji { width: 52px; flex-shrink: 0; text-align: center; }
+.tache-parent-texte, .tache-parent-emoji {
+  font: inherit; font-size: 15px; font-weight: 600; color: var(--text);
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 9px 10px;
+}
+.tache-parent-texte::placeholder, .tache-parent-emoji::placeholder { color: var(--text-faint); font-weight: 500; }
+/* Coché = la tâche se glisse n'importe où sur l'avatar (#zone-corps) pour
+   être validée ; décoché = pas de geste (tâche minuteur seul, ex. "Fais
+   tes devoirs"), cf. creerNouvelleRoutine() dans app.js. Remplace
+   l'ancien <select> à 6 zones (visage/torse/bassin/jambes/pieds/dos) —
+   une seule cible pour tout le corps maintenant, cf. #zone-corps. */
+.tache-parent-corps-case {
+  flex-shrink: 0; display: flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 700; color: var(--text-soft);
+}
+.tache-parent-corps-case input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+/* Minuteur optionnel par tâche (cf. creerNouvelleRoutine() dans app.js) —
+   sur sa propre ligne (flex-basis 100%, cf. .tache-parent ci-dessus) pour
+   ne jamais comprimer texte/emoji/zone sur un écran étroit. Replié par
+   défaut (bouton seul, cf. toggleChampsMinuteurRoutine() dans app.js) :
+   la grande majorité des tâches n'ont pas de minuteur, pas la peine
+   d'imposer deux champs de plus par ligne rien que pour les montrer
+   vides — c'est ce qui rendait le formulaire trop long pour tenir sans
+   défiler jusqu'au bouton "Créer" (retour de terrain). */
+.tache-parent-minuteur { flex-basis: 100%; margin-left: 32px; }
+.btn-toggle-minuteur {
+  font: inherit; font-size: 12px; font-weight: 700; color: var(--text-soft);
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 4px 8px;
+}
+.btn-toggle-minuteur.actif { color: var(--text); border-color: var(--accent-edge); }
+.tache-parent-minuteur-champs { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.tache-parent-minuteur-duree {
+  width: 56px; font: inherit; font-size: 13px; font-weight: 700; color: var(--text); text-align: center;
+  background: var(--surface); border: 2px solid var(--surface-high); padding: 6px 4px;
+}
+.tache-parent-minuteur-case { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-soft); }
+.tache-parent-minuteur-case input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+
+@keyframes rebond { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-14px);} }
+
+/* ---------- Dodo ---------- */
+/* Chambre du profil actif en fond plein écran (image posée en JS via
+   appliquerProfilAuDom() — profil-dépendante, contrairement aux autres
+   scènes fixes de ce fichier) ; l'émoji flotte par-dessus. Contrairement
+   à la règle générale (`.screen.active` repasse en `position: relative`,
+   pour qu'un contenu long pousse la page en scroll normal), cet écran
+   reste sans contenu scrollable : on le garde en `position: absolute;
+   inset: 0` (comme un écran inactif) pour qu'il occupe tout `#app` et que
+   le fond le couvre entièrement, plutôt que de se limiter à la hauteur de
+   l'émoji seul.
+   (spécificité #id.class > .class.class, l'emporte sur `.screen.active`) */
+#screen-dodo.active { position: absolute; inset: 0; }
+/* Fond sombre et uni, volontairement SANS décor (pas de photo de chambre
+   ici, contrairement à #scene pendant une routine) : un écran de sommeil
+   ne doit pas être lumineux — cf. commentaire de #dodo-avatar plus bas
+   pour la même logique appliquée à l'avatar lui-même. */
+#screen-dodo { background-color: var(--deep); }
+/* Avatar endormi (#dodo-avatar, src posé par appliquerProfilAuDom() —
+   cf. app.js), allongé de tout son long (sprite vertical, cf.
+   generate_sprites_detailed_preview.py) : pulsation lente et douce
+   (contraste voulu avec "rebond", festif) — une scène de sommeil ne doit
+   pas stimuler. `filter` fait office de pellicule qui atténue les
+   couleurs (luminosité et saturation réduites, pas de grayscale complet
+   — on doit encore reconnaître l'enfant) plutôt que de les montrer aussi
+   vives qu'à l'écran de routine, éveillé. image-rendering pixelated
+   comme .avatar-calque, même style pixel art. */
+#dodo-avatar {
+  width: 200px; image-rendering: pixelated;
+  animation: respire 4s ease-in-out infinite;
+  filter: brightness(.55) saturate(.6) drop-shadow(0 4px 14px rgba(0, 0, 0, .45));
+}
+@keyframes respire { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+/* "Zzz" : reste un emoji animé à part, pas dessiné dans le sprite (cf.
+   generate_sprites_detailed_preview.py) — flotte doucement au-dessus. */
+#dodo-zzz { position: absolute; top: 18%; right: 22%; font-size: 40px; animation: flotterZzz 3s ease-in-out infinite; }
+@keyframes flotterZzz { 0%,100% { transform: translateY(0); opacity: .85; } 50% { transform: translateY(-10px); opacity: 1; } }
+
+/* ---------- Accueil (première rencontre avec l'acolyte) ---------- */
+.accueil-emoji { font-size: 80px; }
+/* Même correctif que #screen-dodo.active ci-dessous (voir son commentaire) :
+   contenu court, sans rien à faire défiler, qui sinon se limiterait à sa
+   propre hauteur au lieu de remplir #app — visible comme un saut brusque
+   du contenu vers le centre de l'écran au moment de la désactivation
+   (retour à `position: absolute; inset: 0`, la règle des écrans inactifs). */
+#screen-accueil-1.active, #screen-accueil-2.active, #screen-accueil-3.active { position: absolute; inset: 0; }
+
+/* ---------- Réveil (bonjour / as-tu bien dormi / humeur) ---------- */
+#reveil-emoji { font-size: 80px; }
+
+.reveil-choix { display: flex; gap: 16px; }
+.reveil-choix .btn-continuer { margin-top: 0; }
+
+#reveil-humeur-texte { margin: 4px 0 14px; }
+#reveil-humeur-grille {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  flex: 1; align-content: center;
+}
+.btn-humeur {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  padding: 16px 6px; background: var(--surface); border: 3px solid var(--surface-high);
+  box-shadow: var(--shadow-hard); color: var(--text-soft);
+}
+.btn-humeur:active { transform: translate(2px, 2px); box-shadow: none; }
+.btn-humeur-emoji { font-size: 46px; }
+.btn-humeur-texte { font-size: 14px; font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, .pop { animation: none !important; }
+}
