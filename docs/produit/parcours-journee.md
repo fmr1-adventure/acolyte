@@ -34,8 +34,10 @@ dans `concept.md` ; les entités de données dans `modele-de-donnees.md`.
    de l'enfant **dans son état actuel** (habillé ou non...) en haut.
 8. Répétition des étapes 2 à 7 jusqu'au coucher, qui devient
    « maintenant » à son heure, même si tout n'a pas été fait.
-9. **Récompense de fin de journée**, dépendante de la quantité totale
-   d'étoiles accumulées (cf. `concept.md`).
+9. **Coucher calme** : après « Aller se coucher », ni coffre ni fête ;
+   les étoiles du jour attendent le lendemain matin, où une carte « Ce
+   matin » les verse dans la jauge (une pièce toutes les 20 étoiles), puis
+   l'enfant pose ses pièces sur son chemin (cf. `concept.md`).
 
 ## Côté parents : préparer la journée
 

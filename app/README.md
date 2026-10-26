@@ -174,8 +174,13 @@ Séquence :
    valider. La validation déverrouille le coffre de la routine
    (`screen-coffre`) : c'est l'enfant qui tape dessus pour l'ouvrir et
    faire sortir l'étoile (`ouvrirCoffreRoutine()`).
-6. **Récompense de fin de journée** — automatique une fois toutes les
-   routines validées : confettis, total d'étoiles.
+6. **Coucher calme** — « Aller se coucher » (la routine à
+   `disponibleApresHeure`) se valide sans coffre (`validerCoucher()`) ;
+   `allerDormir()` met les étoiles du jour de côté
+   (`mettreDeCoteEtoiles()`, `etat.etoilesMisesDeCote` empêche tout double
+   compte), dit « Bonne nuit…, tes étoiles t'attendent demain matin » et
+   endort l'app. Les étoiles d'un jour sans coucher sont mises de côté au
+   changement de jour (`chargerEtat()`).
 7. **Aventures** (`AVENTURES_COMMUNES` dans `app.js` — un catalogue de
    départ commun, un exemple générique ; un profil n'a par ailleurs
    aucune aventure propre en dur, cf. "Profils" plus bas) — lancées
@@ -246,20 +251,39 @@ Séquence :
    et rapproche le reste des catalogues existants par mots-clés
    (reconnaissance locale, sans IA, dictée via `SpeechRecognition` quand
    le navigateur la propose) ; chaque proposition est à confirmer.
-9. **"Mes récompenses"** (`construireRecompenses()`, en tapant sur les
-   étoiles/pièces du menu) — étoiles du jour et total de pièces
-   présentés comme des objets à collectionner (rotation continue,
-   brillent au toucher). La pièce affiche un petit portrait de l'enfant
-   teinté façon profil gravé sur une pièce d'or (`.piece-visage`),
-   recadré depuis le sprite avatar existant — pas de nouvel asset dédié.
+9. **Récompenses** (`recompenses.js`, logique pure testée par
+   `tests/recompenses.test.js`) — `cle("jauge_etoiles")` `{ dansLaJauge,
+   aDecouvrir }`, `cle("pieces_a_poser")` (migré une fois depuis
+   `cle("pieces")`, `migrerPiecesUneFois()`), `cle("chemin")` (`cases`,
+   `etoilesParPiece`, `heureDecouverte`, `sons`, `recompenses`, `posees`,
+   `atteintes`, `archives`, cf. `normaliserChemin()`).
+   - Bandeau de la liste (`construireBandeauRecompenses()`) : jauge,
+     étoiles d'aujourd'hui, pièces (+ à poser) ; un appui ouvre le chemin.
+   - Carte « Ce matin » (`construireCarteMatin()`, `ajouterEtoilesDuMatin()`)
+     à partir de `heureDecouverte` : enregistre tout d'abord
+     (`verserEtoiles()`), puis anime une étoile à la fois avec les sons
+     (`sonEtoile()`, `sonJaugePleine()`, `sonPiece()`), la voix après.
+   - « Mon chemin » (`screen-chemin`, `construireChemin()`) : route en
+     épingles (`geometrieChemin()`), ronds de 48 px (64 au bout), plateau ;
+     glisser au pointeur (`commencerGlisserPiece()`/`lacherPiece()`,
+     écouté sur la fenêtre) ; `poserPiece()` → `sonPose()`, récompense →
+     `atteintes` + fête + `sonFanfare()` puis la voix.
+   - La pièce Acolyte (`elementPiece(s, { pose, tourne })`) : face 16 × 16
+     en ombres portées (« A » gravé), tranches empilées découpées en
+     escalier, dos ; remplace l'emoji partout (`data-piece` dans le HTML).
+   - Sons (`jouerNotes()`) : doux (triangle), arcade (carré) ou coupés,
+     selon `chemin.sons` ; chaque son renvoie sa durée.
 10. **Espace parent** (`ouvrirEspaceParent()`, bouton ⚙️ discret en haut à
    gauche, sur tous les écrans — symétrique du reset, mais un simple tap
    suffit : rien ici n'est destructif) — hub protégé par le code parent,
    **directement lié à l'espace enfant** (même `app.js`, même état,
-   aucun outil séparé). Rangé en quatre blocs (`construireEspaceParent()`) :
+   aucun outil séparé). Rangé en cinq blocs (`construireEspaceParent()`) :
    LA JOURNÉE (Planning, Relancer une routine), LA BIBLIOTHÈQUE
    (Activités, Routines, Mon entourage), LE SUIVI (Historique, Notes des
-   séances), RÉGLAGES (Code parent, Cet appareil) :
+   séances), LES RÉCOMPENSES (Chemin et récompenses :
+   `construireParentChemin()` — à donner, réglages, estimation,
+   récompenses, nouveau chemin ; point sur ⚙️ via
+   `majBadgeEspaceParent()`), RÉGLAGES (Code parent, Cet appareil) :
    - **Relancer une routine** — pour corriger l'état si l'enfant a changé
      entre-temps (ex. redéshabillé après une routine validée). Réutilise
      l'écran de correction déjà existant (`construireCorrection()`,

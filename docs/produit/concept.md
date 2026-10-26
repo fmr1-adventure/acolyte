@@ -55,16 +55,26 @@ d'autre de sa journée). Un rappel qu'une dépendance entre deux routines
 doit avoir un vrai rapport de cause à effet, pas juste suivre l'ordre où
 elles ont été codées.
 
-## Récompense : étoiles par routine → jauge de journée
+## Récompense : des étoiles aux pièces, des pièces au chemin
 
-- Chaque routine terminée rapporte une **étoile**.
-- Les étoiles remplissent une **jauge de journée** au fur et à mesure.
-- La **récompense de fin de journée dépend de la quantité d'étoiles**
-  accumulées (barème encore à définir).
+C'est la partie la plus « jeu » de l'app : l'enfant voit concrètement
+qu'il avance.
 
-Ça remplace/étend le mécanisme du prototype pilote actuel (une seule
-récompense "coffre" après l'unique routine) — à revoir une fois le modèle
-Routine/Tâche implémenté.
+- Chaque routine faite dans la journée rapporte une **étoile**, une fois
+  par jour, et une étoile **n'est jamais reprise**.
+- **Le soir reste calme** : pas de fête après le coucher, les étoiles du
+  jour sont mises de côté. **Le lendemain matin** (8 h 30 par défaut),
+  l'enfant les verse lui-même dans une **jauge** ; une jauge pleine
+  (20 étoiles par défaut) devient une **pièce**, avec des sons classiques
+  de ce genre de mécanique, jamais en même temps que la voix.
+- Les pièces se posent **à la main** sur un vrai **chemin** bordé de
+  récompenses intermédiaires, jusqu'à une récompense finale visible dès le
+  départ. Les récompenses sont données dans la vraie vie ; les parents
+  voient ce qui est « à donner ».
+
+Ça remplace l'ancienne récompense de fin de journée (confettis, barème
+jamais défini) et l'idée de dépenser ses pièces pour une activité de son
+choix.
 
 ## Récompense d'une aventure : la pièce, pas une étoile
 

@@ -8,6 +8,8 @@
   --surface-active: #33406A;
   --surface-high: #4A5880;
   --accent: #F0952F;
+  /* Or des étoiles et des pièces (jauge, carte « Ce matin », chemin). */
+  --or: #F2C94C;
   --accent-shadow: #8A4E1C;
   --accent-dark: #C97622;
   --accent-edge: #FFF6E8;
@@ -203,12 +205,17 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
   background: none; border: none; padding: 0; font: inherit; cursor: pointer;
 }
 .bloc-monnaies:active { opacity: .7; }
-#jauge-jour { display: flex; gap: 4px; flex-shrink: 0; }
+#jauge-jour { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+/* Jauge vers la prochaine pièce, et étoiles d'aujourd'hui (pas encore dedans). */
+.jauge-barre { width: 84px; height: 14px; background: var(--deep); border: 2px solid var(--surface-high); }
+.jauge-plein { height: 100%; background: var(--or); }
+.etoiles-aujourdhui { font-size: 15px; font-weight: 800; color: var(--text-mute); white-space: nowrap; }
+.badge-a-poser { font-size: 12px; font-weight: 800; color: var(--deep); background: var(--accent-edge); padding: 1px 5px; border: 2px solid var(--outline); }
 .etoile-jauge { font-size: 26px; opacity: .3; filter: grayscale(1); transition: opacity .2s ease, filter .2s ease; }
 .etoile-jauge.gagnee { opacity: 1; filter: none; }
 /* pièces : monnaie distincte des étoiles, ne se remet pas à zéro chaque
    jour (cf. app.js) — reste discrète, n'affiche rien tant qu'il n'y en a
-   aucune (pas de "0 🪙" en permanence sous les yeux). */
+   aucune (pas de « 0 pièce » en permanence sous les yeux). */
 #pieces-total { font-size: 16px; font-weight: 800; color: var(--text-mute); }
 
 #scene-menu {
@@ -275,6 +282,20 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .jour-plus-tard-titre { margin: 6px 0 -4px; }
 .jour-message { text-align: center; font-size: 20px; font-weight: 700; padding: 18px; color: var(--text-soft); }
 .carte-jour.clignote { animation: clignoterCarte .6s ease-in-out 3; }
+
+/* Carte « Ce matin » : les étoiles d'hier entrent dans la jauge. */
+.carte-matin {
+  display: flex; flex-direction: column; gap: 10px; padding: 16px 18px;
+  background: var(--surface-active); border: 3px solid var(--or); box-shadow: var(--shadow-hard);
+}
+.carte-matin .carte-jour-label { color: var(--or); }
+.matin-texte { font-size: 20px; font-weight: 800; }
+.matin-etoiles { font-size: 26px; letter-spacing: 2px; min-height: 32px; }
+.matin-jauge { height: 26px; background: var(--deep); border: 3px solid var(--surface-high); }
+.matin-jauge.pleine { border-color: var(--or); box-shadow: 0 0 0 5px rgba(242,201,76,.35), 0 0 24px rgba(242,201,76,.6); }
+.matin-jauge-plein { height: 100%; background: var(--or); transition: width .2s ease; }
+.matin-piece { display: flex; justify-content: center; padding: 6px 0; }
+.matin-piece:empty { display: none; }
 
 /* ---------- Écoute (🔊 maintenant, 🗓️🔊 toute la journée) ---------- */
 .groupe-ecoute { display: flex; gap: 8px; flex-shrink: 0; }
@@ -852,40 +873,79 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .btn-dictee.ecoute { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(240,149,47,.25); }
 #resultats-ajout-texte .ligne-journee { margin-bottom: 8px; }
 
-/* ---------- Mes récompenses (étoiles + pièces à collectionner) ---------- */
-#recompenses-contenu { display: flex; flex-direction: column; gap: 26px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 12px; }
+/* Message discret d'une liste vide (éditeur, formulaires). */
 .recompenses-vide { font-size: 15px; color: var(--text-faint); }
-.grille-recompenses { display: flex; flex-wrap: wrap; gap: 14px; }
-.recompense-item { width: 84px; height: 84px; cursor: pointer; }
-.recompense-item .visuel {
-  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-  font-size: 52px; animation: tourner 9s linear infinite;
+
+/* ---------- Mon chemin (cf. construireChemin() dans app.js) ---------- */
+#chemin-but { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 15px; font-weight: 700; color: var(--text-soft); }
+#chemin-cadre { position: relative; width: 100%; flex-shrink: 0; }
+#chemin-zone { position: absolute; left: 0; top: 0; width: 364px; height: 682px; transform-origin: 0 0; touch-action: none; user-select: none; }
+.chemin-paysage {
+  position: absolute; left: 0; top: 0; width: 364px; height: 560px; overflow: hidden;
+  background: linear-gradient(180deg, #26345A 0%, #1F2C4C 55%, #1A2742 100%); border: 3px solid var(--surface-high);
 }
-/* toucher une récompense la fait briller (glow), sans interrompre sa
-   rotation continue — deux animations séparées sur des propriétés
-   différentes (transform / filter) pour ne pas se marcher dessus. */
-.recompense-item.briller .visuel { animation: tourner 9s linear infinite, briller .7s ease; }
-@keyframes tourner { to { transform: rotate(360deg); } }
-@keyframes briller {
-  0%, 100% { filter: drop-shadow(0 0 0 transparent) brightness(1); }
-  40% { filter: drop-shadow(0 0 14px var(--accent)) brightness(1.6); }
+.chemin-route { position: absolute; left: 0; top: 0; }
+.route-bord { fill: none; stroke: var(--outline); stroke-width: 50px; stroke-linecap: round; stroke-linejoin: round; }
+.route-sol { fill: none; stroke: var(--surface-high); stroke-width: 42px; stroke-linecap: round; stroke-linejoin: round; }
+.route-ligne { fill: none; stroke: var(--text-faint); stroke-width: 2px; stroke-dasharray: 6 10; stroke-linecap: round; opacity: .5; }
+.chemin-deco { position: absolute; font-size: 22px; transform: translate(-50%, -50%); opacity: .85; pointer-events: none; }
+.chemin-depart { position: absolute; font-size: 12px; font-weight: 800; letter-spacing: 1px; color: var(--text-faint); transform: translate(-50%, 0); pointer-events: none; }
+.chemin-rond {
+  position: absolute; width: 48px; height: 48px; transform: translate(-50%, -50%); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  background: var(--deep); border: 3px solid var(--surface-high); pointer-events: none;
 }
-/* Portrait de l'enfant sur la pièce : recadrage simple (pas de nouvel
-   asset) du sprite avatar existant sur la zone du visage, via un
-   positionnement approximatif plutôt qu'un détourage précis. Petit et
-   teinté dans le ton de la pièce (façon profil gravé, type tête sur une
-   pièce d'or) plutôt qu'une photo couleur qui prendrait toute la place. */
-.piece-visage {
-  width: 100%; height: 100%; border-radius: 50%; overflow: hidden; position: relative;
-  background: var(--accent); border: 3px solid var(--accent-dark);
+.chemin-rond.cadeau { border-color: var(--or); box-shadow: 0 0 0 3px rgba(242,201,76,.25); }
+.chemin-rond.finale { width: 64px; height: 64px; border-width: 4px; border-color: var(--or); background: rgba(242,201,76,.18); font-size: 32px; box-shadow: 0 0 0 5px rgba(242,201,76,.2); }
+.chemin-rond.cible { border: 3px dashed var(--accent-edge); background: rgba(240,149,47,.25); animation: battreRond 1.2s ease-in-out infinite; }
+.chemin-rond.cible.proche { background: rgba(240,149,47,.55); box-shadow: 0 0 0 6px rgba(240,149,47,.45); }
+.chemin-rond.pleine { border: none; box-shadow: none; background: none; animation: none; }
+@keyframes battreRond { 0%, 100% { box-shadow: 0 0 0 0 rgba(240,149,47,.55); } 50% { box-shadow: 0 0 0 9px rgba(240,149,47,0); } }
+.badge-cadeau {
+  position: absolute; right: -8px; top: -8px; width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--deep); border: 2px solid var(--or);
 }
-.piece-visage img {
-  position: absolute; top: 20px; left: 9px; width: 66px; height: auto; image-rendering: pixelated;
-  filter: grayscale(1) brightness(1.25) sepia(1) saturate(4) hue-rotate(-15deg) contrast(1.1);
-  mix-blend-mode: multiply;
+.chemin-plateau { position: absolute; left: 0; top: 572px; width: 364px; height: 110px; background: var(--surface); border: 3px solid var(--surface-high); }
+.chemin-aide { position: absolute; left: 112px; top: 12px; width: 236px; font-size: 15px; font-weight: 700; color: var(--text-soft); }
+.aide-doigt { font-size: 22px; }
+.chemin-piece-plateau {
+  position: absolute; width: 64px; height: 64px; padding: 0; transform: translate(-50%, -50%);
+  background: none; border: none; cursor: grab; touch-action: none;
 }
+.chemin-piece-plateau.prise { opacity: .2; }
+.chemin-compte { position: absolute; right: -10px; top: -8px; padding: 1px 6px; font-size: 12px; font-weight: 800; color: var(--deep); background: var(--accent-edge); border: 2px solid var(--outline); }
+.chemin-piece-volante {
+  position: absolute; width: 64px; height: 64px; transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
+  filter: drop-shadow(8px 10px 0 rgba(0,0,0,.3)); transition: transform .12s ease;
+}
+.chemin-piece-volante.ajustee { transform: translate(-50%, -50%) scale(.75); }
+.chemin-piece-volante.retour { transition: left .3s ease, top .3s ease, transform .3s ease; }
+.chemin-rien {
+  position: absolute; left: 0; top: 572px; width: 364px; height: 110px; display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 0 20px; font-size: 15px; color: var(--text-faint); border: 2px dashed var(--surface-high);
+}
+.chemin-fete {
+  position: absolute; left: 0; top: 560px; width: 364px; min-height: 122px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px; background: #2E3557; border: 3px solid var(--or); box-shadow: var(--shadow-hard); text-align: center; z-index: 6;
+}
+.chemin-fete .btn-continuer { margin-top: 2px; padding: 8px 22px; font-size: 17px; }
+.fete-emoji { font-size: 40px; }
+.fete-titre { font-size: 18px; font-weight: 800; }
+.fete-sous { font-size: 13px; color: var(--text-soft); }
+@media (prefers-reduced-motion: reduce) { .chemin-piece-volante, .chemin-piece-volante.retour { transition: none; } }
 
 /* ---------- Espace parent ---------- */
+/* Point sur ⚙️ : une récompense attend d'être donnée (cf. majBadgeEspaceParent()). */
+#btn-espace-parent.a-donner::after {
+  content: ""; position: absolute; right: -3px; top: -3px; width: 11px; height: 11px;
+  background: var(--or); border: 2px solid var(--outline); border-radius: 50%;
+}
+#parent-chemin-contenu { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 24px; }
+.parent-chemin-ligne { gap: 12px; flex-wrap: wrap; }
+.parent-chemin-ligne .btn-secondaire { margin: 0; }
+.compteur-chemin { display: flex; align-items: center; gap: 10px; }
+.compteur-valeur { min-width: 32px; text-align: center; font-size: 20px; font-weight: 800; }
+.parent-chemin-info { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: var(--text-soft); padding: 4px 2px; }
 /* Onglets de l'écran Planning (semaine type / prochains jours) : même
    famille que .btn-secondaire, l'onglet affiché passe en --accent. */
 .onglets-planning { display: flex; gap: 8px; margin-bottom: 12px; }
@@ -1151,6 +1211,19 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .btn-humeur:active { transform: translate(2px, 2px); box-shadow: none; }
 .btn-humeur-emoji { font-size: 46px; }
 .btn-humeur-texte { font-size: 14px; font-weight: 700; }
+
+/* ---------- La pièce Acolyte (cf. elementPiece() dans app.js) ---------- */
+/* Une face en pixel art, une pile de tranches dorées alternées (la
+   cannelure) et un dos, dans un même espace 3D. */
+.piece3d { position: relative; display: inline-block; flex-shrink: 0; perspective: 700px; vertical-align: middle; }
+.piece3d-corps { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-style: preserve-3d; }
+.piece3d-corps.tourne { animation: tournerPiece 2.6s linear infinite; }
+@keyframes tournerPiece { from { transform: rotateY(0deg) rotateX(8deg); } to { transform: rotateY(360deg) rotateX(8deg); } }
+.piece3d-tranche { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.piece3d-face { position: absolute; left: 0; top: 0; width: 100%; height: 100%; backface-visibility: hidden; }
+.piece3d-face span { position: absolute; left: 0; top: 0; display: block; background: transparent; }
+.piece-inline { display: inline-flex; vertical-align: middle; margin: 0 2px; }
+#pieces-total { display: flex; align-items: center; gap: 4px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, .pop { animation: none !important; }

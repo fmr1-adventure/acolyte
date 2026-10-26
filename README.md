@@ -53,7 +53,11 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   alerte au parent si l'enfant reste bloqué.
 - **Validation par un parent** (code, relecture/correction), puis
   l'enfant ouvre lui-même un coffre qui lui donne son étoile.
-  Récompense de fin de journée et pièces à collectionner.
+- **Récompenses** : les étoiles du jour sont mises de côté le soir (coucher
+  calme, sans fête) et remplissent le lendemain matin, à 8 h 30, une jauge
+  qui donne une pièce toutes les 20 étoiles ; l'enfant pose ses pièces à la
+  main sur un chemin bordé de récompenses, que les parents règlent et
+  marquent « données ». La pièce Acolyte est un dessin original en pixel art.
 - **Activités à la maison** (lecture, temps calme...) : une consigne dite
   par l'acolyte, l'endroit, un minuteur facultatif.
 - **Infos et moments au choix** : « Maman vient te chercher » se lit
@@ -69,10 +73,10 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   chaque journée ; les exceptions se règlent sur les prochains jours
   (« Comme d'habitude » / « Modifié »). Une sortie ou une séance se crée
   directement depuis le jour qu'on prépare, comme une activité à la maison.
-- **Espace parent** (code), en quatre blocs : la journée (planning,
+- **Espace parent** (code), en cinq blocs : la journée (planning,
   relancer une routine), la bibliothèque (activités, routines,
-  entourage), le suivi (historique, notes des séances), les réglages
-  (code parent, profils de l'appareil).
+  entourage), le suivi (historique, notes des séances), les récompenses
+  (chemin, à donner), les réglages (code parent, profils de l'appareil).
 - **Reprise automatique** : quittée en pleine routine ou sortie, l'app
   rouvre là où on en était plutôt que de revenir à la liste.
 

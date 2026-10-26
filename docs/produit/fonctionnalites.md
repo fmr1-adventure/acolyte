@@ -204,12 +204,39 @@ Une étoile n'est jamais reprise : une routine qui se refait dans la
 journée (se rhabiller, remettre ses chaussures) se valide de la même
 façon, mais sans coffre — son étoile est déjà acquise.
 
-### Les récompenses
+### Les récompenses : des étoiles aux pièces, des pièces au chemin
 
-Une fois toutes les routines validées, une récompense de fin de
-journée s'ouvre automatiquement (confettis, total d'étoiles). Un écran
-« Mes récompenses » présente les étoiles du jour et les pièces gagnées
-comme de vrais objets à collectionner.
+**Une étoile n'est jamais reprise.** Chaque routine faite dans la journée
+donne son étoile (une fois par jour, même si la routine se refait),
+comptée en « étoiles d'aujourd'hui » en haut de la liste.
+
+**Le soir, pas de fête.** Après « Aller se coucher », ni coffre ni
+confettis : « Bonne nuit, tes étoiles t'attendent demain matin. » Les
+étoiles du jour sont mises de côté.
+
+**Le matin, la jauge se remplit.** À partir de 8 h 30 (heure réglable),
+une carte « Ce matin » apparaît en haut de la liste (jamais au milieu
+d'une activité) : l'enfant appuie sur « Ajouter mes étoiles » et les
+voit entrer une à une dans la jauge, avec un petit « ding » de plus en
+plus aigu. À 20 étoiles (réglable), la jauge pleine scintille et devient
+une **pièce** (« ting-ting », puis la voix) ; les étoiles en trop
+repartent dans la jauge. S'il n'ouvre pas l'app un jour, les étoiles
+s'additionnent et l'attendent.
+
+**La pièce Acolyte** est un dessin original en pixel art : une pièce
+d'or épaisse avec le « A » d'Acolyte gravé, qui tourne sur elle-même en
+sortant du coffre. Les sorties (et, en option, les activités à la
+maison) en donnent aussi directement.
+
+**Le chemin.** Les pièces gagnées attendent d'être posées sur « Mon
+chemin » (ouvert depuis la jauge) : une route qui serpente du départ
+jusqu'à la récompense finale, bordée de quelques arbres, avec un rond par
+pièce. L'enfant fait glisser chaque pièce **à la main** jusqu'au rond qui
+brille : elle s'y pose avec un petit clic et une vibration ; lâchée
+ailleurs, elle revient toute seule. Certaines cases portent une
+récompense (choisir le dessert, un tour au parc…) : y arriver déclenche
+une petite fanfare et une fête, dite à voix haute. La récompense est
+ensuite donnée dans la vraie vie par un parent.
 
 ### Les sorties
 
@@ -262,10 +289,11 @@ confirmer une par une.
 
 Protégé par un code, accessible en permanence depuis un bouton
 discret, directement connecté à ce que voit l'enfant (rien à
-synchroniser séparément). Il est rangé en quatre blocs : **la journée**
+synchroniser séparément). Il est rangé en cinq blocs : **la journée**
 (le planning, relancer une routine), **la bibliothèque** (activités,
-routines, entourage), **le suivi** (historique, notes des séances) et
-**les réglages** (code parent, cet appareil).
+routines, entourage), **le suivi** (historique, notes des séances),
+**les récompenses** (le chemin) et **les réglages** (code parent, cet
+appareil).
 
 - **Préparer le planning**, en deux onglets :
   - **Semaine type** — un modèle pour chaque jour de la semaine (le
@@ -307,6 +335,14 @@ routines, entourage), **le suivi** (historique, notes des séances) et
   praticiennes...) avec un nom, une icône et un rôle. Sert à associer en
   option des personnes à une activité ou une routine sur mesure et à voir
   « avec qui » directement sur « Ma journée ».
+- **Chemin et récompenses** — ce qui est **à donner** (une récompense
+  atteinte sur le chemin attend qu'un parent coche « Je l'ai donnée » ; un
+  petit point sur ⚙️ le rappelle), les réglages (étoiles par pièce, nombre
+  de cases, heure de découverte des étoiles, sons doux, arcade ou coupés),
+  l'état de la jauge, une estimation du rythme (« environ une pièce tous
+  les 7 jours… ») et les récompenses elles-mêmes (case, pictogramme, nom).
+  Au bout du chemin, on en prépare un nouveau ; les pièces ne sont jamais
+  perdues.
 - **Cet appareil** — indique quel profil cet appareil affiche, pour le
   configurer une bonne fois pour toutes, ou pour ajouter un enfant
   supplémentaire (« + Nouvel enfant », cf. "Première configuration"
@@ -322,7 +358,7 @@ donnée envoyée à un serveur : tout reste sur la tablette.
 
 Toujours en développement actif. Pistes : des réglages sensoriels
 propres à chaque enfant (contraste, mouvement, débit de la voix), de
-vrais décors de pièces, une récompense de fin de journée qui varie
-selon les étoiles gagnées, des notes libres dans le planning, le mode de
-transport d'une sortie (voiture, vélo, à pied), et annoncer à l'enfant
-ce qui vient après (« On fait... / après on fait... »).
+vrais décors de pièces, des notes libres dans le planning, le mode de
+transport avec de vrais décors (vélo, à pied), une animation plus riche
+des étoiles qui deviennent une pièce, et une période « vacances » qui
+retire l'école sur plusieurs jours d'un coup.

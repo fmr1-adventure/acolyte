@@ -47,7 +47,7 @@
 // caches et on recharge, une seule fois par session, avant d'exécuter
 // quoi que ce soit d'autre.
 // ---------------------------------------------------------------------
-const VERSION_APP = "19";
+const VERSION_APP = "20";
 (function verifierVersionPage() {
   const meta = document.querySelector('meta[name="acolyte-version"]');
   if (meta && meta.content === VERSION_APP) {
@@ -971,6 +971,8 @@ function chargerEtat() {
   try { const b = localStorage.getItem(cle("journee")); etat = b ? JSON.parse(b) : null; } catch (e) {}
 
   if (etat && etat.jour && etat.jour !== cleJour()) {
+    // Coucher pas validé hier : ses étoiles attendent quand même ce matin.
+    if (etat.routines) mettreDeCoteEtoiles(etat);
     archiverJournee(etat);
     etat = null;
     // Nouveau jour : les minuteurs d'hier n'ont plus de sens (cf. la
@@ -1132,9 +1134,148 @@ function sauverPieces(n) {
 // pareil pour n'importe quel profil (clé propre via `cle()`) sans
 // variante parallèle, pour garder la même garantie partout.
 function ajouterPieces(n) {
+  migrerPiecesUneFois();
   const total = chargerPieces() + Math.max(0, n);
   sauverPieces(total);
+  sauverPiecesAPoser(chargerPiecesAPoser() + Math.max(0, n));
   return total;
+}
+
+// Pièces gagnées qui attendent d'être posées sur le chemin (cf. l'écran
+// « Mon chemin ») — le total `cle("pieces")` ne fait que monter, celles-ci
+// diminuent quand l'enfant en pose une.
+function chargerPiecesAPoser() {
+  try {
+    const n = JSON.parse(localStorage.getItem(cle("pieces_a_poser")));
+    return typeof n === "number" && n >= 0 ? n : 0;
+  } catch (e) { return 0; }
+}
+function sauverPiecesAPoser(n) {
+  try { localStorage.setItem(cle("pieces_a_poser"), JSON.stringify(Math.max(0, n))); } catch (e) {}
+}
+// Les pièces gagnées avant le chemin deviennent des pièces à poser : rien
+// n'est perdu, et la première ouverture du chemin est déjà un moment de jeu.
+function migrerPiecesUneFois() {
+  try { if (localStorage.getItem(cle("pieces_a_poser")) !== null) return; } catch (e) { return; }
+  sauverPiecesAPoser(chargerPieces());
+}
+
+// Jauge d'étoiles (`cle("jauge_etoiles")`) : `dansLaJauge` vers la
+// prochaine pièce, `aDecouvrir` = étoiles mises de côté le soir, versées le
+// lendemain matin. Jamais remise à zéro au changement de jour.
+function chargerJauge() {
+  try {
+    const j = JSON.parse(localStorage.getItem(cle("jauge_etoiles")));
+    if (j && typeof j === "object") return { dansLaJauge: Math.max(0, j.dansLaJauge | 0), aDecouvrir: Math.max(0, j.aDecouvrir | 0) };
+  } catch (e) {}
+  return { dansLaJauge: 0, aDecouvrir: 0 };
+}
+function sauverJauge(j) {
+  try { localStorage.setItem(cle("jauge_etoiles"), JSON.stringify(j)); } catch (e) {}
+}
+// Chemin de pièces et ses réglages (cf. recompenses.js) ; valeurs par
+// défaut tant qu'un parent n'a rien réglé.
+function chargerChemin() {
+  try { return normaliserChemin(JSON.parse(localStorage.getItem(cle("chemin")))); } catch (e) { return normaliserChemin(null); }
+}
+function sauverChemin(c) {
+  try { localStorage.setItem(cle("chemin"), JSON.stringify(c)); } catch (e) {}
+}
+// Met de côté les étoiles du jour pour le lendemain matin (jamais deux
+// fois, cf. etoilesAMettreDeCote()). Modifie `etat` sans le sauver.
+function mettreDeCoteEtoiles(etat) {
+  const nouvelles = etoilesAMettreDeCote(etat);
+  if (nouvelles > 0) {
+    const j = chargerJauge();
+    j.aDecouvrir += nouvelles;
+    sauverJauge(j);
+  }
+  etat.etoilesMisesDeCote = Math.max(etat.etoilesMisesDeCote || 0, etat.etoiles || 0);
+}
+
+// ---------------------------------------------------------------------
+// La pièce Acolyte : un dessin original en pixel art (16 × 16, comme
+// l'avatar), or épais et contour foncé, avec le « A » d'Acolyte gravé. Elle
+// a une vraie épaisseur : une pile de tranches cannelées, découpées en
+// escalier comme le disque de pixels de la face, et un dos — on la voit
+// inclinée, et elle tourne à la sortie du coffre. `s` = taille d'un pixel
+// (entière, pour des pixels nets) : la pièce mesure 16·s px.
+// ---------------------------------------------------------------------
+const MOTIF_A_PIECE = ["...##...", "..####..", ".##..##.", ".##..##.", ".######.", ".##..##.", ".##..##.", "........"];
+const ombresFacePiece = {};
+function dessinFacePiece(s) {
+  if (ombresFacePiece[s]) return ombresFacePiece[s];
+  const a = new Set();
+  MOTIF_A_PIECE.forEach((ligne, y) => [...ligne].forEach((c, x) => { if (c === "#") a.add((x + 4) + "," + (y + 4)); }));
+  const ombres = [];
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const dx = x + 0.5 - 8, dy = y + 0.5 - 8;
+      const d = Math.hypot(dx, dy);
+      if (d > 8) continue;
+      let c;
+      if (d > 7) c = "#4A3006";
+      else if (d > 5.9) c = (dx + dy < 0) ? "#FBDD6E" : "#C38A18";
+      else if (a.has(x + "," + y)) c = "#A8700E";
+      else if (a.has((x + 1) + "," + (y + 1))) c = "#FFE88A";
+      else if (dx + dy < -6.5) c = "#FFF3B5";
+      else c = "#F2C23C";
+      ombres.push((x * s) + "px " + (y * s) + "px 0 0 " + c);
+    }
+  }
+  return (ombresFacePiece[s] = ombres.join(","));
+}
+let contourTranchePiece = null;
+function contourPiece() {
+  if (contourTranchePiece) return contourTranchePiece;
+  const lignes = [];
+  for (let y = 0; y < 16; y++) {
+    const xs = [];
+    for (let x = 0; x < 16; x++) if (Math.hypot(x + 0.5 - 8, y + 0.5 - 8) <= 8) xs.push(x);
+    lignes.push({ y, min: Math.min(...xs), max: Math.max(...xs) + 1 });
+  }
+  const pct = (v) => (v * 100 / 16) + "%";
+  const points = [];
+  lignes.forEach(l => { points.push(pct(l.max) + " " + pct(l.y), pct(l.max) + " " + pct(l.y + 1)); });
+  lignes.slice().reverse().forEach(l => { points.push(pct(l.min) + " " + pct(l.y + 1), pct(l.min) + " " + pct(l.y)); });
+  return (contourTranchePiece = "polygon(" + points.join(",") + ")");
+}
+function elementPiece(s, options = {}) {
+  const pose = options.pose || "rotateY(-28deg) rotateX(10deg)";
+  const epaisseur = Math.max(2, Math.round(3 * s));
+  const scene = document.createElement("span");
+  scene.className = "piece3d";
+  scene.style.width = scene.style.height = (16 * s) + "px";
+  scene.setAttribute("aria-hidden", "true");
+  const corps = document.createElement("span");
+  corps.className = "piece3d-corps" + (options.tourne ? " tourne" : "");
+  corps.style.transform = pose;
+  corps.style.transformOrigin = "50% 50% " + (-epaisseur / 2) + "px";
+  for (let k = 1; k < epaisseur; k++) {
+    const t = document.createElement("span");
+    t.className = "piece3d-tranche";
+    t.style.transform = "translateZ(" + (-k) + "px)";
+    t.style.background = Math.floor(k / s) % 2 ? "#8F620C" : "#C38A18";
+    t.style.clipPath = contourPiece();
+    corps.appendChild(t);
+  }
+  [["translateZ(" + (-epaisseur) + "px) rotateY(180deg)"], ["translateZ(0px)"]].forEach(([transform]) => {
+    const face = document.createElement("span");
+    face.className = "piece3d-face";
+    face.style.transform = transform;
+    const pixels = document.createElement("span");
+    pixels.style.width = pixels.style.height = s + "px";
+    pixels.style.boxShadow = dessinFacePiece(s);
+    face.appendChild(pixels);
+    corps.appendChild(face);
+  });
+  scene.appendChild(corps);
+  return scene;
+}
+// Pièces écrites dans index.html (`<span data-piece="1">`, ex. un libellé
+// de formulaire) : dessinées au démarrage.
+function installerPiecesInline() {
+  document.querySelectorAll("[data-piece]").forEach(el => el.replaceChildren(elementPiece(Number(el.dataset.piece) || 1)));
 }
 
 // toutes les tâches faites, toutes routines confondues — pour que
@@ -1178,6 +1319,57 @@ function jouerSon() {
       osc.start(t0); osc.stop(t0 + 0.3);
     });
   } catch (e) {}
+}
+
+// Sons des étoiles et des pièces — même famille que jouerSon() (Web Audio,
+// rien à télécharger), mais plus hauts et plus brillants que le carillon
+// « bravo » et l'alerte du minuteur, pour ne jamais s'y confondre. Volume
+// modéré, attaques adoucies ; style réglé par les parents (`chemin.sons`) :
+// doux (triangle, par défaut), arcade (carré, plus « jeu vidéo ») ou coupés.
+// Chaque son renvoie sa durée en secondes : la voix ne vient qu'après.
+function jouerNotes(notes) {
+  const style = chargerChemin().sons;
+  if (style === "coupes") return 0;
+  let fin = 0;
+  try {
+    if (!audioCtxPartage) audioCtxPartage = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtxPartage;
+    if (ctx.state === "suspended") ctx.resume();
+    const arcade = style === "arcade";
+    notes.forEach(n => {
+      const forme = n.forme || (arcade ? "square" : "triangle");
+      const vol = (arcade ? 0.07 : 0.2) * (n.vol || 1);
+      const t0 = ctx.currentTime + n.t;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = forme;
+      o.frequency.value = n.f;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + n.d);
+      o.connect(g).connect(ctx.destination);
+      o.start(t0);
+      o.stop(t0 + n.d + 0.03);
+      fin = Math.max(fin, n.t + n.d);
+    });
+  } catch (e) { return 0; }
+  return fin;
+}
+// Une étoile qui entre dans la jauge : un « ding » court, un demi-ton plus
+// haut à chaque étoile — on entend la jauge monter.
+function sonEtoile(rang) { return jouerNotes([{ f: 880 * Math.pow(2, Math.min(rang, 24) / 12), t: 0, d: 0.12 }]); }
+// La jauge pleine : un scintillement, quatre notes très rapides qui montent.
+function sonJaugePleine() { return jouerNotes([1318.51, 1567.98, 1760, 2093].map((f, i) => ({ f, t: i * 0.06, d: 0.1, vol: 0.8 }))); }
+// La pièce : le « ting-ting » classique, deux notes aiguës, la seconde résonne.
+function sonPiece() { return jouerNotes([{ f: 1975.53, t: 0, d: 0.09 }, { f: 2637.02, t: 0.09, d: 0.55 }]); }
+// Une pièce posée sur son rond : un petit « clic », deux notes très brèves.
+function sonPose() { return jouerNotes([{ f: 1760, t: 0, d: 0.06 }, { f: 2349.32, t: 0.05, d: 0.14, vol: 0.8 }]); }
+// Une récompense atteinte : trois notes qui montent puis une note tenue,
+// plus ample pour la récompense finale.
+function sonFanfare(finale) {
+  const notes = [523.25, 659.25, 783.99].map((f, i) => ({ f, t: i * 0.11, d: 0.16, vol: 0.8 }));
+  notes.push({ f: 1046.5, t: 0.33, d: finale ? 0.9 : 0.5 });
+  if (finale) notes.push({ f: 1318.51, t: 0.33, d: 0.9, forme: "sine", vol: 0.4 }, { f: 1567.98, t: 0.33, d: 0.9, forme: "sine", vol: 0.35 });
+  return jouerNotes(notes);
 }
 
 // Signal d'attention (fin de minuteur non résolue, cf. tickMinuteurGlobal()/
@@ -1324,25 +1516,15 @@ function construireMenu() {
   // toutes les routines du jour soient validées : un enfant peut très bien
   // n'avoir rien fait d'autre de la journée et aller directement se
   // coucher, ce doit quand même clôturer la journée.
-  if (etat.routines.soir.valide && !etat.journeeFaite) {
-    allerFinDeJournee();
+  if (etat.routines.soir && etat.routines.soir.valide && !etat.journeeFaite) {
+    allerDormir();
     return;
   }
 
   synchroniserAvatar(etat);
 
-  // jauge de journée : une étoile par routine, acquise une fois par jour
-  const jauge = document.getElementById("jauge-jour");
-  jauge.innerHTML = "";
-  toutesLesRoutines().forEach(r => {
-    const etoile = document.createElement("div");
-    etoile.className = "etoile-jauge" + (etat.routines[r.id].etoileDonnee ? " gagnee" : "");
-    etoile.textContent = "⭐";
-    jauge.appendChild(etoile);
-  });
-  const piecesTotal = chargerPieces();
-  document.getElementById("pieces-total").textContent = piecesTotal > 0 ? "🪙 " + piecesTotal : "";
-
+  construireBandeauRecompenses(etat);
+  majBadgeEspaceParent();
   construireListeJour(etat);
   afficherEcran("screen-menu");
 }
@@ -1388,12 +1570,154 @@ function planningDeLaListe(etat) {
   return etat.planning.map(it => (libelleItemPlanning(it) ? it : Object.assign({}, it, { passe: true })));
 }
 
+// En haut de la liste : la jauge (étoiles vers la prochaine pièce), les
+// étoiles d'aujourd'hui (qui ne la rempliront que demain matin) et les
+// pièces ; un appui ouvre le chemin.
+function construireBandeauRecompenses(etat) {
+  const chemin = chargerChemin();
+  const jauge = chargerJauge();
+  const bloc = document.getElementById("jauge-jour");
+  const barre = document.createElement("div");
+  barre.className = "jauge-barre";
+  const plein = document.createElement("div");
+  plein.className = "jauge-plein";
+  plein.style.width = Math.min(100, 100 * jauge.dansLaJauge / chemin.etoilesParPiece) + "%";
+  barre.appendChild(plein);
+  const aujourdhui = document.createElement("span");
+  aujourdhui.className = "etoiles-aujourdhui";
+  aujourdhui.textContent = "⭐ " + (etat.etoiles || 0);
+  bloc.replaceChildren(barre, aujourdhui);
+  const blocPieces = document.getElementById("pieces-total");
+  blocPieces.replaceChildren(elementPiece(2), " " + chargerPieces());
+  const aPoser = chargerPiecesAPoser();
+  if (aPoser > 0) {
+    const badge = document.createElement("span");
+    badge.className = "badge-a-poser";
+    badge.textContent = "+" + aPoser;
+    blocPieces.appendChild(badge);
+  }
+}
+
+// ---------------------------------------------------------------------
+// Carte « Ce matin » : à partir de l'heure de découverte (8h30 par défaut),
+// les étoiles mises de côté la veille attendent en haut de la liste — jamais
+// pendant une activité. « Ajouter mes étoiles » les enregistre tout de
+// suite (fermer l'app ne perd ni ne rejoue rien), puis les montre entrer
+// une à une dans la jauge ; une jauge pleine devient une pièce.
+// `matin` garde l'animation et son résultat tant que l'enfant ne l'a pas
+// fermée (la liste se reconstruit toutes les 15 s).
+// ---------------------------------------------------------------------
+let matin = null;
+
+function construireCarteMatin(liste) {
+  const jauge = chargerJauge();
+  const chemin = chargerChemin();
+  if (!matin && !decouverteDisponible(jauge, heureActuelleHHMM(), chemin.heureDecouverte)) return;
+  const carte = document.createElement("div");
+  carte.className = "carte-matin";
+  const n = matin ? matin.n : jauge.aDecouvrir;
+  carte.innerHTML = `<div class="carte-jour-label">☀️ CE MATIN</div>`
+    + `<div class="matin-texte">${matin && matin.fini ? (matin.pieces ? "Tes étoiles se sont transformées en pièce !" : "Tes étoiles sont dans ta jauge !") : "Tu as gagné"}</div>`
+    + `<div class="matin-etoiles"></div>`
+    + `<div class="matin-jauge"><div class="matin-jauge-plein"></div></div>`
+    + `<div class="matin-piece"></div>`;
+  const etoiles = carte.querySelector(".matin-etoiles");
+  const restantes = matin ? n - matin.rang : n;
+  etoiles.textContent = restantes > 12 ? "⭐ × " + restantes : "⭐".repeat(Math.max(0, restantes));
+  const plein = carte.querySelector(".matin-jauge-plein");
+  plein.style.width = Math.min(100, 100 * (matin ? matin.dans : jauge.dansLaJauge) / chemin.etoilesParPiece) + "%";
+  if (matin && matin.pieceVisible) carte.querySelector(".matin-piece").appendChild(elementPiece(5, { tourne: true }));
+  const bouton = document.createElement("button");
+  bouton.type = "button";
+  bouton.className = "btn-continuer btn-cest-parti-jour";
+  if (!matin) {
+    bouton.textContent = "Ajouter mes étoiles ⭐";
+    bouton.onclick = ajouterEtoilesDuMatin;
+  } else if (!matin.fini) {
+    bouton.classList.add("hidden");
+  } else if (matin.pieces) {
+    bouton.textContent = "Poser ma pièce sur mon chemin →";
+    bouton.onclick = () => { matin = null; ouvrirChemin(); };
+  } else {
+    bouton.textContent = "Super ! ⭐";
+    bouton.onclick = () => { matin = null; construireListeJour(chargerEtat()); };
+  }
+  carte.appendChild(bouton);
+  liste.appendChild(carte);
+}
+
+function ajouterEtoilesDuMatin() {
+  const jauge = chargerJauge();
+  const chemin = chargerChemin();
+  const n = jauge.aDecouvrir;
+  if (!n) return;
+  const r = verserEtoiles(jauge.dansLaJauge, n, chemin.etoilesParPiece);
+  sauverJauge({ dansLaJauge: r.dansLaJauge, aDecouvrir: 0 });
+  if (r.pieces) ajouterPieces(r.pieces);
+  matin = { n, rang: 0, dans: jauge.dansLaJauge, etapes: r.etapes, pieces: r.pieces, pieceVisible: false, fini: false };
+  construireListeJour(chargerEtat());
+  // Une étoile à la fois, plus vite s'il y en a beaucoup (plusieurs jours
+  // sans ouvrir l'app).
+  const pas = Math.max(140, Math.min(450, 6000 / n));
+  const suivante = () => {
+    if (!matin) return;
+    // L'enfant est parti ailleurs : on termine sans bruit, le résultat
+    // l'attend sur la liste.
+    if (!document.getElementById("screen-menu").classList.contains("active")) {
+      matin.rang = matin.etapes.length;
+      matin.dans = matin.etapes.length ? matin.etapes[matin.etapes.length - 1].dans % chargerChemin().etoilesParPiece : matin.dans;
+      matin.pieceVisible = matin.pieces > 0;
+      matin.fini = true;
+      return;
+    }
+    if (matin.rang >= matin.etapes.length) { finirMatin(); return; }
+    const etape = matin.etapes[matin.rang];
+    matin.rang++;
+    matin.dans = etape.dans;
+    sonEtoile(matin.rang - 1);
+    rafraichirCarteMatin();
+    if (!etape.piece) { setTimeout(suivante, pas); return; }
+    // Jauge pleine : elle brille, puis devient une pièce ; la suite repart de zéro.
+    setTimeout(() => {
+      if (!matin) return;
+      sonJaugePleine();
+      document.querySelector(".matin-jauge")?.classList.add("pleine");
+      setTimeout(() => {
+        if (!matin) return;
+        matin.pieceVisible = true;
+        matin.dans = 0;
+        const duree = sonPiece();
+        rafraichirCarteMatin();
+        setTimeout(suivante, Math.max(pas, duree * 1000 + 200));
+      }, 500);
+    }, 150);
+  };
+  setTimeout(suivante, 300);
+}
+
+function rafraichirCarteMatin() {
+  const ecran = document.getElementById("screen-menu");
+  if (ecran.classList.contains("active")) construireListeJour(chargerEtat());
+}
+
+function finirMatin() {
+  matin.fini = true;
+  rafraichirCarteMatin();
+  construireBandeauRecompenses(chargerEtat());
+  const texte = matin.pieces > 1
+    ? "Bravo ! Tes étoiles se sont transformées en " + matin.pieces + " pièces. Tu peux les poser sur ton chemin."
+    : matin.pieces ? "Bravo ! Tes étoiles se sont transformées en pièce. Tu peux la poser sur ton chemin."
+    : "Bravo ! Tes étoiles sont dans ta jauge.";
+  setTimeout(() => dire(texte), 300);
+}
+
 function construireListeJour(etat) {
   listeJourConstruite = true;
   const planning = planningDeLaListe(etat);
   const resultat = statutsJournee(planning, horaireItem);
   const liste = document.getElementById("liste-journee");
   liste.innerHTML = "";
+  construireCarteMatin(liste);
 
   const visibles = planning.map((item, i) => ({ item, i, lib: libelleItemPlanning(item), statut: resultat.statuts[i] }))
     .filter(v => v.lib && v.statut !== "passe");
@@ -1479,8 +1803,8 @@ function carteListeJour(v, resultat) {
 // de pictogrammes ailleurs. Jamais sur la séance (la praticienne tient la
 // tablette) ni côté parents.
 // ---------------------------------------------------------------------
-const ECRANS_ECOUTE = ["screen-menu", "screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-choix", "screen-recompenses", "screen-dents", "screen-histoire"];
-const ECRANS_BANDE = ["screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-choix", "screen-recompenses"];
+const ECRANS_ECOUTE = ["screen-menu", "screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-choix", "screen-chemin", "screen-dents", "screen-histoire"];
+const ECRANS_BANDE = ["screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-choix", "screen-chemin"];
 // Le calendrier en grand, le haut-parleur en badge : distinct du 🔊 seul.
 const ICONE_ECOUTE_JOURNEE = '<span class="ecoute-cal">🗓️</span><span class="ecoute-badge">🔊</span>';
 
@@ -2581,60 +2905,239 @@ function ouvrirJourSemaineType(jour) {
   afficherEcran("screen-journee");
 }
 
-// Écran "Mes récompenses" : les étoiles gagnées aujourd'hui et les
-// pièces accumulées (cf. `chargerPieces` — pas remises à zéro chaque
-// jour, donc affichées en total plutôt qu'"aujourd'hui"), présentées
-// comme des objets à collectionner plutôt qu'un simple compteur —
-// accessible en tapant sur les étoiles/pièces du menu (`btn-mes-recompenses`).
-function construireRecompenses() {
-  const etat = chargerEtat();
-  const conteneur = document.getElementById("recompenses-contenu");
-  conteneur.innerHTML = "";
+// ---------------------------------------------------------------------
+// Mon chemin : une route qui serpente du départ (en bas) jusqu'à la
+// récompense finale (en haut), en larges virages en épingle, avec un rond
+// par pièce. L'enfant fait glisser chaque pièce à la main sur le prochain
+// rond, qui brille : c'est là qu'il voit sa progression. Une récompense
+// atteinte déclenche une fête et part dans « À donner » chez les parents.
+// Pas de jauge ni d'étoiles ici. Dessiné dans une zone de 364 × 682 px,
+// agrandie à la largeur de l'écran.
+// ---------------------------------------------------------------------
+const ZONE_CHEMIN = { largeur: 364, hauteur: 682, plateau: { x: 62, y: 627 } };
+let feteChemin = null;
+let glisserPiece = null;
 
-  function ajouterGroupe(titre, n, visuelHTML, texteVide) {
-    const groupe = document.createElement("div");
-    const label = document.createElement("div");
-    label.className = "groupe-journee-titre";
-    label.textContent = titre;
-    groupe.appendChild(label);
-    if (n === 0) {
-      const vide = document.createElement("div");
-      vide.className = "recompenses-vide";
-      vide.textContent = texteVide;
-      groupe.appendChild(vide);
-    } else {
-      const grille = document.createElement("div");
-      grille.className = "grille-recompenses";
-      for (let i = 0; i < n; i++) {
-        const item = document.createElement("div");
-        item.className = "recompense-item";
-        item.innerHTML = `<div class="visuel">${visuelHTML}</div>`;
-        item.onclick = () => faireBrillier(item);
-        grille.appendChild(item);
-      }
-      groupe.appendChild(grille);
+// Route validée en maquette : tronçons légèrement bombés et virages en
+// épingle assez ouverts pour que deux ronds ne se touchent jamais ; ronds
+// espacés régulièrement le long de la route.
+function geometrieChemin(cases) {
+  const R = 60, XG = 96, XD = 268;
+  const SEGMENTS = [
+    ["l", 78, 518, XD, 518, -8], ["a", XD, 458, Math.PI / 2, -Math.PI / 2],
+    ["l", XD, 398, XG, 398, 8], ["a", XG, 338, Math.PI / 2, 3 * Math.PI / 2],
+    ["l", XG, 278, XD, 278, -8], ["a", XD, 218, Math.PI / 2, -Math.PI / 2],
+    ["l", XD, 158, XG, 158, 8], ["a", XG, 98, Math.PI / 2, 3 * Math.PI / 2],
+  ];
+  const pts = [];
+  SEGMENTS.forEach(seg => {
+    for (let k = pts.length ? 1 : 0; k <= 80; k++) {
+      const u = k / 80;
+      if (seg[0] === "l") pts.push({ x: seg[1] + (seg[3] - seg[1]) * u, y: seg[2] + (seg[4] - seg[2]) * u + seg[5] * Math.pow(Math.sin(Math.PI * u), 2) });
+      else { const a = seg[3] + (seg[4] - seg[3]) * u; pts.push({ x: seg[1] + R * Math.cos(a), y: seg[2] + R * Math.sin(a) }); }
     }
-    conteneur.appendChild(groupe);
-  }
+  });
+  const cumul = [0];
+  for (let k = 1; k < pts.length; k++) cumul.push(cumul[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].y - pts[k - 1].y));
+  const L = cumul[cumul.length - 1];
+  const auPoint = (dist) => {
+    let k = 1;
+    while (k < cumul.length - 1 && cumul[k] < dist) k++;
+    const r = (dist - cumul[k - 1]) / (cumul[k] - cumul[k - 1] || 1);
+    return { x: pts[k - 1].x + r * (pts[k].x - pts[k - 1].x), y: pts[k - 1].y + r * (pts[k].y - pts[k - 1].y) };
+  };
+  const ronds = [];
+  for (let i = 0; i < cases - 1; i++) ronds.push(auPoint(16 + i * (L - 96) / (cases - 2)));
+  ronds.push(auPoint(L - 6));
+  let d = "";
+  for (let k = 0; k < pts.length; k += 2) d += (k === 0 ? "M" : " L") + pts[k].x.toFixed(1) + " " + pts[k].y.toFixed(1);
+  return { ronds, d };
+}
+const DECOR_CHEMIN = [
+  { x: 28, y: 458, emoji: "🍄" }, { x: 182, y: 458, emoji: "🌳" }, { x: 330, y: 338, emoji: "🌻" },
+  { x: 182, y: 338, emoji: "🌳" }, { x: 28, y: 218, emoji: "🌼" }, { x: 182, y: 218, emoji: "🌲" },
+  { x: 300, y: 80, emoji: "⛰️" },
+];
 
-  ajouterGroupe("MES ÉTOILES — AUJOURD'HUI", etat.etoiles || 0, "⭐", "Pas encore d'étoile aujourd'hui !");
-  ajouterGroupe(
-    "MES PIÈCES — AU TOTAL",
-    chargerPieces(),
-    // Même recadrage CSS (.piece-visage) pour les deux enfants : les deux
-    // sprites de base viennent du même générateur, tête au même endroit
-    // sur la même grille (cf. scripts/generate_sprites_detailed_preview.py).
-    '<div class="piece-visage"><img src="' + profilActif().sprites.base + '" alt=""></div>',
-    "Pas encore de pièce !"
-  );
+function ouvrirChemin() {
+  feteChemin = null;
+  glisserPiece = null;
+  construireChemin();
+  afficherEcran("screen-chemin");
+  dire(phraseChemin(chargerChemin(), chargerPiecesAPoser()));
 }
 
-function faireBrillier(el) {
-  el.classList.remove("briller");
-  void el.offsetWidth; // relance l'animation même si elle vient de jouer
-  el.classList.add("briller");
-  jouerSon();
-  if (navigator.vibrate) navigator.vibrate(30);
+function construireChemin() {
+  const chemin = chargerChemin();
+  const aPoser = chargerPiecesAPoser();
+  const finale = recompenseDeLaCase(chemin, chemin.cases);
+  document.getElementById("chemin-but").textContent = "🏁 Au bout du chemin" + (finale ? " : " + finale.emoji + " " + finale.nom : "");
+
+  const zone = document.getElementById("chemin-zone");
+  zone.replaceChildren();
+  const geo = geometrieChemin(chemin.cases);
+  const paysage = document.createElement("div");
+  paysage.className = "chemin-paysage";
+  paysage.innerHTML = `<svg class="chemin-route" width="364" height="560" aria-hidden="true">`
+    + `<path class="route-bord" d="${geo.d}"></path><path class="route-sol" d="${geo.d}"></path><path class="route-ligne" d="${geo.d}"></path></svg>`
+    + DECOR_CHEMIN.map(dc => `<span class="chemin-deco" style="left:${dc.x}px;top:${dc.y}px">${dc.emoji}</span>`).join("")
+    + `<span class="chemin-depart" style="left:66px;top:544px">DÉPART</span>`;
+  const cible = !feteChemin && aPoser > 0 && chemin.posees < chemin.cases ? chemin.posees + 1 : null;
+  geo.ronds.forEach((p, i) => {
+    const n = i + 1;
+    const rec = recompenseDeLaCase(chemin, n);
+    const estFinale = n === chemin.cases;
+    const pleine = n <= chemin.posees;
+    const rond = document.createElement("div");
+    rond.className = "chemin-rond" + (pleine ? " pleine" : "") + (rec && !estFinale ? " cadeau" : "") + (estFinale ? " finale" : "") + (n === cible ? " cible" : "");
+    rond.style.left = Math.round(p.x) + "px";
+    rond.style.top = Math.round(p.y) + "px";
+    if (n === cible) rond.id = "chemin-cible";
+    if (pleine) {
+      // La pièce remplit exactement son rond (48 px, 64 au bout).
+      rond.appendChild(elementPiece(estFinale ? 4 : 3, { pose: "rotateX(24deg)" }));
+      if (rec) { const b = document.createElement("span"); b.className = "badge-cadeau"; b.textContent = rec.emoji; rond.appendChild(b); }
+    } else if (rec) rond.textContent = rec.emoji;
+    paysage.appendChild(rond);
+  });
+  zone.appendChild(paysage);
+
+  if (feteChemin) {
+    const fete = document.createElement("div");
+    fete.className = "chemin-fete";
+    fete.innerHTML = `<span class="fete-emoji">${feteChemin.emoji}</span><span class="fete-titre">${feteChemin.titre}</span>`
+      + `<span class="fete-sous">Papa ou maman va te donner ta récompense.</span>`;
+    const ok = document.createElement("button");
+    ok.type = "button";
+    ok.className = "btn-continuer";
+    ok.textContent = "Super ! 🎉";
+    ok.onclick = () => { feteChemin = null; construireChemin(); };
+    fete.appendChild(ok);
+    zone.appendChild(fete);
+  } else if (cible) {
+    const plateau = document.createElement("div");
+    plateau.className = "chemin-plateau";
+    plateau.innerHTML = `<span class="chemin-aide"><span class="aide-doigt">👆</span> Fais glisser ta pièce jusqu'au rond qui brille.</span>`;
+    const piece = document.createElement("button");
+    piece.type = "button";
+    piece.className = "chemin-piece-plateau";
+    piece.setAttribute("aria-label", "Ma pièce à poser : fais-la glisser sur le chemin");
+    piece.style.left = ZONE_CHEMIN.plateau.x + "px";
+    piece.style.top = ZONE_CHEMIN.plateau.y + "px";
+    piece.appendChild(elementPiece(4));
+    if (aPoser > 1) { const c = document.createElement("span"); c.className = "chemin-compte"; c.textContent = "×" + aPoser; piece.appendChild(c); }
+    piece.onpointerdown = commencerGlisserPiece;
+    zone.append(plateau, piece);
+  } else {
+    const rien = document.createElement("div");
+    rien.className = "chemin-rien";
+    rien.textContent = chemin.posees >= chemin.cases
+      ? "Tu es au bout du chemin ! Papa ou maman va préparer la suite."
+      : "Pas de pièce à poser pour l'instant. Les étoiles et les sorties en apportent !";
+    zone.appendChild(rien);
+  }
+  ajusterZoneChemin();
+}
+
+// La zone garde ses 364 px de dessin et s'agrandit à la largeur de l'écran.
+function ajusterZoneChemin() {
+  const cadre = document.getElementById("chemin-cadre");
+  const zone = document.getElementById("chemin-zone");
+  const k = Math.max(0.8, Math.min(1.6, (cadre.clientWidth || ZONE_CHEMIN.largeur) / ZONE_CHEMIN.largeur));
+  zone.style.transform = "scale(" + k + ")";
+  cadre.style.height = Math.round(ZONE_CHEMIN.hauteur * k) + "px";
+  zone.style.left = Math.max(0, Math.round(((cadre.clientWidth || 0) - ZONE_CHEMIN.largeur * k) / 2)) + "px";
+}
+
+function positionDansZone(e) {
+  const zone = document.getElementById("chemin-zone");
+  const rect = zone.getBoundingClientRect();
+  const k = rect.width / ZONE_CHEMIN.largeur || 1;
+  return { x: (e.clientX - rect.left) / k, y: (e.clientY - rect.top) / k };
+}
+
+function commencerGlisserPiece(e) {
+  if (glisserPiece) return;
+  e.preventDefault();
+  const source = e.currentTarget;
+  try { source.setPointerCapture(e.pointerId); } catch (err) {}
+  source.classList.add("prise");
+  const volante = document.createElement("div");
+  volante.className = "chemin-piece-volante";
+  volante.appendChild(elementPiece(4));
+  document.getElementById("chemin-zone").appendChild(volante);
+  glisserPiece = { source, volante, pointerId: e.pointerId };
+  deplacerPiece(e);
+  // Écouté sur la fenêtre : la pièce suit le doigt même hors du bouton,
+  // et un lâcher n'importe où (ou une interruption) la fait toujours revenir.
+  window.addEventListener("pointermove", deplacerPiece);
+  window.addEventListener("pointerup", lacherPiece);
+  window.addEventListener("pointercancel", lacherPiece);
+}
+
+function placerVolante(x, y, ajustee) {
+  const v = glisserPiece.volante;
+  v.style.left = x + "px";
+  v.style.top = y + "px";
+  v.classList.toggle("ajustee", ajustee);
+}
+
+function deplacerPiece(e) {
+  if (!glisserPiece || e.pointerId !== glisserPiece.pointerId) return;
+  const p = positionDansZone(e);
+  const cible = document.getElementById("chemin-cible");
+  const cx = cible ? parseFloat(cible.style.left) : NaN, cy = cible ? parseFloat(cible.style.top) : NaN;
+  const distance = cible ? Math.hypot(p.x - cx, p.y - cy) : Infinity;
+  if (cible) cible.classList.toggle("proche", distance < 60);
+  // Près du bon rond, la pièce prend sa taille exacte et s'y aligne.
+  if (distance <= 34) placerVolante(cx, cy, true); else placerVolante(p.x, p.y, false);
+}
+
+function lacherPiece(e) {
+  if (!glisserPiece || e.pointerId !== glisserPiece.pointerId) return;
+  const { source, volante } = glisserPiece;
+  window.removeEventListener("pointermove", deplacerPiece);
+  window.removeEventListener("pointerup", lacherPiece);
+  window.removeEventListener("pointercancel", lacherPiece);
+  const p = positionDansZone(e);
+  const cible = document.getElementById("chemin-cible");
+  const ok = cible && e.type === "pointerup" && Math.hypot(p.x - parseFloat(cible.style.left), p.y - parseFloat(cible.style.top)) <= 34;
+  if (ok) { glisserPiece = null; poserPiece(); return; }
+  // Lâchée ailleurs : elle revient toute seule sur le plateau.
+  volante.classList.add("retour");
+  placerVolante(ZONE_CHEMIN.plateau.x, ZONE_CHEMIN.plateau.y, false);
+  setTimeout(() => {
+    volante.remove();
+    source.classList.remove("prise");
+    if (cible) cible.classList.remove("proche");
+    glisserPiece = null;
+  }, 320);
+  dire("Presque ! Pose ta pièce sur le rond qui brille.");
+}
+
+function poserPiece() {
+  const chemin = chargerChemin();
+  const aPoser = chargerPiecesAPoser();
+  if (!aPoser || chemin.posees >= chemin.cases) { construireChemin(); return; }
+  chemin.posees++;
+  const n = chemin.posees;
+  const rec = recompenseDeLaCase(chemin, n);
+  if (rec) chemin.atteintes.push({ case: n, emoji: rec.emoji, nom: rec.nom, gagneeLe: cleJour() });
+  sauverChemin(chemin);
+  sauverPiecesAPoser(aPoser - 1);
+  const dureePose = sonPose();
+  try { if (navigator.vibrate) navigator.vibrate(45); } catch (err) {}
+  if (rec) {
+    const finale = n === chemin.cases;
+    const titre = (finale ? "Bravo, tu as gagné : " : "Tu as gagné : ") + rec.nom + " !";
+    feteChemin = { emoji: rec.emoji, titre };
+    // La fanfare, puis seulement la voix : jamais les deux en même temps.
+    setTimeout(() => {
+      const duree = sonFanfare(finale);
+      setTimeout(() => dire(titre), duree * 1000 + 150);
+    }, dureePose * 1000 + 50);
+  }
+  construireChemin();
 }
 
 function clignoterRoutine(id) {
@@ -3573,10 +4076,12 @@ function allerValidation() {
   apresCodeValide = () => {
     // Routine déjà faite une fois aujourd'hui (s'habiller à nouveau...) :
     // son étoile est acquise, ce passage se valide sans coffre.
+    // Le coucher se valide aussi sans coffre : pas de fête avant de dormir.
+    const coucher = estItemCoucher({ type: "routine", id: routine.id });
     const etoileDejaDonnee = chargerEtat().routines[routine.id].etoileDonnee;
     document.getElementById("correction-note").textContent = "Décoche ce qui n'a pas vraiment été fait, puis valide.";
-    document.getElementById("btn-valider-routine").textContent = etoileDejaDonnee ? "Valider ✅" : "Déverrouiller le coffre 🔒";
-    actionCorrection = etoileDejaDonnee ? validerRoutineSansCoffre : ouvrirCoffreRoutine;
+    document.getElementById("btn-valider-routine").textContent = coucher || etoileDejaDonnee ? "Valider ✅" : "Déverrouiller le coffre 🔒";
+    actionCorrection = coucher ? validerCoucher : etoileDejaDonnee ? validerRoutineSansCoffre : ouvrirCoffreRoutine;
     construireCorrection();
     document.getElementById("correction-wrap").classList.remove("hidden");
   };
@@ -3714,6 +4219,20 @@ function ouvrirCoffreRoutine() {
   });
 }
 
+// Le coucher validé : son étoile est donnée sans coffre (si ce n'est déjà
+// fait), puis la journée se termine en douceur (cf. allerDormir()).
+function validerCoucher() {
+  const idRoutine = routineActuelleId;
+  const etat = chargerEtat();
+  const r = etat.routines[idRoutine];
+  r.valide = true;
+  if (!r.etoileDonnee) { r.etoileDonnee = true; etat.etoiles = (etat.etoiles || 0) + 1; }
+  marquerItemFait(etat, "routine", idRoutine);
+  sauverEtat(etat);
+  routineActuelleId = null;
+  allerDormir();
+}
+
 // Second passage d'une routine dans la journée : validé par le parent
 // comme le premier, mais sans coffre ni nouvelle étoile.
 function validerRoutineSansCoffre() {
@@ -3809,6 +4328,18 @@ function construireEspaceParent() {
       ],
     },
     {
+      titre: "LES RÉCOMPENSES",
+      options: [
+        {
+          emoji: "🪜", titre: "Chemin et récompenses",
+          soustitre: aDonner().length
+            ? "🎁 " + aDonner().length + (aDonner().length > 1 ? " récompenses à donner" : " récompense à donner")
+            : "La jauge, le chemin de pièces et ses récompenses",
+          action: () => { construireParentChemin(); afficherEcran("screen-parent-chemin"); },
+        },
+      ],
+    },
+    {
       titre: "RÉGLAGES",
       options: [
         {
@@ -3838,6 +4369,217 @@ function construireEspaceParent() {
       conteneur.appendChild(carte);
     });
   });
+}
+
+// ---------------------------------------------------------------------
+// Chemin et récompenses (espace parent) : ce qui est à donner (une
+// récompense atteinte sur le chemin attend qu'un parent coche « Je l'ai
+// donnée », pour que les deux parents sachent toujours ce qui est dû), les
+// réglages de la jauge et du chemin, et les récompenses elles-mêmes.
+// ---------------------------------------------------------------------
+function aDonner() {
+  try { return chargerChemin().atteintes.filter(a => !a.donneeLe); } catch (e) { return []; }
+}
+
+// Petit point sur ⚙️ tant qu'une récompense attend d'être donnée.
+function majBadgeEspaceParent() {
+  try { document.getElementById("btn-espace-parent").classList.toggle("a-donner", aDonner().length > 0); } catch (e) {}
+}
+
+let recompenseEnEdition = null;
+let brouillonRecompense = null;
+
+function construireParentChemin() {
+  const conteneur = document.getElementById("parent-chemin-contenu");
+  conteneur.replaceChildren();
+  const chemin = chargerChemin();
+  const titre = (texte) => { const t = document.createElement("div"); t.className = "groupe-journee-titre groupe-parent-titre"; t.textContent = texte; conteneur.appendChild(t); };
+  const ligne = (html) => { const l = document.createElement("div"); l.className = "carte-routine parent-chemin-ligne"; l.innerHTML = html; conteneur.appendChild(l); return l; };
+
+  titre("À DONNER");
+  const dus = chemin.atteintes.map((a, i) => ({ a, i })).filter(x => !x.a.donneeLe);
+  if (!dus.length) { const v = document.createElement("div"); v.className = "recompenses-vide"; v.textContent = "Rien à donner pour l'instant."; conteneur.appendChild(v); }
+  dus.forEach(({ a, i }) => {
+    const l = ligne(`<div class="carte-routine-nom">${a.emoji} ${a.nom}<div class="carte-parent-soustitre">Gagnée le ${dateLisible(a.gagneeLe).toLowerCase()}</div></div>`);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn-secondaire";
+    b.textContent = "Je l'ai donnée ✓";
+    b.onclick = () => { const c = chargerChemin(); c.atteintes[i].donneeLe = cleJour(); sauverChemin(c); majBadgeEspaceParent(); construireParentChemin(); };
+    l.appendChild(b);
+  });
+
+  titre("LE CHEMIN");
+  if (chemin.posees >= chemin.cases) {
+    const l = ligne(`<div class="carte-routine-nom">🏁 Le chemin est terminé<div class="carte-parent-soustitre">Préparez le suivant : les pièces gagnées entre-temps l'attendent.</div></div>`);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn-secondaire";
+    b.textContent = "Nouveau chemin";
+    b.onclick = () => {
+      const c = chargerChemin();
+      c.archives.push({ termineLe: cleJour(), cases: c.cases, recompenses: c.recompenses });
+      c.posees = 0;
+      sauverChemin(c);
+      construireParentChemin();
+    };
+    l.appendChild(b);
+  }
+  conteneur.appendChild(compteurChemin("⭐ Étoiles pour une pièce", chemin.etoilesParPiece, 5, 40, changerEtoilesParPiece));
+  conteneur.appendChild(compteurChemin("🪜 Cases sur le chemin", chemin.cases, Math.max(5, chemin.posees), 30, changerCasesChemin));
+
+  const heure = ligne(`<div class="carte-routine-nom">☀️ Découverte des étoiles<div class="carte-parent-soustitre">Le matin, à partir de cette heure</div></div>`);
+  const champHeure = document.createElement("input");
+  champHeure.type = "time";
+  champHeure.className = "input-heure-journee";
+  champHeure.value = chemin.heureDecouverte;
+  champHeure.onchange = () => { if (!champHeure.value) return; const c = chargerChemin(); c.heureDecouverte = champHeure.value; sauverChemin(c); construireParentChemin(); };
+  heure.appendChild(champHeure);
+
+  const sons = ligne(`<div class="carte-routine-nom">🔔 Sons de la jauge et des pièces</div>`);
+  const grilleSons = document.createElement("div");
+  grilleSons.className = "grille-entourage";
+  construireChoixUnique(grilleSons, [["doux", "Doux"], ["arcade", "Arcade"], ["coupes", "Coupés"]], chemin.sons, v => {
+    const c = chargerChemin(); c.sons = v; sauverChemin(c); construireParentChemin(); sonPiece();
+  });
+  sons.appendChild(grilleSons);
+
+  const jauge = chargerJauge();
+  const etat = chargerEtat();
+  const aujourdhui = etoilesAMettreDeCote(etat);
+  const parJour = Math.max(1, toutesLesRoutines().length);
+  const est = estimationRythme(chemin, parJour);
+  const info = document.createElement("div");
+  info.className = "parent-chemin-info";
+  info.innerHTML = `<div>Jauge : ⭐ ${jauge.dansLaJauge} / ${chemin.etoilesParPiece}`
+    + (jauge.aDecouvrir ? ` · ${jauge.aDecouvrir} à découvrir dès ${chemin.heureDecouverte}` : "")
+    + (aujourdhui ? ` · + ${aujourdhui} d'aujourd'hui, découvertes demain matin` : "") + `</div>`
+    + `<div>Pièces à poser : ${chargerPiecesAPoser()} · posées : ${chemin.posees} / ${chemin.cases}</div>`
+    + `<div>Avec ${parJour} étoiles par jour, les étoiles seules donnent environ une pièce tous les ${est.joursParPiece} jours : `
+    + `le chemin prendrait environ ${est.semaines} semaine${est.semaines > 1 ? "s" : ""}, sans compter les pièces des sorties.</div>`
+    + (est.tropLong ? `<div class="texte-erreur">C'est long : rapprochez les récompenses, ou réduisez le nombre de cases ou d'étoiles par pièce.</div>` : "");
+  conteneur.appendChild(info);
+
+  titre("LES RÉCOMPENSES");
+  chemin.recompenses.forEach((r, i) => {
+    if (recompenseEnEdition === i) { conteneur.appendChild(formulaireRecompense(chemin)); return; }
+    const l = ligne(`<div class="carte-routine-nom">${r.case === chemin.cases ? "Au bout" : "Case " + r.case} · ${r.emoji} ${r.nom}</div>`);
+    const droite = document.createElement("div");
+    droite.className = "carte-routine-droite";
+    const modifier = document.createElement("button");
+    modifier.type = "button"; modifier.className = "btn-mini-edition"; modifier.textContent = "✏️";
+    modifier.setAttribute("aria-label", "Modifier « " + r.nom + " »");
+    modifier.onclick = () => { recompenseEnEdition = i; brouillonRecompense = Object.assign({}, r); construireParentChemin(); };
+    const retirer = document.createElement("button");
+    retirer.type = "button"; retirer.className = "btn-mini-edition btn-retirer"; retirer.textContent = "✕";
+    retirer.setAttribute("aria-label", "Retirer « " + r.nom + " »");
+    retirer.onclick = () => { const c = chargerChemin(); c.recompenses.splice(i, 1); sauverChemin(c); construireParentChemin(); };
+    droite.append(modifier, retirer);
+    l.appendChild(droite);
+  });
+  if (recompenseEnEdition === "nouvelle") conteneur.appendChild(formulaireRecompense(chemin));
+  else {
+    const ajouter = document.createElement("button");
+    ajouter.type = "button";
+    ajouter.className = "btn-secondaire";
+    ajouter.textContent = "+ Ajouter une récompense";
+    ajouter.onclick = () => {
+      const libre = [...Array(chemin.cases).keys()].map(k => k + 1).reverse().find(n => !recompenseDeLaCase(chemin, n)) || chemin.cases;
+      recompenseEnEdition = "nouvelle";
+      brouillonRecompense = { case: libre, emoji: "🎁", nom: "" };
+      construireParentChemin();
+    };
+    conteneur.appendChild(ajouter);
+  }
+}
+
+function compteurChemin(libelle, valeur, min, max, changer) {
+  const l = document.createElement("div");
+  l.className = "carte-routine parent-chemin-ligne";
+  l.innerHTML = `<div class="carte-routine-nom">${libelle}</div>`;
+  const c = document.createElement("div");
+  c.className = "compteur-chemin";
+  const moins = document.createElement("button");
+  moins.type = "button"; moins.className = "btn-mini-edition"; moins.textContent = "−"; moins.disabled = valeur <= min;
+  moins.onclick = () => changer(valeur - 1);
+  const v = document.createElement("span");
+  v.className = "compteur-valeur"; v.textContent = valeur;
+  const plus = document.createElement("button");
+  plus.type = "button"; plus.className = "btn-mini-edition"; plus.textContent = "+"; plus.disabled = valeur >= max;
+  plus.onclick = () => changer(valeur + 1);
+  c.append(moins, v, plus);
+  l.appendChild(c);
+  return l;
+}
+
+// Baisser le seuil sous ce qui est déjà dans la jauge donne la pièce tout
+// de suite, sans perdre d'étoile (cf. verserEtoiles()).
+function changerEtoilesParPiece(n) {
+  const c = chargerChemin();
+  c.etoilesParPiece = n;
+  sauverChemin(c);
+  const j = chargerJauge();
+  const r = verserEtoiles(j.dansLaJauge, 0, n);
+  if (r.pieces) { sauverJauge({ dansLaJauge: r.dansLaJauge, aDecouvrir: j.aDecouvrir }); ajouterPieces(r.pieces); }
+  construireParentChemin();
+}
+
+// Moins de cases : la récompense finale suit la dernière case ; celles qui
+// tomberaient hors du chemin sont retirées.
+function changerCasesChemin(n) {
+  const c = chargerChemin();
+  const hors = c.recompenses.filter(r => r.case > n);
+  c.recompenses = c.recompenses.filter(r => r.case <= n);
+  if (hors.length && !c.recompenses.some(r => r.case === n)) {
+    const derniere = hors[hors.length - 1];
+    c.recompenses.push(Object.assign({}, derniere, { case: n }));
+  }
+  c.cases = n;
+  sauverChemin(c);
+  construireParentChemin();
+}
+
+function formulaireRecompense(chemin) {
+  const f = document.createElement("div");
+  f.className = "ajout-en-ligne";
+  const b = brouillonRecompense;
+  f.innerHTML = `<label class="champ-parent"><span>Case (1 à ${chemin.cases}, ${chemin.cases} = au bout du chemin)</span>`
+    + `<input type="number" id="recompense-case" min="1" max="${chemin.cases}" value="${b.case}"></label>`
+    + `<div class="champ-parent"><span>Icône</span><button type="button" class="emoji-trigger" id="recompense-emoji">${b.emoji}</button></div>`
+    + `<label class="champ-parent"><span>La récompense, telle qu'elle sera dite (« Tu as gagné : … »)</span>`
+    + `<input type="text" id="recompense-nom" maxlength="40" placeholder="Ex : choisir le dessert"></label>`
+    + `<div class="texte-erreur" id="recompense-erreur"></div>`;
+  f.querySelector("#recompense-nom").value = b.nom;
+  f.querySelector("#recompense-emoji").onclick = () => {
+    b.nom = f.querySelector("#recompense-nom").value;
+    b.case = Number(f.querySelector("#recompense-case").value) || b.case;
+    ouvrirSelecteurEmoji(["🍦", "🛝", "🎬", "🎁", "🧱", "🍕", "🎮", "📚", "🚲", "🏊", "🎨", "🍫"], b.emoji, (e) => { b.emoji = e; fermerSelecteurEmoji(); construireParentChemin(); });
+  };
+  const actions = document.createElement("div");
+  actions.className = "creer-depuis-planning";
+  const annuler = document.createElement("button");
+  annuler.type = "button"; annuler.className = "btn-secondaire"; annuler.textContent = "Annuler";
+  annuler.onclick = () => { recompenseEnEdition = null; brouillonRecompense = null; construireParentChemin(); };
+  const enregistrer = document.createElement("button");
+  enregistrer.type = "button"; enregistrer.className = "btn-secondaire"; enregistrer.textContent = "Enregistrer";
+  enregistrer.onclick = () => {
+    const n = Math.round(Number(f.querySelector("#recompense-case").value));
+    const nom = f.querySelector("#recompense-nom").value.trim();
+    const c = chargerChemin();
+    const autres = c.recompenses.filter((r, i) => i !== recompenseEnEdition);
+    if (!nom) { f.querySelector("#recompense-erreur").textContent = "Écris la récompense."; return; }
+    if (!(n >= 1 && n <= c.cases)) { f.querySelector("#recompense-erreur").textContent = "Choisis une case entre 1 et " + c.cases + "."; return; }
+    if (autres.some(r => r.case === n)) { f.querySelector("#recompense-erreur").textContent = "Il y a déjà une récompense sur cette case."; return; }
+    if (n <= c.posees) { f.querySelector("#recompense-erreur").textContent = "Cette case est déjà dépassée sur le chemin."; return; }
+    c.recompenses = autres.concat([{ case: n, emoji: b.emoji, nom }]);
+    sauverChemin(normaliserChemin(c));
+    recompenseEnEdition = null;
+    brouillonRecompense = null;
+    construireParentChemin();
+  };
+  actions.append(annuler, enregistrer);
+  f.appendChild(actions);
+  return f;
 }
 
 // "Cet appareil" : quel profil (tousLesProfils()) cet appareil affiche —
@@ -5148,13 +5890,12 @@ function creerNouvellePersonne() {
 // 4. Récompense de fin de journée (une fois "Aller se coucher" validée),
 // puis endormissement de l'app jusqu'au lendemain HEURE_REVEIL
 // ---------------------------------------------------------------------
-// Message de clôture de la journée, pas un récapitulatif des routines
-// faites (cf. les appelants : déclenché par "Aller se coucher" seule,
-// même si l'enfant n'a rien fait d'autre de la journée). Identique à
-// l'écrit et à l'oral (cf. `dire`). Fonction (pas une constante) : dépend
-// du prénom du profil actif.
+// Message de clôture de la journée, dit au coucher (cf. allerDormir()) :
+// calme, sans récapitulatif ni fête — les étoiles du jour se découvrent le
+// lendemain matin. Fonction (pas une constante) : dépend du prénom du
+// profil actif.
 function texteFinJournee(profil) {
-  return "Bravo pour toutes les routines que tu as faites aujourd'hui " + profil.prenom + ". Bonne nuit et à demain.";
+  return "Bonne nuit " + profil.prenom + ", tes étoiles t'attendent demain matin.";
 }
 const HEURE_REVEIL = 7;
 // `profil.naissance` ("AAAA-M-J", cf. `finaliserPremiereConfiguration()`)
@@ -5183,10 +5924,6 @@ function texteReveilBonjour(profil) {
 const TEXTE_REVEIL_DORMI = "As-tu bien dormi ?";
 const TEXTE_REVEIL_HUMEUR = "Comment te sens-tu ? Choisis bien ta réponse avec l'image qui te plaît le plus.";
 
-function afficherRecompenseFinDeJournee(etat) {
-  document.getElementById("coffre-texte").textContent = texteFinJournee(profilActif());
-  document.getElementById("coffre-recompense-texte").textContent = "+ " + (etat.etoiles || 0) + " ⭐ aujourd'hui";
-}
 
 // `cle("reveil")` (horodatage ISO, prochain HEURE_REVEIL) est
 // volontairement une clé à part de `cle("journee")` : cette dernière
@@ -5297,10 +6034,15 @@ function finReveil(humeurId) {
   construireMenu();
 }
 
-function allerFinDeJournee() {
+// Fin de journée, après « Aller se coucher » : ni coffre ni confettis, pour
+// un coucher calme. Les étoiles du jour sont mises de côté et attendent le
+// lendemain matin (carte « Ce matin », cf. construireCarteMatin()).
+function allerDormir() {
   const etat = chargerEtat();
-  afficherRecompenseFinDeJournee(etat);
-  ouvrirCoffre(texteFinJournee(profilActif()), ["⭐", "✨", "🎉", "⭐", "✨"], endormir);
+  mettreDeCoteEtoiles(etat);
+  sauverEtat(etat);
+  endormir();
+  dire(texteFinJournee(profilActif()));
 }
 
 // Écran coffre : partagé entre la récompense de fin de journée (étoiles),
@@ -5355,7 +6097,9 @@ function jouerOuvertureCoffre(texteVoix, symbolesConfettis, emojiRevele) {
   jouerSon();
   if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
   const emoji = document.getElementById("coffre-emoji");
-  emoji.textContent = emojiRevele;
+  // La pièce sort du coffre en tournant sur elle-même.
+  if (emojiRevele === "pièce") emoji.replaceChildren(elementPiece(6, { tourne: true, pose: "rotateY(-30deg) rotateX(8deg)" }));
+  else emoji.textContent = emojiRevele;
   emoji.classList.remove("pop-ouverture"); void emoji.offsetWidth; emoji.classList.add("pop-ouverture");
   lancerConfettis(symbolesConfettis);
 }
@@ -5645,9 +6389,9 @@ function terminerAventure(a) {
       const total = ajouterPieces(a.recompensePieces);
       const prenom = profilActif().prenom;
       document.getElementById("coffre-texte").textContent = "Bravo " + prenom + ", tu as fait : " + a.lieu + " !";
-      document.getElementById("coffre-recompense-texte").textContent =
-        "+ " + a.recompensePieces + " 🪙 (" + total + " au total)";
-      return { texteVoix: "Bravo " + prenom + ", tu as gagné une pièce !", symbolesConfettis: ["🪙", "✨", "🎉", "🪙", "✨"], emojiRevele: "🪙" };
+      document.getElementById("coffre-recompense-texte").replaceChildren(
+        "+ " + a.recompensePieces + " ", elementPiece(1), " (" + total + " au total)");
+      return { texteVoix: "Bravo " + prenom + ", tu as gagné une pièce !", symbolesConfettis: ["✨", "⭐", "🎉", "✨", "⭐"], emojiRevele: "pièce" };
     });
     return;
   }
@@ -5810,6 +6554,7 @@ setInterval(tickHorloge, 15000);
 // Câblage des boutons + démarrage
 // ---------------------------------------------------------------------
 installerEcoute();
+installerPiecesInline();
 document.getElementById("btn-retour-routine").onclick = retourMenuDepuisRoutine;
 document.getElementById("btn-voix-routine").onclick = () => dire(document.getElementById("etape-courante").textContent);
 document.getElementById("btn-retour-dents").onclick = quitterBrossageDents;
@@ -5871,10 +6616,13 @@ document.getElementById("btn-retour-menu-journee").onclick = () => {
 };
 document.getElementById("btn-modifier-journee").onclick = basculerEditionJournee;
 
-document.getElementById("btn-mes-recompenses").onclick = () => { construireRecompenses(); afficherEcran("screen-recompenses"); };
-document.getElementById("btn-retour-menu-recompenses").onclick = construireMenu;
+document.getElementById("btn-mes-recompenses").onclick = () => ouvrirChemin();
+document.getElementById("btn-retour-chemin").onclick = () => { feteChemin = null; construireMenu(); };
+document.getElementById("btn-voix-chemin").onclick = () => dire(feteChemin ? feteChemin.titre : phraseChemin(chargerChemin(), chargerPiecesAPoser()));
+window.addEventListener("resize", () => { if (document.getElementById("screen-chemin").classList.contains("active")) ajusterZoneChemin(); });
 
 document.getElementById("btn-espace-parent").onclick = ouvrirEspaceParent;
+document.getElementById("btn-retour-parent-chemin").onclick = () => { recompenseEnEdition = null; brouillonRecompense = null; construireEspaceParent(); afficherEcran("screen-parent"); };
 document.getElementById("btn-retour-menu-parent").onclick = construireMenu;
 document.getElementById("btn-retour-parent-routines").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
 document.getElementById("btn-retour-parent-historique").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
@@ -5971,8 +6719,8 @@ document.getElementById("btn-debug-humeur").onclick = puisFermerDebug(() => etap
 document.getElementById("btn-debug-menu").onclick = puisFermerDebug(construireMenu);
 document.getElementById("btn-debug-missions").onclick = puisFermerDebug(() => { construireMissions(); afficherEcran("screen-missions"); });
 document.getElementById("btn-debug-journee").onclick = puisFermerDebug(() => { ciblerAujourdhui(); construireJournee(); afficherEcran("screen-journee"); });
-document.getElementById("btn-debug-recompenses").onclick = puisFermerDebug(() => { construireRecompenses(); afficherEcran("screen-recompenses"); });
-document.getElementById("btn-debug-coffre").onclick = puisFermerDebug(allerFinDeJournee);
+document.getElementById("btn-debug-recompenses").onclick = puisFermerDebug(ouvrirChemin);
+document.getElementById("btn-debug-coffre").onclick = puisFermerDebug(allerDormir);
 
 document.getElementById("btn-debug-parent").onclick = puisFermerDebug(() => { construireEspaceParent(); afficherEcran("screen-parent"); });
 document.getElementById("btn-debug-parent-routines").onclick = puisFermerDebug(() => { construireParentRoutines(); afficherEcran("screen-parent-routines"); });
@@ -6045,6 +6793,7 @@ setInterval(tickMinuteurGlobal, 1000);
     // basculer la visibilité de calques qui doivent déjà exister).
     appliquerProfilAuDom();
     migrerDatesUneFois();
+    migrerPiecesUneFois();
     // Encore en sommeil (tablette rouverte en pleine nuit) : reste sur
     // l'écran dodo, avant même de toucher à l'état du jour — pas
     // d'interaction possible avant `dortEncore()` == false (cf. `endormir`).

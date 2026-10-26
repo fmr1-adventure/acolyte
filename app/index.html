@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <!-- Même numéro que VERSION_APP (app.js) et CACHE_NAME (sw.js), cf.
      verifierVersionPage() dans app.js. -->
-<meta name="acolyte-version" content="19">
+<meta name="acolyte-version" content="20">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Acolyte</title>
 <link rel="stylesheet" href="styles.css">
@@ -85,7 +85,7 @@
       <button class="btn-debug-item" id="btn-debug-menu">🏠 Menu du jour</button>
       <button class="btn-debug-item" id="btn-debug-missions">🚗 Sorties (missions)</button>
       <button class="btn-debug-item" id="btn-debug-journee">🗓️ Ma journée</button>
-      <button class="btn-debug-item" id="btn-debug-recompenses">🏆 Mes récompenses</button>
+      <button class="btn-debug-item" id="btn-debug-recompenses">🪜 Mon chemin</button>
       <button class="btn-debug-item" id="btn-debug-coffre">🎁 Récompense fin de journée</button>
     </div>
 
@@ -181,14 +181,18 @@
     <div id="journee-contenu"></div>
   </div>
 
-  <!-- ============ Mes récompenses (étoiles + pièces à collectionner) ============ -->
-  <div id="screen-recompenses" class="screen">
+  <!-- ============ Mon chemin (les pièces à poser, les récompenses) ============ -->
+  <!-- Construit par construireChemin() (app.js) : une route qui serpente du
+       départ, en bas, à la récompense finale, en haut ; l'enfant fait
+       glisser chaque pièce sur le rond qui brille. -->
+  <div id="screen-chemin" class="screen">
     <div class="barre-haut">
-      <button class="btn-retour-ecran" id="btn-retour-menu-recompenses" aria-label="Retour au menu">←</button>
-      <div class="prenom-actif">Mes récompenses</div>
-      <div></div>
+      <button class="btn-retour-ecran" id="btn-retour-chemin" aria-label="Retour à ma journée">←</button>
+      <div class="prenom-actif">Mon chemin</div>
+      <button class="btn-voix" id="btn-voix-chemin" aria-label="Réécouter">🔊</button>
     </div>
-    <div id="recompenses-contenu"></div>
+    <div id="chemin-but"></div>
+    <div id="chemin-cadre"><div id="chemin-zone"></div></div>
   </div>
 
   <!-- ============ 1. Écran d'une routine (générique, alimenté par ROUTINES) ============ -->
@@ -671,6 +675,16 @@
     <div id="parent-planning-journees-liste"></div>
   </div>
 
+  <!-- ============ Espace parent : chemin et récompenses ============ -->
+  <div id="screen-parent-chemin" class="screen">
+    <div class="barre-haut">
+      <button class="btn-retour-ecran" id="btn-retour-parent-chemin" aria-label="Retour à l'espace parent">←</button>
+      <div class="prenom-actif">Chemin et récompenses</div>
+      <div></div>
+    </div>
+    <div id="parent-chemin-contenu"></div>
+  </div>
+
   <!-- ============ Espace parent : cet appareil (quel profil) ============ -->
   <div id="screen-parent-appareil" class="screen">
     <div class="barre-haut">
@@ -919,7 +933,7 @@
       </div>
       <label class="champ-parent champ-parent-case">
         <input type="checkbox" id="na-piece">
-        <span>Donne une pièce 🪙 à la fin</span>
+        <span>Donne une pièce <span class="piece-inline" data-piece="1"></span> à la fin</span>
       </label>
       <label class="champ-parent">
         <span>Autres mots pour la retrouver (facultatif, séparés par des virgules)</span>
@@ -1186,6 +1200,7 @@
 </div>
 <script src="semaine.js"></script>
 <script src="journee.js"></script>
+<script src="recompenses.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

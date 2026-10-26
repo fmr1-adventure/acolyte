@@ -85,8 +85,27 @@ récurrente par nature, elle apparaît ensuite tous les jours.
   pas le cycle quotidien** des étoiles : dans le prototype, une clé
   `localStorage` séparée (`cle("pieces")`) qui n'est jamais réinitialisée
   au changement de jour.
-- Pas encore de mécanique de dépense modélisée (boutique, choix
-  d'activité) — juste le total qui s'accumule pour l'instant.
+- Une pièce gagnée (jauge pleine ou activité) incrémente aussi
+  `cle("pieces_a_poser")` ; l'enfant la pose ensuite sur le chemin
+  (`cle("chemin").posees`). Les pièces d'avant le chemin sont devenues des
+  pièces à poser (migration unique).
+
+## Jauge d'étoiles et chemin (aspect données)
+
+- `cle("jauge_etoiles")` = `{ dansLaJauge, aDecouvrir }`, jamais remis à
+  zéro au changement de jour. Les étoiles du jour passent dans
+  `aDecouvrir` à la validation du coucher, ou au changement de jour s'il
+  n'a pas eu lieu (`etat.etoilesMisesDeCote` retient combien l'ont déjà
+  été). La carte « Ce matin » les verse dans `dansLaJauge` à partir de
+  `heureDecouverte` ; à `etoilesParPiece`, une pièce, le reste repart dans
+  la jauge. L'étoile reste aussi comptée dans `etat.etoiles` (historique).
+- `cle("chemin")` = `{ cases, etoilesParPiece, heureDecouverte, sons,
+  recompenses: [{ case, emoji, nom }], posees, atteintes: [{ case, emoji,
+  nom, gagneeLe, donneeLe? }], archives }`, avec `sons` = `"doux" |
+  "arcade" | "coupes"`. La récompense finale est celle de la dernière case.
+  `atteintes` garde le pictogramme et le nom au moment où la récompense
+  est gagnée (« À donner » ne dépend pas d'un réglage modifié ensuite). Un
+  chemin terminé est archivé avant d'en préparer un nouveau.
 
 ## Planning (aspect données) — items de "Ma journée"
 
