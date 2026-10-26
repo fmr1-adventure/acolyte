@@ -837,7 +837,21 @@ function libelleItemPlanning(item) {
   if (item.type === "routine") { const r = routineParId(item.id); return r ? { emoji: r.emoji, nom: r.nom, entourage: entourageDe(r) } : null; }
   if (item.type === "aventure") { const a = aventureParId(item.id); return a ? { emoji: a.emoji, nom: a.lieu, entourage: entourageDe(a) } : null; }
   if (item.type === "repas") { const r = REPAS.find(x => x.id === item.id); return r ? { emoji: r.emoji, nom: r.nom } : null; }
+  if (item.type === "note") return item.texte ? { emoji: "💬", nom: item.texte, entourage: entourageDe(item) } : null;
+  if (item.type === "choix") {
+    // Une fois choisi, le moment au choix EST l'activité choisie ; avant,
+    // il annonce ses idées (une activité supprimée depuis est ignorée).
+    const choisie = item.choisi && aventureParId(item.choisi);
+    if (choisie) return { emoji: choisie.emoji, nom: choisie.lieu, entourage: entourageDe(choisie) };
+    const options = (item.options || []).map(aventureParId).filter(Boolean);
+    return options.length ? { emoji: "🎲", nom: "Au choix : " + listeOu(options.map(a => a.lieu)) } : null;
+  }
   return null;
+}
+
+// « A, B ou C »
+function listeOu(noms) {
+  return noms.length <= 1 ? noms.join("") : noms.slice(0, -1).join(", ") + " ou " + noms[noms.length - 1];
 }
 
 // ---------------------------------------------------------------------
@@ -1340,9 +1354,16 @@ let listeJourConstruite = false;
 let lectureJournee = null;
 function lectureJourneeEnCours() { return lectureJournee !== null; }
 
+// Planning du jour tel que la liste le voit : un élément orphelin (activité
+// ou idées d'un moment au choix qui n'existent plus) compte comme sauté,
+// pour ne jamais devenir un « maintenant » invisible.
+function planningDeLaListe(etat) {
+  return etat.planning.map(it => (libelleItemPlanning(it) ? it : Object.assign({}, it, { passe: true })));
+}
+
 function construireListeJour(etat) {
   listeJourConstruite = true;
-  const planning = etat.planning;
+  const planning = planningDeLaListe(etat);
   const resultat = statutsJournee(planning, horaireItem);
   const liste = document.getElementById("liste-journee");
   liste.innerHTML = "";
@@ -1431,8 +1452,8 @@ function carteListeJour(v, resultat) {
 // de pictogrammes ailleurs. Jamais sur la séance (la praticienne tient la
 // tablette) ni côté parents.
 // ---------------------------------------------------------------------
-const ECRANS_ECOUTE = ["screen-menu", "screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-recompenses", "screen-dents", "screen-histoire"];
-const ECRANS_BANDE = ["screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-recompenses"];
+const ECRANS_ECOUTE = ["screen-menu", "screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-choix", "screen-recompenses", "screen-dents", "screen-histoire"];
+const ECRANS_BANDE = ["screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-choix", "screen-recompenses"];
 // Le calendrier en grand, le haut-parleur en badge : distinct du 🔊 seul.
 const ICONE_ECOUTE_JOURNEE = '<span class="ecoute-cal">🗓️</span><span class="ecoute-badge">🔊</span>';
 
@@ -1475,23 +1496,24 @@ function installerEcoute() {
 
 function phraseMaintenantDuJour() {
   const etat = chargerEtat();
-  return phraseMaintenant(etat.planning, statutsJournee(etat.planning, horaireItem), nomItemPlanning);
+  const planning = planningDeLaListe(etat);
+  return phraseMaintenant(planning, statutsJournee(planning, horaireItem), nomItemPlanning);
 }
 
 // Pendant une sortie ou une activité, 🔊 redit l'écran puis annonce la
 // suite : « … Après : le déjeuner. »
 function suiteApres() {
   const etat = chargerEtat();
-  const r = statutsJournee(etat.planning, horaireItem);
+  const r = statutsJournee(planningDeLaListe(etat), horaireItem);
   const nom = r.apres === null ? null : nomItemPlanning(etat.planning[r.apres]);
-  return nom ? " Après : " + nom + "." : "";
+  return nom ? " " + finPhrase("Après : " + nom) : "";
 }
 
 function construireBandeJournee(ecran) {
   const bande = ecran.querySelector(".bande-journee");
   if (!bande) return;
   const etat = chargerEtat();
-  const r = statutsJournee(etat.planning, horaireItem);
+  const r = statutsJournee(planningDeLaListe(etat), horaireItem);
   bande.innerHTML = "";
   etat.planning.forEach((item, i) => {
     const lib = libelleItemPlanning(item);
@@ -1516,7 +1538,8 @@ function basculerLectureJournee() {
 // d'une lecture déjà arrêtée (cancel() en déclenche sur la file restante).
 function lireJournee() {
   const etat = chargerEtat();
-  const phrases = phrasesJournee(etat.planning, statutsJournee(etat.planning, horaireItem), nomItemPlanning);
+  const planning = planningDeLaListe(etat);
+  const phrases = phrasesJournee(planning, statutsJournee(planning, horaireItem), nomItemPlanning);
   try { speechSynthesis.cancel(); } catch (e) {}
   const jeton = {};
   lectureJournee = jeton;
@@ -1563,11 +1586,70 @@ function lancerItemJour(index) {
   const item = chargerEtat().planning[index];
   if (!item) return;
   if (item.type === "routine") { demarrerRoutine(item.id); return; }
-  if (item.type !== "aventure") return;
-  const a = aventureParId(item.id);
+  if (item.type === "aventure") { lancerActivite(item.id, index); return; }
+  if (item.type === "choix") {
+    if (item.choisi && aventureParId(item.choisi)) lancerActivite(item.choisi, index);
+    else ouvrirChoix(index);
+  }
+}
+
+// Une activité à la maison démarre tout de suite ; une sortie seulement si
+// l'enfant est prêt (cf. partirSiPret()).
+function lancerActivite(id, index) {
+  const a = aventureParId(id);
   if (!a) return;
   if (a.nature === "maison") { demarrerAventure(a.id); return; }
   partirSiPret(a.id, index);
+}
+
+// ---------------------------------------------------------------------
+// Moment au choix : l'enfant choisit parmi les 2 ou 3 idées préparées par
+// les parents (`item.options`), sans attendre personne. Le choix est gardé
+// pour la journée (`item.choisi`) ; la fin de l'activité choisie marque le
+// moment au choix comme fait (cf. indexAMarquer() dans journee.js).
+// ---------------------------------------------------------------------
+let choixEnCours = null;
+function optionsDuChoix(index) {
+  const item = chargerEtat().planning[index];
+  return item && item.type === "choix" ? (item.options || []).map(aventureParId).filter(Boolean) : [];
+}
+function phraseChoix(options) { return "Tu peux choisir : " + listeOu(options.map(a => a.lieu)) + "."; }
+
+function ouvrirChoix(index) {
+  const options = optionsDuChoix(index);
+  if (!options.length) return;
+  choixEnCours = { index, selection: null };
+  construireOptionsChoix();
+  afficherEcran("screen-choix");
+  dire(phraseChoix(options));
+}
+
+function construireOptionsChoix() {
+  const conteneur = document.getElementById("choix-options");
+  conteneur.innerHTML = "";
+  optionsDuChoix(choixEnCours.index).forEach(a => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "carte-choix type-" + (a.nature === "maison" ? "maison" : "sortie") + (choixEnCours.selection === a.id ? " choisie" : "");
+    b.innerHTML = `<span class="carte-jour-emoji">${a.emoji}</span><span class="carte-jour-nom">${a.lieu}</span>`;
+    b.onclick = () => { choixEnCours.selection = a.id; construireOptionsChoix(); dire(finPhrase(a.lieu)); };
+    conteneur.appendChild(b);
+  });
+  document.getElementById("btn-choix-valider").disabled = !choixEnCours.selection;
+}
+
+// Enregistre le choix puis repasse par la liste : l'activité choisie y est
+// « maintenant » et se lance comme les autres (une sortie pas prête y fait
+// clignoter la routine à faire).
+function validerChoix() {
+  if (!choixEnCours || !choixEnCours.selection) return;
+  const { index, selection } = choixEnCours;
+  choixEnCours = null;
+  const etat = chargerEtat();
+  const item = etat.planning[index];
+  if (item && item.type === "choix") { item.choisi = selection; sauverEtat(etat); }
+  construireMenu();
+  if (item && item.type === "choix") lancerItemJour(index);
 }
 
 // Activité en cours (`etat.enCours`) : routine ou étape d'aventure
@@ -2022,9 +2104,12 @@ function definirHeureItemPlanning(i, valeur) {
 // qu'en toute fin : dans la liste de l'enfant, rien ne se lance après le
 // coucher, qui clôt la journée.
 function ajouterItemPlanning(type, id) {
+  insererItemPlanning({ type, id });
+}
+function insererItemPlanning(item) {
   const planning = chargerPlanningCible();
   const posCoucher = planning.findIndex(estItemCoucher);
-  if (posCoucher === -1) planning.push({ type, id }); else planning.splice(posCoucher, 0, { type, id });
+  if (posCoucher === -1) planning.push(item); else planning.splice(posCoucher, 0, item);
   sauverPlanningCible(planning);
   construireJournee();
 }
@@ -2080,7 +2165,101 @@ function construireAjoutPlanning(planning) {
     creer.appendChild(b);
   });
   bloc.appendChild(creer);
+  bloc.appendChild(construireAjoutEnLigne());
   return bloc;
+}
+
+// Ajouts qui n'existent que dans le planning (pas dans la bibliothèque) :
+// une info, un moment au choix — un petit bloc qui se déplie sous les
+// boutons, sans quitter le jour édité. `ajoutEnLigne` survit aux
+// reconstructions de l'éditeur.
+let ajoutEnLigne = null;
+let noteEntourageBrouillon = [];
+let choixOptionsBrouillon = [];
+
+function construireAjoutEnLigne() {
+  const bloc = document.createElement("div");
+  const boutons = document.createElement("div");
+  boutons.className = "creer-depuis-planning";
+  [["note", "+ Info"], ["choix", "+ Moment au choix"]].forEach(([type, texte]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn-secondaire" + (ajoutEnLigne === type ? " ajout-ouvert" : "");
+    b.textContent = texte;
+    b.onclick = () => {
+      ajoutEnLigne = ajoutEnLigne === type ? null : type;
+      noteEntourageBrouillon = [];
+      choixOptionsBrouillon = [];
+      construireJournee();
+    };
+    boutons.appendChild(b);
+  });
+  bloc.appendChild(boutons);
+  if (ajoutEnLigne === "note") bloc.appendChild(formulaireNoteEnLigne());
+  if (ajoutEnLigne === "choix") bloc.appendChild(formulaireChoixEnLigne());
+  return bloc;
+}
+
+function formulaireChoixEnLigne() {
+  const f = document.createElement("div");
+  f.className = "ajout-en-ligne";
+  f.innerHTML = `<div class="champ-parent"><span>2 ou 3 idées, parmi les activités</span><div class="grille-entourage" id="ajout-choix-options"></div></div>`
+    + `<div class="texte-erreur" id="ajout-choix-erreur"></div>`;
+  const grille = f.querySelector("#ajout-choix-options");
+  const construire = () => {
+    grille.innerHTML = "";
+    toutesLesAventures().forEach(a => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip-entourage" + (choixOptionsBrouillon.includes(a.id) ? " choisi" : "");
+      b.textContent = a.emoji + " " + a.lieu;
+      b.onclick = () => {
+        const pos = choixOptionsBrouillon.indexOf(a.id);
+        if (pos !== -1) choixOptionsBrouillon.splice(pos, 1);
+        else if (choixOptionsBrouillon.length < 3) choixOptionsBrouillon.push(a.id);
+        construire();
+      };
+      grille.appendChild(b);
+    });
+  };
+  construire();
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "btn-continuer";
+  b.textContent = "Ajouter le moment au choix";
+  b.onclick = () => {
+    if (choixOptionsBrouillon.length < 2) { f.querySelector("#ajout-choix-erreur").textContent = "Choisis 2 ou 3 activités."; return; }
+    const item = { type: "choix", options: [...choixOptionsBrouillon] };
+    ajoutEnLigne = null;
+    choixOptionsBrouillon = [];
+    insererItemPlanning(item);
+  };
+  f.appendChild(b);
+  return f;
+}
+
+function formulaireNoteEnLigne() {
+  const f = document.createElement("div");
+  f.className = "ajout-en-ligne";
+  f.innerHTML = `<label class="champ-parent"><span>L'info, telle qu'elle sera dite</span>`
+    + `<input type="text" id="ajout-note-texte" maxlength="80" placeholder="Ex : Maman vient te chercher."></label>`
+    + `<div class="champ-parent"><span>Avec qui ? (facultatif)</span><div class="grille-entourage" id="ajout-note-entourage"></div></div>`
+    + `<div class="texte-erreur" id="ajout-note-erreur"></div>`;
+  construireChoixEntourage(f.querySelector("#ajout-note-entourage"), noteEntourageBrouillon);
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "btn-continuer";
+  b.textContent = "Ajouter l'info";
+  b.onclick = () => {
+    const texte = f.querySelector("#ajout-note-texte").value.trim();
+    if (!texte) { f.querySelector("#ajout-note-erreur").textContent = "Écris l'info à ajouter."; return; }
+    const item = { type: "note", texte };
+    if (noteEntourageBrouillon.length) item.entourageIds = [...noteEntourageBrouillon];
+    ajoutEnLigne = null;
+    insererItemPlanning(item);
+  };
+  f.appendChild(b);
+  return f;
 }
 
 // ---------------------------------------------------------------------
@@ -3986,6 +4165,19 @@ const ETAPES_SEANCE = ["On dit bonjour", "On fait la séance", "On dit au revoir
 const EMOJI_MAISON_DEFAUT = "📖";
 let endroitChoisi = "salon";
 let minuteurChoisi = 0;
+// Sortie et séance : comment on y va (absent sur une activité = voiture).
+const TRANSPORTS = [["voiture", "🚗 Voiture"], ["velo", "🚲 Vélo"], ["pied", "🚶 À pied"]];
+const PICTO_TRANSPORT = { velo: "🚲", pied: "🚶" };
+let transportChoisi = "voiture";
+function texteTrajetSuggere(transport, nom) {
+  if (transport === "velo") return contracterA("On pédale jusqu'à " + nom + ".");
+  if (transport === "pied") return contracterA("On marche jusqu'à " + nom + ".");
+  return "On roule vers " + nom + ".";
+}
+// « à le parc » → « au parc », « à les » → « aux » (noms tapés par un parent).
+function contracterA(texte) {
+  return texte.replace(/(^|[\s'])à le /gi, "$1au ").replace(/(^|[\s'])à les /gi, "$1aux ");
+}
 // Formulaire ouvert depuis l'éditeur de journée (cf. construireAjoutPlanning())
 // plutôt que depuis la bibliothèque : l'activité créée est ajoutée au jour
 // édité, et ← comme la création ramènent à ce jour.
@@ -4025,6 +4217,9 @@ function afficherNatureFormulaireActivite() {
   document.getElementById("na-sortie-bloc").classList.toggle("hidden", nature === "maison");
   document.getElementById("na-maison-bloc").classList.toggle("hidden", nature !== "maison");
   document.getElementById("na-nom").placeholder = nature === "maison" ? "Ex : Lecture" : "Ex : La piscine";
+  if (nature !== "maison") {
+    construireChoixUnique(document.getElementById("na-transport-grille"), TRANSPORTS, transportChoisi, choisirTransport);
+  }
   if (nature === "seance") construireChoixPersonneSeance();
   if (nature === "maison") {
     construireChoixUnique(document.getElementById("na-endroit-grille"), Object.entries(ENDROITS), endroitChoisi,
@@ -4050,6 +4245,16 @@ function construireChoixUnique(grille, options, valeur, choisir) {
     b.onclick = () => choisir(v);
     grille.appendChild(b);
   });
+}
+
+// Le texte du trajet suit le mode de transport tant que le parent ne l'a
+// pas réécrit (il vaut encore la suggestion de l'ancien mode).
+function choisirTransport(transport) {
+  const nom = document.getElementById("na-nom").value.trim();
+  const trajet = document.getElementById("na-trajet");
+  if (nom && trajet.value.trim() === texteTrajetSuggere(transportChoisi, nom)) trajet.value = texteTrajetSuggere(transport, nom);
+  transportChoisi = transport;
+  afficherNatureFormulaireActivite();
 }
 
 function choisirNatureFormulaire(nature) {
@@ -4082,6 +4287,7 @@ function ouvrirNouvelleAventure(options = {}) {
   personneSeanceId = null;
   endroitChoisi = "salon";
   minuteurChoisi = 0;
+  transportChoisi = "voiture";
   document.getElementById("btn-creer-aventure").textContent = "Créer l'activité";
   ["na-nom", "na-trajet", "na-arrivee", "na-etape1", "na-etape2", "na-etape3", "na-mots-cles", "na-consigne"]
     .forEach(id => { document.getElementById(id).value = ""; });
@@ -4144,6 +4350,7 @@ function ouvrirEditionAventure(id) {
   document.getElementById("na-consigne").value = a.consigne || "";
   endroitChoisi = a.endroit || "salon";
   minuteurChoisi = a.minuteurMinutes || 0;
+  transportChoisi = a.modeTransport || "voiture";
   document.getElementById("na-piece").checked = a.recompensePieces > 0;
   document.getElementById("na-mots-cles").value = (a.motsCles || []).join(", ");
   document.getElementById("na-erreur").textContent = "";
@@ -4163,8 +4370,8 @@ function suggererTextesActivite() {
   if (!nom) return;
   const trajetEl = document.getElementById("na-trajet");
   const arriveeEl = document.getElementById("na-arrivee");
-  if (!trajetEl.value.trim()) trajetEl.value = "On roule vers " + nom + ".";
-  if (!arriveeEl.value.trim()) arriveeEl.value = "On est arrivés à " + nom + ".";
+  if (!trajetEl.value.trim()) trajetEl.value = texteTrajetSuggere(transportChoisi, nom);
+  if (!arriveeEl.value.trim()) arriveeEl.value = contracterA("On est arrivés à " + nom + ".");
 }
 
 function creerNouvelleAventure() {
@@ -4201,7 +4408,7 @@ function creerNouvelleAventure() {
       document.getElementById("na-erreur").textContent = "Remplis tous les champs avant de créer l'activité.";
       return;
     }
-    champs = { lieu: nom, emoji: emojiChoisiActivite, texteTrajet, texteArrivee, programme: ["1. " + e1, "2. " + e2, "3. " + e3], recompensePieces: pieceOui ? 1 : 0 };
+    champs = { lieu: nom, emoji: emojiChoisiActivite, modeTransport: transportChoisi, texteTrajet, texteArrivee, programme: ["1. " + e1, "2. " + e2, "3. " + e3], recompensePieces: pieceOui ? 1 : 0 };
   }
 
   const motsCles = document.getElementById("na-mots-cles").value.trim();
@@ -5200,6 +5407,13 @@ function allerAuTrajet() {
   afficherEcran("screen-trajet");
   document.getElementById("trajet-texte").textContent = texte;
   document.getElementById("scene-trajet").classList.toggle("retour", sensTrajet === "retour");
+  // À vélo ou à pied : la fenêtre de voiture n'a pas de sens, un grand
+  // pictogramme la remplace en attendant un vrai décor.
+  const picto = PICTO_TRANSPORT[(prochaine || a).modeTransport];
+  document.getElementById("scene-trajet").classList.toggle("hidden", !!picto);
+  const transport = document.getElementById("trajet-transport");
+  transport.textContent = picto || "";
+  transport.classList.toggle("hidden", !picto);
   dire(texte);
 }
 
@@ -5605,6 +5819,9 @@ document.getElementById("input-restaurer").onchange = (ev) => {
 
 document.getElementById("btn-un-parent").onclick = () => (suiteBravo || allerValidation)();
 document.getElementById("btn-maison-fini").onclick = finActiviteMaison;
+document.getElementById("btn-choix-valider").onclick = validerChoix;
+document.getElementById("btn-retour-choix").onclick = () => { choixEnCours = null; construireMenu(); };
+document.getElementById("btn-voix-choix").onclick = () => { if (choixEnCours) dire(phraseChoix(optionsDuChoix(choixEnCours.index))); };
 document.getElementById("btn-retour-maison").onclick = () => { arreterMinuteurMaison(); aventureActuelleId = null; construireMenu(); };
 document.getElementById("btn-voix-maison").onclick = () => dire(document.getElementById("maison-consigne").textContent + suiteApres());
 document.getElementById("btn-valider-routine").onclick = () => { if (actionCorrection) actionCorrection(); };
@@ -5620,6 +5837,7 @@ document.getElementById("btn-retour-menu").onclick = construireMenu;
 // Un jour à venir ou de la semaine type s'ouvre depuis l'écran Planning : on
 // y revient, plutôt que de sauter au menu de l'enfant.
 document.getElementById("btn-retour-menu-journee").onclick = () => {
+  ajoutEnLigne = null;
   if (planningCibleEstAujourdhui()) { construireMenu(); return; }
   construireParentPlanningJournees();
   afficherEcran("screen-parent-planning-journees");

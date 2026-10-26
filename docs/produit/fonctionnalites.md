@@ -134,6 +134,15 @@ journée ; à la fin, un carillon et « C'est l'heure ! Tu as fini ? ».
 « J'ai fini » mène aux félicitations puis à un parent, qui valide avec
 son code — avec une pièce dans un coffre si l'activité en donne une.
 
+### Les infos et les moments au choix
+
+Une **info** (« Maman vient te chercher ») se glisse dans la journée
+comme un repère, en gris et en pointillés : rien à faire, elle se lit
+telle quelle quand on écoute la journée. Un **moment au choix** (le
+week-end : vélo, Lego ou lecture) propose 2 ou 3 idées préparées par les
+parents : quand c'est son tour, l'enfant les entend, en touche une, puis
+« C'est parti » lance l'activité choisie — sans attendre personne.
+
 ### Les routines
 
 Chaque routine (s'habiller, se préparer à partir, aller se coucher...)
@@ -205,7 +214,8 @@ comme de vrais objets à collectionner.
 ### Les sorties
 
 Une sortie programmée (ex. le magasin de bricolage, une séance chez une
-praticienne, l'école) se joue en deux temps : le trajet (avec sa propre
+praticienne, l'école) se fait en voiture, à vélo ou à pied — le texte
+du trajet et la scène suivent — et se joue en deux temps : le trajet (avec sa propre
 petite scène) puis l'arrivée, avant de rentrer à la maison — chaque
 étape confirmée par un parent. Une sortie peut rapporter des pièces,
 une monnaie à part des étoiles, qui ne repart jamais à zéro d'un jour
@@ -269,9 +279,11 @@ routines, entourage), **le suivi** (historique, notes des séances) et
     semaine type change ; les autres restent « Comme d'habitude ».
 
   Depuis n'importe quel jour en cours de préparation, on peut créer
-  directement une **nouvelle sortie** ou une **nouvelle séance** (on
-  choisit alors avec qui, dans « Mon entourage ») : elle est ajoutée au
-  jour qu'on prépare, sans passer par la bibliothèque.
+  directement une **nouvelle sortie**, une **activité à la maison** ou une
+  **nouvelle séance** (on choisit alors avec qui, dans « Mon
+  entourage ») : elle est ajoutée au jour qu'on prépare, sans passer par
+  la bibliothèque. On y ajoute aussi une **info** ou un **moment au
+  choix**.
 - **Relancer une routine** si la situation a changé (ex. l'enfant
   s'est redéshabillé après coup) : les tâches décochées sont à refaire
   et la routine redevient « maintenant » dans la liste — l'étoile

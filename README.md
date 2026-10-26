@@ -56,7 +56,11 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   Récompense de fin de journée et pièces à collectionner.
 - **Activités à la maison** (lecture, temps calme...) : une consigne dite
   par l'acolyte, l'endroit, un minuteur facultatif.
-- **Sorties** (école, courses, séance chez une praticienne...) : trajet
+- **Infos et moments au choix** : « Maman vient te chercher » se lit
+  dans la journée ; un moment au choix laisse l'enfant choisir parmi 2 ou
+  3 idées préparées par les parents.
+- **Sorties** (école, courses, séance chez une praticienne...), en
+  voiture, à vélo ou à pied : trajet
   puis arrivée, avec un déroulé à part pour les séances (la praticienne
   démarre la séance et laisse une note réservée aux parents).
 - **Préparer une journée** (côté parents) : réordonner, ajouter, retirer

@@ -1,10 +1,11 @@
 // Liste du jour côté enfant — logique pure, sans DOM ni stockage, testée
 // sous Node (tests/journee.test.js) et chargée avant app.js dans la page.
 // Un item de planning `{ type, id, heure?, fait?, passe? }` est soit à
-// faire (routine, activité), soit un repère (repas) : un repère n'est
-// jamais « maintenant », il est passé dès que la liste le dépasse.
+// faire (routine, activité, moment au choix), soit un repère (repas,
+// info) : un repère n'est jamais « maintenant », il est passé dès que la
+// liste le dépasse.
 
-function estAFaire(item) { return item.type === "routine" || item.type === "aventure"; }
+function estAFaire(item) { return item.type === "routine" || item.type === "aventure" || item.type === "choix"; }
 function resteAFaire(item) { return estAFaire(item) && !item.fait && !item.passe; }
 
 // `horaire(item)` : `null` si l'item n'a pas d'heure de déblocage, sinon
@@ -46,6 +47,10 @@ function statutsJournee(planning, horaire) {
   };
 }
 
+// « Après : » + nom, terminé par un point — sauf si le nom (une info
+// écrite par un parent) a déjà sa ponctuation.
+function finPhrase(texte) { return /[.!?…]$/.test(texte.trim()) ? texte.trim() : texte + "."; }
+
 // Lecture de toute la journée : une phrase courte par élément, ce qui est
 // fait d'abord, puis maintenant / après / ensuite. Ni les items sautés ni
 // ceux restés pas faits (pas de reproche). `nomDe(item)` peut renvoyer
@@ -57,10 +62,12 @@ function phrasesJournee(planning, resultat, nomDe) {
   resultat.statuts.forEach((statut, i) => {
     const nom = nomDe(planning[i]);
     if (!nom) return;
+    // Une info passée n'est pas « faite » : elle n'est simplement plus lue.
+    if (statut === "repere-passe" && planning[i].type === "note") return;
     if (statut === "fait" || statut === "repere-passe") faits.push({ index: i, nom });
-    else if (prefixes[statut]) suite.push({ index: i, texte: prefixes[statut] + nom + "." });
+    else if (prefixes[statut]) suite.push({ index: i, texte: finPhrase(prefixes[statut] + nom) });
   });
-  const phrases = faits.map((f, n) => ({ index: f.index, texte: (n === 0 ? "C'est fait : " : "") + f.nom + "." })).concat(suite);
+  const phrases = faits.map((f, n) => ({ index: f.index, texte: finPhrase((n === 0 ? "C'est fait : " : "") + f.nom) })).concat(suite);
   return phrases.length ? phrases : [{ index: null, texte: "Rien de prévu aujourd'hui." }];
 }
 
@@ -70,16 +77,18 @@ function phraseMaintenant(planning, resultat, nomDe) {
   const nom = (i) => (i === null ? null : nomDe(planning[i]));
   const m = nom(resultat.maintenant);
   const a = nom(resultat.apres);
-  if (m && a) return "Maintenant : " + m + ". Après : " + a + ".";
-  if (m) return "Maintenant : " + m + ".";
-  if (a) return "Après : " + a + ".";
+  if (m && a) return finPhrase("Maintenant : " + m) + " " + finPhrase("Après : " + a);
+  if (m) return finPhrase("Maintenant : " + m);
+  if (a) return finPhrase("Après : " + a);
   return "Tout est fait pour aujourd'hui !";
 }
 
 // L'item à marquer fait quand une routine ou une activité se termine : le
-// premier de ce type et de cet id qui reste à faire.
+// premier de ce type et de cet id qui reste à faire — pour une activité,
+// un moment au choix où elle a été choisie compte aussi.
 function indexAMarquer(planning, type, id) {
-  return planning.findIndex(it => it.type === type && it.id === id && !it.fait && !it.passe);
+  return planning.findIndex(it => !it.fait && !it.passe
+    && ((it.type === type && it.id === id) || (type === "aventure" && it.type === "choix" && it.choisi === id)));
 }
 
-if (typeof module !== "undefined") module.exports = { estAFaire, statutsJournee, phrasesJournee, phraseMaintenant, indexAMarquer };
+if (typeof module !== "undefined") module.exports = { estAFaire, statutsJournee, phrasesJournee, phraseMaintenant, indexAMarquer, finPhrase };

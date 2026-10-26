@@ -173,6 +173,16 @@ Séquence :
    départ commun, un exemple générique ; un profil n'a par ailleurs
    aucune aventure propre en dur, cf. "Profils" plus bas) — lancées
    depuis la carte « maintenant » de la liste (`demarrerAventure()`) :
+   - **Mode de transport** (`modeTransport` : voiture par défaut, vélo,
+     à pied) — texte de trajet suggéré (`texteTrajetSuggere()`), et hors
+     voiture la fenêtre de voiture est remplacée par un grand pictogramme
+     (`#trajet-transport`).
+   - **Moment au choix** (item `choix` du planning) — `screen-choix`
+     (`ouvrirChoix()`/`validerChoix()`) : les 2 ou 3 idées, toucher =
+     nom dit + sélection, « C'est parti » enregistre `choisi` et lance
+     l'activité via la liste ; sa fin marque le moment au choix fait.
+     Ajouté depuis l'éditeur (« + Moment au choix », bloc en ligne), comme
+     une **info** (item `note`, « + Info »).
    - **Activité à la maison** (`nature: "maison"`) — `screen-maison`
      (`ouvrirActiviteMaison()`) : pictogramme, endroit, consigne dite à
      l'ouverture, minuteur facultatif (`minuteurMinutes`) calculé depuis

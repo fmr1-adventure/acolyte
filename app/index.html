@@ -889,6 +889,10 @@
       </div>
       <!-- Sortie et séance : trajet, arrivée, ce qui va se passer. -->
       <div class="groupe-champs" id="na-sortie-bloc">
+      <div class="champ-parent">
+        <span>Comment on y va ?</span>
+        <div id="na-transport-grille" class="grille-entourage"></div>
+      </div>
       <label class="champ-parent">
         <span>Texte pendant le trajet</span>
         <input type="text" id="na-trajet" placeholder="Ex : On roule vers la piscine." maxlength="80">
@@ -1058,6 +1062,9 @@
         "/>
       </svg>
     </div>
+    <!-- À vélo ou à pied : pas encore de décor, un grand pictogramme à la
+         place de la fenêtre de voiture (cf. allerAuTrajet()). -->
+    <div id="trajet-transport" class="hidden" aria-hidden="true"></div>
     <div class="texte-consigne" id="trajet-texte">On roule.</div>
     <div class="note-bas">C'est un temps d'attente : rien à faire, rien à toucher. Quand on est arrivés, un parent appuie ici.</div>
     <button class="btn-continuer" id="btn-arrive">On est arrivés ✅</button>
@@ -1112,6 +1119,20 @@
       </div>
     </div>
     <button class="btn-continuer" id="btn-maison-fini">J'ai fini ✅</button>
+  </div>
+
+  <!-- ============ Moment au choix (l'enfant choisit parmi 2 ou 3 idées) ============ -->
+  <!-- Ouvert depuis la liste du jour (cf. ouvrirChoix() dans app.js) : les
+       idées préparées par les parents ; toucher une carte dit son nom et
+       la sélectionne, « C'est parti » lance l'activité choisie. -->
+  <div id="screen-choix" class="screen">
+    <div class="barre-haut">
+      <button class="btn-retour-ecran" id="btn-retour-choix" aria-label="Retour à ma journée">←</button>
+      <div class="prenom-actif">À toi de choisir</div>
+      <button class="btn-voix" id="btn-voix-choix" aria-label="Réécouter">🔊</button>
+    </div>
+    <div id="choix-options"></div>
+    <button class="btn-continuer" id="btn-choix-valider" disabled>C'est parti ▶</button>
   </div>
 
   <!-- ============ Séance chez une praticienne (en cours) ============ -->

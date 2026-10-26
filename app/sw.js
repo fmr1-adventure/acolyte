@@ -25,7 +25,7 @@
  * ci-dessous — jamais un problème en usage réel, seulement le tout
  * premier écran de configuration doit être en ligne.
  */
-const CACHE_NAME = "acolyte-v17";
+const CACHE_NAME = "acolyte-v18";
 const A_METTRE_EN_CACHE = [
   "./",
   "./index.html",

@@ -23,6 +23,10 @@
   /* Activité « à la maison » (lecture, temps calme...) : turquoise, à
      part du violet des sorties (« on part de la maison »). */
   --type-maison: #5CC9BC;
+  /* Info (« Maman vient te chercher ») : gris, en pointillés — rien à faire.
+     Moment au choix : orange, volontairement plus jaune que --accent. */
+  --type-note: #9AA3B8;
+  --type-choix: #F2B84B;
   /* Mini-jeu brossage de dents (cf. #bouche-ouverte/#bouche-fermee) —
      tokens dédiés plutôt que réutiliser --skin/--rouge, pour ajuster
      l'illustration sans toucher au reste de l'avatar. */
@@ -236,6 +240,8 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .picto-jour.type-repas { border-bottom-color: var(--type-repas); }
 .picto-jour.type-sortie { border-bottom-color: var(--type-aventure); }
 .picto-jour.type-maison { border-bottom-color: var(--type-maison); }
+.picto-jour.type-note { border-style: dashed; border-bottom-color: var(--type-note); }
+.picto-jour.type-choix { border-bottom-color: var(--type-choix); }
 .carte-jour {
   display: flex; flex-direction: column; gap: 6px; padding: 10px 16px;
   background: var(--surface-active); border: 3px solid var(--surface-high); border-left-width: 8px;
@@ -244,6 +250,8 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .carte-jour.type-repas { border-left-color: var(--type-repas); }
 .carte-jour.type-sortie { border-left-color: var(--type-aventure); }
 .carte-jour.type-maison { border-left-color: var(--type-maison); }
+.carte-jour.type-note { border-style: dashed; border-left-color: var(--type-note); background: var(--surface); }
+.carte-jour.type-choix { border-left-color: var(--type-choix); }
 .carte-jour-label { font-size: 12px; letter-spacing: 1.5px; font-weight: 800; color: var(--text-faint); }
 .carte-jour-corps { display: flex; align-items: center; gap: 14px; }
 .carte-jour-emoji { font-size: 28px; flex-shrink: 0; }
@@ -289,6 +297,8 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .picto-bande.type-repas { border-bottom-color: var(--type-repas); }
 .picto-bande.type-sortie { border-bottom-color: var(--type-aventure); }
 .picto-bande.type-maison { border-bottom-color: var(--type-maison); }
+.picto-bande.type-note { border-style: dashed; border-bottom-color: var(--type-note); }
+.picto-bande.type-choix { border-bottom-color: var(--type-choix); }
 .picto-bande.passe { opacity: .4; }
 .picto-bande.en-cours { border-color: var(--accent); outline: 3px solid var(--accent); outline-offset: 1px; }
 /* Élément en train d'être lu par 🗓️🔊 : bien visible, même estompé. */
@@ -323,6 +333,22 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .btn-secondaire:active { transform: translate(2px, 2px); }
 
 #missions-emoji { font-size: 80px; }
+
+#trajet-transport { font-size: 120px; line-height: 1; text-align: center; margin: 24px 0 8px; }
+
+/* ---------- Moment au choix ---------- */
+#choix-options { display: flex; flex-direction: column; gap: 14px; margin: 8px 0 16px; }
+.carte-choix {
+  display: flex; align-items: center; gap: 18px; padding: 16px 20px; text-align: left;
+  background: var(--surface-active); border: 3px solid var(--surface-high); border-left-width: 8px;
+  box-shadow: var(--shadow-hard); color: var(--text); font: inherit;
+}
+.carte-choix .carte-jour-emoji { font-size: 48px; }
+.carte-choix .carte-jour-nom { font-size: 22px; font-weight: 800; }
+.carte-choix.type-maison { border-left-color: var(--type-maison); }
+.carte-choix.type-sortie { border-left-color: var(--type-aventure); }
+.carte-choix.choisie { border-color: var(--accent); border-left-width: 8px; background: rgba(240,149,47,.18); }
+#btn-choix-valider:disabled { opacity: .4; box-shadow: none; }
 
 /* ---------- Activité à la maison ---------- */
 #maison-endroit { font-size: 15px; font-weight: 700; color: var(--text-faint); }
@@ -755,6 +781,8 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .ligne-journee.type-repas { border-left: 5px solid var(--type-repas); }
 .ligne-journee.type-aventure { border-left: 5px solid var(--type-aventure); }
 .ligne-journee.type-maison { border-left: 5px solid var(--type-maison); }
+.ligne-journee.type-note { border-left: 5px dashed var(--type-note); border-style: dashed; }
+.ligne-journee.type-choix { border-left: 5px solid var(--type-choix); }
 
 /* Repère "maintenant/ensuite" (cf. reperesJournee() dans app.js) : une
    mise en avant visuelle, jamais une logique de blocage. */
@@ -788,6 +816,12 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .grille-ajout-planning { display: flex; flex-wrap: wrap; gap: 10px; }
 .creer-depuis-planning { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .creer-depuis-planning .btn-secondaire { margin: 0; flex: 1; }
+.creer-depuis-planning .btn-secondaire.ajout-ouvert { border-color: var(--accent); }
+/* Petit formulaire déplié dans l'éditeur (info, moment au choix). */
+.ajout-en-ligne {
+  display: flex; flex-direction: column; gap: 12px; margin-top: 12px; padding: 14px;
+  background: var(--surface); border: 2px solid var(--surface-high);
+}
 .btn-ajout-planning {
   display: flex; align-items: center; gap: 8px; padding: 10px 14px;
   background: var(--surface-active); border: 2px solid var(--surface-high); color: var(--text);

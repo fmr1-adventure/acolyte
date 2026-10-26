@@ -51,7 +51,9 @@ l'arrivée, le `programme` (3 lignes annoncées à l'arrivée) et une
 "maison"` est une **activité à la maison** : ni trajet ni programme, mais
 `endroit` (`"chambre" | "salon" | "cuisine"`), `consigne` (la phrase dite
 par l'acolyte), `minuteurMinutes` (0, 10, 20 ou 30) et `recompensePieces`.
-Sans `nature`, c'est une sortie. Une aventure avec `personne` est
+Sans `nature`, c'est une sortie ; une sortie (ou une séance) porte
+`modeTransport` (`"voiture" | "velo" | "pied"`, absent = voiture), qui
+pilote le texte de trajet suggéré et la scène du trajet. Une aventure avec `personne` est
 une **séance** : à l'arrivée, c'est l'écran de séance (code de la
 praticienne) qui prend le relais. Une séance créée depuis le planning
 porte la personne choisie dans l'entourage, qui figure aussi dans ses
@@ -95,6 +97,14 @@ principe déjà appliqué à l'aventure/la pièce). Un champ optionnel `heure`
 ("HH:MM") peut s'y ajouter : purement un repère d'affichage, jamais lu
 par la logique de la liste — deux mécanismes volontairement séparés (cf.
 `concept.md`).
+
+Deux types d'items n'existent que dans le planning, pas dans la
+bibliothèque : une **info** `{ type: "note", texte, entourageIds?, heure? }`
+(un repère, jamais « maintenant », lue telle quelle) et un **moment au
+choix** `{ type: "choix", options: [idActivite…], choisi?, heure? }` (2 ou 3
+activités ; `choisi` est rempli par le choix de l'enfant, pour la journée,
+et c'est la fin de l'activité choisie qui marque le moment au choix
+`fait`). Un élément dont l'activité n'existe plus est ignoré par la liste.
 
 Pour **aujourd'hui** seulement, deux champs de plus : `fait: true` quand
 l'élément est terminé (une routine à l'ouverture de son coffre ou à sa
