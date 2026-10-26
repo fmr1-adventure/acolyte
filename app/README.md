@@ -108,23 +108,30 @@ Séquence :
    `screen-reveil-bonjour` → `screen-reveil-dormi` → `screen-reveil-humeur`
    (`ouvrirReveil()`/`finReveil()`), dont les réponses sont gardées dans
    `etat.reveil` puis archivées dans l'historique.
-2. **Menu de la journée** — liste des routines. Seule la première non
-   validée est cliquable ; les suivantes sont grisées/verrouillées (🔒)
-   tant que **toutes** les précédentes ne sont pas validées (pas
-   seulement l'immédiatement précédente — sinon relancer une routine du
-   milieu depuis l'espace parent peut laisser une routine plus loin
-   débloquée à tort, cf. `construireMenu()`, `toutPrecedentValide`). Une
-   routine peut sortir de ce chaînage et se débloquer par l'heure plutôt
-   que par les précédentes (`disponibleApresHeure`, cf. "Aller se
-   coucher" plus haut) — icône 🕒 au lieu de 🔒, message vocal dédié tant
-   que l'heure n'est pas là. L'avatar y est affiché dans son état réel du
-   moment (habillé ou non selon ce qui est déjà fait), avec une jauge de
-   journée (une étoile par routine validée), et une horloge (jour +
-   heure, `#horloge`/`majHorloge()`, purement informative). Un bouton
-   voiture 🚗 distinct ("Partir à l'aventure") ouvre `screen-missions`
-   (les sorties du jour, cf. "Aventures" plus bas) **seulement si** "Se
-   préparer à partir" est validée — sinon il ramène directement dans
-   cette routine (`allerVersDepart()`).
+2. **Liste du jour** (`construireMenu()` → `construireListeJour()`) — le
+   menu de l'enfant est sa journée, construite depuis `etat.planning` :
+   une rangée de pictogrammes « déjà fait », la carte **maintenant** en
+   grand (bouton « C'est parti ▶ », `lancerItemJour()`), **après** en
+   moyen, **plus tard** en petit ; couleur par nature (`natureItem()`).
+   Les statuts viennent de `statutsJournee()` (`journee.js`) : seul
+   « maintenant » se lance ; une routine à `disponibleApresHeure` (le
+   coucher) devient « maintenant » à son heure, même si tout n'est pas
+   fait (`horaireItem()`), et reste verrouillée (🕒) avant ; un item
+   `passe` (sauté par un parent) n'est pas montré. Une sortie ne part
+   que si les routines de `ROUTINES_REQUISES_DEPART` placées avant elle
+   sont validées (`partirSiPret()` — voix + clignotement sinon). Le
+   chaînage `chainee` n'est plus lu. L'avatar dans son état réel, la
+   jauge (une étoile par routine acquise aujourd'hui, `etoileDonnee`) et
+   l'horloge restent en haut ; le tick de l'horloge reconstruit la liste
+   (sauf pendant une lecture), pour que le coucher se déverrouille seul.
+   **Écoute** (`installerEcoute()`) : sur chaque écran de
+   `ECRANS_ECOUTE`, 🔊 (`phraseMaintenant()`, ou le texte de l'écran +
+   « Après : … » via `suiteApres()`) et 🗓️🔊 (`lireJournee()` : une
+   phrase par élément, `phrasesJournee()`, chacune allumant sa carte ou
+   son pictogramme à son `onstart` ; second appui, autre annonce via
+   `dire()` ou changement d'écran → `arreterLectureJournee()`). Bande de
+   pictogrammes (`construireBandeJournee()`) sous le bandeau des écrans
+   de `ECRANS_BANDE`.
 3. **Écran de routine** (générique, alimenté par la routine choisie) —
    liste récapitulative complète toujours visible (l'enfant mesure ce
    qu'il reste à faire), ordre imposé (une seule tâche actionnable à la
@@ -164,10 +171,14 @@ Séquence :
    routines validées : confettis, total d'étoiles.
 7. **Aventures** (`AVENTURES_COMMUNES` dans `app.js` — un catalogue de
    départ commun, un exemple générique ; un profil n'a par ailleurs
-   aucune aventure propre en dur, cf. "Profils" plus bas) — depuis le
-   menu, "Partir à l'aventure" ouvre `screen-missions`, qui liste les
-   aventures programmées pour aujourd'hui (champ `date`, même format que
-   `cleJour()`). Taper une carte lance :
+   aucune aventure propre en dur, cf. "Profils" plus bas) — lancées
+   depuis la carte « maintenant » de la liste (`demarrerAventure()`) :
+   - **Activité à la maison** (`nature: "maison"`) — `screen-maison`
+     (`ouvrirActiviteMaison()`) : pictogramme, endroit, consigne dite à
+     l'ouverture, minuteur facultatif (`minuteurMinutes`) calculé depuis
+     `enCours.debut` (reprise après fermeture) ; « J'ai fini » →
+     félicitations (`suiteBravo`) → code → `terminerAventure()` (coffre
+     si `recompensePieces`).
    - **Trajet** — pas de barre de progression/minuteur, juste un temps
      d'attente avec la scène de la fenêtre de voiture
      (`app/assets/scenes/fenetre-voiture.jpg`) et l'enfant de profil en
@@ -202,8 +213,8 @@ Séquence :
      praticienne est une aventure comme une autre, ajoutée depuis
      l'espace parent ("+ Nouvelle activité") avec un champ `personne` —
      cf. plus bas, "Espace parent".
-8. **"Ma journée"** (`construireJournee()`, bouton secondaire sur le
-   menu) — le planning du jour (`etat.planning`) affiché **dans l'ordre
+8. **"Ma journée"** (`construireJournee()`, éditeur parent ouvert depuis
+   l'écran Planning — plus montré à l'enfant) — le planning (`etat.planning`) affiché **dans l'ordre
    chronologique** (routines, aventure(s) du jour, repas — `REPAS` —
    mélangés en une seule liste). Chaque item peut porter une `heure`
    optionnelle ; dès qu'il y en a, un repère "maintenant" suit l'horloge
@@ -236,9 +247,12 @@ Séquence :
      entre-temps (ex. redéshabillé après une routine validée). Réutilise
      l'écran de correction déjà existant (`construireCorrection()`,
      `screen-validation`) plutôt que d'en dupliquer un : mêmes tâches
-     décochables, bouton "Mettre à jour" au lieu de "Valider". Si la
-     routine était validée, son étoile est retirée (regagnée à la
-     revalidation par l'enfant) et `journeeFaite` repasse à `false`.
+     décochables, bouton "Mettre à jour" au lieu de "Valider". Si des
+     tâches ont été décochées, la routine redevient à faire : son dernier
+     item `fait` du planning est rouvert (elle repasse « maintenant »),
+     l'étoile reste acquise (`etoileDonnee`) et le nouveau passage se
+     valide sans coffre (`validerRoutineSansCoffre()`). Pour le coucher,
+     `journeeFaite` repasse aussi à `false`.
    - **Historique des journées** — lecture seule de `cle("historique")`
      (`construireHistorique()`), avec les réponses du réveil.
    - **Notes des séances** — toutes les notes laissées par les
@@ -579,6 +593,9 @@ le mécanisme principal.
   `migrerActivitesDatees`, `NOMS_JOURS`), chargée avant `app.js` et
   testée sans navigateur : `node --test tests/*.test.js` depuis la racine
   du dépôt (Node 18 ou plus récent).
+- `journee.js` — logique pure de la **liste du jour** (`statutsJournee`,
+  `phrasesJournee`, `phraseMaintenant`, `indexAMarquer`), chargée avant
+  `app.js`, testée par `tests/journee.test.js` (même commande).
 - `chargerSemaineType()`/`sauverSemaineType()` (`app.js`) —
   `cle("semaine_type")`, un planning par jour de la semaine ("1" = lundi
   … "7" = dimanche). `planningParDefaut(dateKey)` renvoie le jour de la

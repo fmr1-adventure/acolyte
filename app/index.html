@@ -147,21 +147,10 @@
       </div>
     </div>
 
-    <div id="titre-menu">Qu'est-ce qu'on fait ?</div>
-    <div id="liste-routines"></div>
-
-    <!-- Porte de sortie vers les aventures/missions : n'ouvre que si
-         "Se préparer à partir" est validée, sinon ramène directement à
-         cette routine (cf. app.js, allerVersDepart()). -->
-    <button id="btn-depart" aria-label="Partir à l'aventure">
-      <span id="depart-icone">🚗</span>
-      <span id="depart-texte">Partir à l'aventure</span>
-    </button>
-
-    <button id="btn-journee" class="btn-secondaire" aria-label="Afficher ma journée">
-      <span>🗓️</span>
-      <span>Afficher ma journée</span>
-    </button>
+    <!-- La journée de l'enfant en une seule liste, construite depuis le
+         planning du jour (cf. construireListeJour() dans app.js) : déjà
+         fait, maintenant (seul élément qui se lance), après, plus tard. -->
+    <div id="liste-journee"></div>
   </div>
 
   <!-- ============ Aventures / missions du jour ============ -->
@@ -864,6 +853,13 @@
       <div></div>
     </div>
     <div id="nouvelle-aventure-contenu">
+      <!-- Nature de l'activité, en création seulement (cf.
+           afficherNatureFormulaireActivite() dans app.js) : chaque nature
+           ne montre que ses champs. -->
+      <div class="champ-parent" id="na-nature-bloc">
+        <span>Quel genre d'activité ?</span>
+        <div id="na-nature-grille" class="grille-entourage"></div>
+      </div>
       <div class="champ-parent hidden" id="na-seance-bloc">
         <span>Avec qui a lieu la séance ?</span>
         <div id="na-seance-grille" class="grille-entourage"></div>
@@ -876,6 +872,23 @@
         <span>Icône</span>
         <button type="button" class="emoji-trigger" id="na-emoji-trigger" aria-label="Changer l'icône"></button>
       </div>
+      <!-- À la maison : où, ce que dit l'acolyte, minuteur facultatif. -->
+      <div class="groupe-champs hidden" id="na-maison-bloc">
+        <div class="champ-parent">
+          <span>Où ?</span>
+          <div id="na-endroit-grille" class="grille-entourage"></div>
+        </div>
+        <label class="champ-parent">
+          <span>Ce que dit l'acolyte</span>
+          <input type="text" id="na-consigne" placeholder="Ex : On lit un livre, bien installé dans le salon." maxlength="100">
+        </label>
+        <div class="champ-parent">
+          <span>Minuteur</span>
+          <div id="na-minuteur-grille" class="grille-entourage"></div>
+        </div>
+      </div>
+      <!-- Sortie et séance : trajet, arrivée, ce qui va se passer. -->
+      <div class="groupe-champs" id="na-sortie-bloc">
       <label class="champ-parent">
         <span>Texte pendant le trajet</span>
         <input type="text" id="na-trajet" placeholder="Ex : On roule vers la piscine." maxlength="80">
@@ -896,6 +909,7 @@
         <span>3ᵉ étape sur place</span>
         <input type="text" id="na-etape3" placeholder="Ex : On se rhabille." maxlength="60">
       </label>
+      </div>
       <label class="champ-parent champ-parent-case">
         <input type="checkbox" id="na-piece">
         <span>Donne une pièce 🪙 à la fin</span>
@@ -1076,6 +1090,30 @@
     <button class="btn-continuer" id="btn-cest-parti">C'est parti</button>
   </div>
 
+  <!-- ============ Activité à la maison (lecture, temps calme...) ============ -->
+  <!-- Ouverte depuis la liste du jour (cf. ouvrirActiviteMaison() dans
+       app.js) : pas de trajet, juste ce qu'on fait, où, et un minuteur
+       facultatif qui continue même pendant l'écoute de la journée. -->
+  <div id="screen-maison" class="screen">
+    <div class="barre-haut">
+      <button class="btn-retour-ecran" id="btn-retour-maison" aria-label="Retour à ma journée">←</button>
+      <div class="bloc-nom">
+        <div class="prenom-actif" id="maison-nom"></div>
+        <div id="maison-endroit"></div>
+      </div>
+      <button class="btn-voix" id="btn-voix-maison" aria-label="Réécouter">🔊</button>
+    </div>
+    <div class="scene-centree">
+      <div id="maison-emoji"></div>
+      <div class="texte-consigne" id="maison-consigne"></div>
+      <div id="maison-minuteur" class="hidden">
+        <div id="maison-minuteur-jauge"><div id="maison-minuteur-remplissage"></div></div>
+        <div id="maison-minuteur-chrono"></div>
+      </div>
+    </div>
+    <button class="btn-continuer" id="btn-maison-fini">J'ai fini ✅</button>
+  </div>
+
   <!-- ============ Séance chez une praticienne (en cours) ============ -->
   <!-- N'apparaît que pour une aventure avec une praticienne précise
        (personne, cf. terminerVisite() dans app.js) — une praticienne
@@ -1123,6 +1161,7 @@
 
 </div>
 <script src="semaine.js"></script>
+<script src="journee.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

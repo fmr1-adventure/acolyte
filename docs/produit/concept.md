@@ -16,12 +16,31 @@ Deux natures de choses au menu de la journée :
   journée (aller chez l'orthophoniste, aller faire des courses, aller
   faire du vélo...). Pas forcément récurrentes.
 
+## La journée en une seule liste
+
+L'enfant voit sa journée à **un seul endroit** : la liste du jour, qui
+remplace l'ancien menu de routines, la voiture « Partir à l'aventure » et
+l'aperçu « Ma journée ». Ce qui est fait, ce qu'on fait **maintenant**,
+ce qui vient **après**, et plus tard — routines, activités à la maison,
+sorties et repas mélangés dans l'ordre du planning. Un enfant qui ne lit
+pas comprend sa journée sans rien lire : une seule chose se lance à la
+fois, « maintenant » et « après » sont toujours visibles, et tout
+s'écoute.
+
+## Tout s'écoute, partout
+
+Sur chaque écran de l'enfant, deux boutons au même endroit : 🔊 pour
+réentendre le moment présent (et la suite), 🗓️🔊 pour entendre toute la
+journée, chaque élément s'allumant au moment où il est lu. Une seule voix
+à la fois : toute autre annonce coupe la lecture. Rien de tout ça là où
+l'enfant n'a pas la main (séance chez la praticienne, espace parent).
+
 ## Ordre et blocage, paramétrables par les parents
 
-Dans le menu de la journée, une seule routine/mission est cliquable à la
-fois ; les autres sont grisées tant que la précédente n'est pas finie.
-**L'ordre et les dépendances entre routines/missions sont paramétrables
-par les parents** — pas un enchaînement figé dans le code.
+Dans la liste de la journée, seul l'élément « maintenant » se lance ;
+les suivants attendent leur tour. **L'ordre est celui du planning,
+choisi par les parents** — pas un enchaînement figé dans le code (l'ancien
+chaînage entre routines a disparu avec la liste du jour).
 
 Toutes les routines ne se prêtent pas à ce chaînage : "Aller se
 coucher" n'a **aucun rapport** avec "S'habiller"/"Se préparer à
@@ -67,6 +86,10 @@ aventure est une **pièce**.
 
 ## "Ma journée" : aperçu chronologique + premier pas vers le paramétrage parent
 
+*Depuis la liste du jour, cet écran n'est plus montré à l'enfant : c'est
+l'éditeur de journée des parents (aujourd'hui, un jour à venir, un jour de
+la semaine type). L'historique ci-dessous reste vrai pour l'éditeur.*
+
 Écran séparé du parcours actif (menu → routines → aventures) : un simple
 **aperçu de la journée**, dans l'**ordre chronologique** — routines,
 mission(s) du jour, repas mélangés dans une seule liste plutôt que
@@ -108,7 +131,7 @@ ci-dessous). Ce mode édition est maintenant repris tel quel comme une
 des options de l'espace parent.
 
 **Le planning est la seule source de vérité pour ce qui est accessible
-aujourd'hui** : une activité apparaît dans "Partir à l'aventure" si et
+aujourd'hui** : une activité apparaît dans la liste de l'enfant si et
 seulement si elle est dans le planning du jour — pas via un champ date
 séparé qu'il faudrait aussi penser à mettre à jour. Le planning du jour
 lui-même vient de la **semaine type** : chaque matin, la journée part du
@@ -189,6 +212,11 @@ proposer des activités**, qui doivent ensuite être **validées par les
 parents** avant de devenir faisables. Flux encore à préciser.
 
 ## Porte de sortie vers les missions
+
+*Remplacée par la liste du jour : il n'y a plus de voiture, une sortie se
+lance depuis sa carte « maintenant ». La règle « prêt avant de partir »
+reste : si « Se préparer à partir », placée avant la sortie, n'est pas
+faite, la voix le rappelle et sa carte clignote. Historique ci-dessous.*
 
 Le menu de la journée a un point de sortie unique vers l'écran des
 sorties/missions — pas une carte comme les routines, un vrai "portail",

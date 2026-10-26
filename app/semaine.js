@@ -34,17 +34,22 @@ function ajouterAuxSeptJours(semaineType, item) {
   return resultat;
 }
 
-function insererActivite(items, aventure) {
+// `estCoucher(item)` (facultatif) : sans `apres`, l'activité se place
+// juste avant le coucher plutôt qu'en toute fin — rien ne se lance après
+// le coucher dans la liste de l'enfant.
+function insererActivite(items, aventure, estCoucher) {
   const resultat = copieProfonde(items);
   if (resultat.some(it => it.type === "aventure" && it.id === aventure.id)) return resultat;
   const entree = { type: "aventure", id: aventure.id };
   if (aventure.heureDefaut) entree.heure = aventure.heureDefaut;
   const pos = aventure.apres ? resultat.findIndex(it => it.type === aventure.apres.type && it.id === aventure.apres.id) : -1;
-  if (pos === -1) resultat.push(entree); else resultat.splice(pos + 1, 0, entree);
+  if (pos !== -1) { resultat.splice(pos + 1, 0, entree); return resultat; }
+  const coucher = estCoucher ? resultat.findIndex(estCoucher) : -1;
+  if (coucher === -1) resultat.push(entree); else resultat.splice(coucher, 0, entree);
   return resultat;
 }
 
-function migrerActivitesDatees(aventures, planningFutur, aujourdhui, planningPour) {
+function migrerActivitesDatees(aventures, planningFutur, aujourdhui, planningPour, estCoucher) {
   const resultat = copieProfonde(planningFutur);
   const pourAujourdhui = [];
   const reference = dateDeCle(aujourdhui).getTime();
@@ -53,7 +58,7 @@ function migrerActivitesDatees(aventures, planningFutur, aujourdhui, planningPou
     const t = dateDeCle(a.date).getTime();
     if (t === reference) { pourAujourdhui.push(a); return; }
     if (t < reference) return;
-    resultat[a.date] = insererActivite(resultat[a.date] || planningPour(a.date), a);
+    resultat[a.date] = insererActivite(resultat[a.date] || planningPour(a.date), a, estCoucher);
   });
   return { planningFutur: resultat, pourAujourdhui };
 }

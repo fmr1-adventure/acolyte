@@ -37,6 +37,13 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   ("S'habiller", "Se préparer à partir", "Aller se coucher").
 - **Réveil** : écran endormi avant l'heure, puis petit rituel (bonjour,
   sommeil, humeur).
+- **La journée en une seule liste** : déjà fait, **maintenant** (seul
+  élément qui se lance), après, plus tard — routines, activités, sorties
+  et repas dans l'ordre choisi par les parents. Le coucher passe en
+  premier à son heure.
+- **Tout s'écoute** : sur chaque écran, 🔊 redit le moment présent et la
+  suite, 🗓️🔊 lit toute la journée en allumant chaque élément au moment
+  où il est lu.
 - **Routines** : une suite de tâches, une à la fois, validées en glissant
   une icône vers l'avatar qui s'habille au fur et à mesure. Mini-jeu pour
   le brossage des dents, écran dédié pour l'histoire du soir. Le coucher
@@ -47,22 +54,23 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
 - **Validation par un parent** (code, relecture/correction), puis
   l'enfant ouvre lui-même un coffre qui lui donne son étoile.
   Récompense de fin de journée et pièces à collectionner.
+- **Activités à la maison** (lecture, temps calme...) : une consigne dite
+  par l'acolyte, l'endroit, un minuteur facultatif.
 - **Sorties** (école, courses, séance chez une praticienne...) : trajet
   puis arrivée, avec un déroulé à part pour les séances (la praticienne
   démarre la séance et laisse une note réservée aux parents).
-- **« Ma journée »** : planning chronologique des routines, sorties et
-  repas, modifiable par un parent, ajout rapide par phrase tapée ou
-  dictée.
+- **Préparer une journée** (côté parents) : réordonner, ajouter, retirer
+  ou sauter un élément, ajout rapide par phrase tapée ou dictée.
 - **Semaine type** : un modèle pour chaque jour de la semaine, d'où part
   chaque journée ; les exceptions se règlent sur les prochains jours
   (« Comme d'habitude » / « Modifié »). Une sortie ou une séance se crée
-  directement depuis le jour qu'on prépare.
+  directement depuis le jour qu'on prépare, comme une activité à la maison.
 - **Espace parent** (code), en quatre blocs : la journée (planning,
   relancer une routine), la bibliothèque (activités, routines,
   entourage), le suivi (historique, notes des séances), les réglages
   (code parent, profils de l'appareil).
 - **Reprise automatique** : quittée en pleine routine ou sortie, l'app
-  rouvre là où on en était plutôt que de revenir au menu.
+  rouvre là où on en était plutôt que de revenir à la liste.
 
 ## D'où vient ce projet (historique)
 

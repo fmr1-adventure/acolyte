@@ -29,8 +29,12 @@ la routine, pas l'inverse.)
 
 ## Récompense (aspect données)
 
-- Chaque routine terminée + validée par un parent rapporte une étoile
-  (champ à porter par la routine ou par l'état du jour — à trancher).
+- Chaque routine terminée + validée par un parent rapporte une étoile,
+  **une fois par jour** : `etat.routines[id].etoileDonnee`, posé à
+  l'ouverture du coffre et jamais remis à faux dans la journée. Une
+  routine refaite (second passage dans le planning, ou relancée par un
+  parent) se valide sans coffre ni nouvelle étoile ; la relance ne retire
+  plus l'étoile.
 - Le total d'étoiles du jour alimente une jauge de journée.
 - Voir `concept.md` pour la philosophie (jauge, correction avant
   validation) et `parcours-journee.md` pour où ça se déclenche dans le
@@ -43,7 +47,11 @@ Une **Aventure** est une sortie programmée (ex. "chez le/la praticien·ne",
 `concept.md`. Dans le prototype (`AVENTURES_COMMUNES`/`aventures_perso`
 dans `app.js`), une aventure porte : `lieu`, les textes du trajet et de
 l'arrivée, le `programme` (3 lignes annoncées à l'arrivée) et une
-`personne` optionnelle `{ emoji, nom }`. Une aventure avec `personne` est
+`personne` optionnelle `{ emoji, nom }`. Une aventure avec `nature:
+"maison"` est une **activité à la maison** : ni trajet ni programme, mais
+`endroit` (`"chambre" | "salon" | "cuisine"`), `consigne` (la phrase dite
+par l'acolyte), `minuteurMinutes` (0, 10, 20 ou 30) et `recompensePieces`.
+Sans `nature`, c'est une sortie. Une aventure avec `personne` est
 une **séance** : à l'arrivée, c'est l'écran de séance (code de la
 praticienne) qui prend le relais. Une séance créée depuis le planning
 porte la personne choisie dans l'entourage, qui figure aussi dans ses
@@ -59,7 +67,7 @@ désormais dans la semaine type.
 Créer une activité depuis la **bibliothèque** ne l'ajoute qu'au
 catalogue — la placer sur un jour est une action séparée, depuis
 "AJOUTER À LA JOURNÉE". Créer une sortie ou une séance **depuis un jour
-en cours de préparation** (« + Nouvelle sortie/séance ») l'ajoute à ce
+en cours de préparation** (« + Nouvelle sortie / À la maison / séance ») l'ajoute à ce
 jour-là, quel qu'il soit (aujourd'hui, un jour à venir, un jour de la
 semaine type). Une routine, elle, est ajoutée dès sa création à
 aujourd'hui et aux 7 jours de la semaine type : structurellement
@@ -73,7 +81,7 @@ récurrente par nature, elle apparaît ensuite tous les jours.
   donne aux parents dans la vraie vie).
 - Stockage à part de l'état du jour, justement parce que ça **ne suit
   pas le cycle quotidien** des étoiles : dans le prototype, une clé
-  `localStorage` séparée (`leon_pieces`) qui n'est jamais réinitialisée
+  `localStorage` séparée (`cle("pieces")`) qui n'est jamais réinitialisée
   au changement de jour.
 - Pas encore de mécanique de dépense modélisée (boutique, choix
   d'activité) — juste le total qui s'accumule pour l'instant.
@@ -84,9 +92,22 @@ Un item de `etat.planning` référence une routine, une aventure ou un
 repas (`{ type, id }`) — jamais les données elles-mêmes, toujours résolu
 depuis le catalogue correspondant à l'affichage (cf. `concept.md`,
 principe déjà appliqué à l'aventure/la pièce). Un champ optionnel `heure`
-("HH:MM") peut s'y ajouter : purement un repère d'affichage pour le
-regroupement "maintenant/ensuite", jamais lu par la logique de déblocage
-des routines — deux mécanismes volontairement séparés (cf. `concept.md`).
+("HH:MM") peut s'y ajouter : purement un repère d'affichage, jamais lu
+par la logique de la liste — deux mécanismes volontairement séparés (cf.
+`concept.md`).
+
+Pour **aujourd'hui** seulement, deux champs de plus : `fait: true` quand
+l'élément est terminé (une routine à l'ouverture de son coffre ou à sa
+validation, une activité au retour confirmé par un parent — c'est
+toujours le premier item restant de ce type et de cet id qui est marqué)
+et `passe: true` quand un parent l'a sauté. La liste de l'enfant en
+déduit, sans rien stocker de plus, ce qui est fait, « maintenant »,
+« après » et « plus tard » (`app/journee.js`, testé par
+`tests/journee.test.js`) : « maintenant » est le premier item à faire
+(routine ou activité) ni fait ni sauté — ou le coucher, dès son heure
+(`disponibleApresHeure`). Une journée commencée avant cette version
+marque une fois le premier item de chaque routine déjà validée
+(drapeau `etat.itemsMigres`).
 
 **Semaine type** — `cle("semaine_type")`, map `{ "1": [items...], …,
 "7": [items...] }` (1 = lundi … 7 = dimanche, même forme d'item). C'est

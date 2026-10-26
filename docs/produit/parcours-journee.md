@@ -7,15 +7,17 @@ dans `concept.md` ; les entités de données dans `modele-de-donnees.md`.
 ## Séquence
 
 1. **Réveil** — l'enfant prend la tablette pour la première fois de la
-   journée, arrive sur le **menu de la journée** (liste des routines et
-   missions du jour).
-2. Dans ce menu, seule la première routine (ex. "S'habiller") est
-   cliquable ; les autres routines/missions sont **grisées, non
-   cliquables**, tant que celle-ci n'est pas terminée (ordre/blocage
-   paramétrable par les parents — cf. `concept.md`).
-3. L'enfant choisit une routine → écran d'exécution de la routine
-   (l'écran drag-and-drop existant dans `app/`). Il doit aller
-   **jusqu'au bout** pour obtenir l'étoile de cette routine.
+   journée et arrive, après le petit rituel du réveil, sur la **liste de
+   sa journée** : ce qui est fait, ce qu'on fait **maintenant**, ce qui
+   vient **après**, et plus tard — dans l'ordre du planning.
+2. Seul « maintenant » se lance (bouton « C'est parti ▶ ») ; toucher une
+   autre carte dit son nom. 🔊 et 🗓️🔊 permettent à tout moment
+   d'entendre le moment présent ou toute la journée.
+3. Selon sa nature, « maintenant » ouvre : une routine (l'écran
+   drag-and-drop, à faire **jusqu'au bout** pour obtenir l'étoile), une
+   activité à la maison (consigne, minuteur facultatif, « J'ai fini »), ou
+   une sortie (trajet → arrivée → retour ; seulement si « Se préparer à
+   partir », placée avant, est faite).
 4. **Fin de routine — félicitations puis appel au parent** : message
    écrit + dit, spécifique à la routine et personnalisé avec le prénom de
    l'enfant (ex. "Bravo Sacha, tu t'es habillé·e tout seul·e !"), suivi de
@@ -28,21 +30,19 @@ dans `concept.md` ; les entités de données dans `modele-de-donnees.md`.
 6. **Validation parent** — au final le parent valide toujours (la
    correction ajuste, elle ne bloque pas). À la validation : l'enfant
    reçoit son étoile, la jauge de journée se remplit visiblement.
-7. Retour à l'écran des routines/missions — idéalement une scène montrant
-   l'enfant **dans son état actuel** (habillé ou non, coiffé ou non...),
-   en train d'attendre, avec accès au menu du jour.
-8. Répétition des étapes 2 à 7 pour chaque routine/mission programmée.
+7. Retour à la liste du jour, où « maintenant » a avancé — avec l'avatar
+   de l'enfant **dans son état actuel** (habillé ou non...) en haut.
+8. Répétition des étapes 2 à 7 jusqu'au coucher, qui devient
+   « maintenant » à son heure, même si tout n'a pas été fait.
 9. **Récompense de fin de journée**, dépendante de la quantité totale
    d'étoiles accumulées (cf. `concept.md`).
 
-## Écran parallèle : "Ma journée"
+## Côté parents : préparer la journée
 
-En dehors de cette séquence (accessible à tout moment depuis le menu),
-"Ma journée" donne une vue d'ensemble plutôt qu'un parcours à suivre :
-mêmes routines/aventures/repas, dans l'ordre, avec un repère "maintenant"
-qui suit l'horloge quand des heures ont été réglées par un parent — sans
-jamais influencer le déblocage réel des étapes 2-3 ci-dessus, qui reste
-strictement séquentiel/par tâche. Détail des principes dans `concept.md`.
+"Ma journée" n'est plus un écran de l'enfant : c'est l'éditeur où un
+parent prépare aujourd'hui, un jour à venir ou un jour de la semaine type
+(réordonner, ajouter, retirer, sauter un élément d'aujourd'hui). Détail
+des principes dans `concept.md`.
 
 ## Cas particulier : journée sans planification (ex. week-end)
 

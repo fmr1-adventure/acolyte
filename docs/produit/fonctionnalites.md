@@ -65,7 +65,7 @@ n'est envoyé où que ce soit : tout reste sur l'appareil.
 
 Le tout premier jour d'un enfant sur l'application, ce rituel est sauté
 : l'acolyte vient déjà de se présenter pendant l'accueil (cf. « Première
-configuration » ci-dessus), et on arrive directement au menu de la
+configuration » ci-dessus), et on arrive directement à la liste de la
 journée. Les jours suivants, avant l'heure du réveil, l'application
 reste « endormie » : l'écran
 montre l'avatar de l'enfant allongé de tout son long, yeux fermés, sous
@@ -82,12 +82,57 @@ devient « Bonjour [prénom] ! Joyeux anniversaire, tu as maintenant
 [âge] ans ! » avec une icône de gâteau — le reste du rituel ne change
 pas.
 
-### Le menu de la journée
+### La journée en une seule liste
 
-Un menu affiche les routines du jour, la première seule accessible :
-les suivantes se débloquent au fur et à mesure, dans l'ordre. Un
-avatar de l'enfant, habillé progressivement au fil de ses tâches, et
-une jauge d'étoiles donnent une vue d'ensemble en un coup d'œil.
+L'écran principal de l'enfant **est sa journée**, dans l'ordre choisi
+par les parents : routines, activités à la maison, sorties, séances et
+repas, chacun avec sa couleur. En haut, une rangée de pictogrammes
+rappelle ce qui est **déjà fait** ; en dessous, en grand, ce qu'on fait
+**maintenant**, avec un gros bouton « C'est parti ▶ » ; puis ce qui vient
+**après**, en moyen, et le reste **plus tard**, en petit. Seul
+« maintenant » se lance : une chose à la fois. Toucher une autre carte
+dit simplement son nom. Les repas sont des repères : ils s'affichent à
+leur place mais ne se « font » pas.
+
+Quand une routine ou une activité est terminée, la liste avance toute
+seule. Le coucher devient « maintenant » à son heure, même si tout n'a
+pas été fait (sans reproche) ; avant, il attend, verrouillé (« Pas
+encore l'heure »). Une sortie ne part que si l'enfant est prêt : si
+« Se préparer à partir » (placée avant elle) n'est pas faite, la voix le
+rappelle et la carte clignote.
+
+L'avatar de l'enfant, habillé progressivement au fil de ses tâches, et
+une jauge d'étoiles restent en haut de l'écran.
+
+### Tout s'écoute
+
+L'enfant ne lit pas : sur chaque écran (la liste, une routine, une
+activité, le trajet, l'arrivée, les récompenses), deux boutons, toujours
+au même endroit en haut :
+
+- **🔊** redit ce qu'on fait maintenant et ce qui vient après
+  (« Maintenant : Lecture. Après : le dîner. ») — dans une routine, il
+  redit la tâche en cours ;
+- **🗓️🔊** lit toute la journée dans l'ordre (« C'est fait : … »,
+  « Maintenant : … », « Après : … », « Ensuite : … »), et chaque élément
+  **s'allume au moment où il est lu**. Un second appui arrête la
+  lecture ; toute autre annonce aussi.
+
+Sur les écrans d'activité, une bande de pictogrammes de la journée reste
+visible sous le bandeau, l'élément en cours entouré : un repère
+permanent de « où j'en suis ». Rien de tout ça sur l'écran de séance,
+tenu par la praticienne, ni côté parents.
+
+### Les activités à la maison
+
+Lecture, temps calme, devoirs : une activité **à la maison** n'a pas de
+trajet. Son écran montre son pictogramme, l'endroit (chambre, salon,
+cuisine) et dit la phrase choisie par les parents (« On lit un livre,
+bien installé dans le salon »). Un minuteur facultatif (10, 20 ou
+30 minutes) se vide pendant l'activité, même quand on écoute la
+journée ; à la fin, un carillon et « C'est l'heure ! Tu as fini ? ».
+« J'ai fini » mène aux félicitations puis à un parent, qui valide avec
+son code — avec une pièce dans un coffre si l'activité en donne une.
 
 ### Les routines
 
@@ -115,8 +160,8 @@ peut toujours aller se coucher normalement.
 
 Si l'application est quittée en pleine activité (tablette mise en
 veille, app fermée), elle **reprend là où on en était** à la
-réouverture — même routine, même étape de sortie — plutôt que de
-revenir au menu.
+réouverture — même routine, même étape de sortie, même minuteur d'une
+activité à la maison — plutôt que de revenir à la liste.
 
 ### Le minuteur visuel
 
@@ -146,6 +191,10 @@ c'est l'enfant qui appuie dessus pour l'ouvrir, et c'est ce geste-là qui
 fait sortir l'étoile elle-même (pas un cadeau générique) et remplit la
 jauge du jour.
 
+Une étoile n'est jamais reprise : une routine qui se refait dans la
+journée (se rhabiller, remettre ses chaussures) se valide de la même
+façon, mais sans coffre — son étoile est déjà acquise.
+
 ### Les récompenses
 
 Une fois toutes les routines validées, une récompense de fin de
@@ -153,7 +202,7 @@ journée s'ouvre automatiquement (confettis, total d'étoiles). Un écran
 « Mes récompenses » présente les étoiles du jour et les pièces gagnées
 comme de vrais objets à collectionner.
 
-### Les sorties (« Partir à l'aventure »)
+### Les sorties
 
 Une sortie programmée (ex. le magasin de bricolage, une séance chez une
 praticienne, l'école) se joue en deux temps : le trajet (avec sa propre
@@ -183,16 +232,17 @@ l'enfant — et se retrouve dans un écran dédié de l'espace parent,
 « Notes des séances », en plus de l'historique du jour où elle a eu
 lieu.
 
-### « Ma journée »
+### Préparer une journée (côté parents)
 
-Un planning affiche, dans l'ordre chronologique, les routines, sorties
-et repas du jour — modifiable par un parent (réorganiser, ajouter,
-retirer), avec une couleur propre à chaque nature d'activité pour s'y
-repérer d'un coup d'œil. Un parent peut y régler une heure pour un ou
-plusieurs moments de la journée : un repère « maintenant » se déplace
-alors tout seul au fil de l'horloge, pour voir en un instant où on en est
-— sans jamais changer ce qui est réellement débloqué pour l'enfant, qui
-continue de dépendre uniquement des routines terminées. Pour ajouter
+Depuis l'espace parent, chaque journée (aujourd'hui, un jour à venir ou
+un jour de la semaine type) s'ouvre dans le même éditeur : les routines,
+activités et repas dans l'ordre, avec une couleur propre à chaque nature
+— réorganiser, ajouter, retirer. Pour aujourd'hui, ce qui est déjà fait
+est coché, et un parent peut **sauter** un élément (une sortie annulée)
+sans le retirer : il disparaît de la liste de l'enfant et se reprend d'un
+appui. Un parent peut aussi régler une heure pour un ou plusieurs
+moments : c'est une simple annotation, affichée sur la carte de l'enfant,
+jamais lue à voix haute et jamais un verrou. Pour ajouter
 plusieurs éléments d'un coup, un parent peut aussi taper (ou dicter, au
 micro) une phrase comme « vélo 15h, goûter chez mamie 17h » : l'app
 reconnaît les heures et propose les activités correspondantes, à
@@ -223,7 +273,9 @@ routines, entourage), **le suivi** (historique, notes des séances) et
   choisit alors avec qui, dans « Mon entourage ») : elle est ajoutée au
   jour qu'on prépare, sans passer par la bibliothèque.
 - **Relancer une routine** si la situation a changé (ex. l'enfant
-  s'est redéshabillé après coup).
+  s'est redéshabillé après coup) : les tâches décochées sont à refaire
+  et la routine redevient « maintenant » dans la liste — l'étoile
+  gagnée, elle, reste acquise.
 - **Historique des journées** — chaque jour archivé avec ses étoiles,
   ses routines faites, et désormais **les réponses du réveil**
   (sommeil, humeur).

@@ -68,6 +68,6 @@ place(picture, 110, 14)
 place(trophies, 240, 20)
 
 final = room.resize((CW * SCALE, CH * SCALE), Image.NEAREST)
-out_path = os.path.join(OUT, "leon_chambre_vrais_sprites.png")
+out_path = os.path.join(OUT, "chambre_vrais_sprites.png")
 final.convert("RGB").save(out_path)
 print(out_path)

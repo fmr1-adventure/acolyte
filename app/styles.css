@@ -20,6 +20,9 @@
   --type-routine: #6FA8DC;
   --type-repas: #93C47D;
   --type-aventure: #C58AF9;
+  /* Activité « à la maison » (lecture, temps calme...) : turquoise, à
+     part du violet des sorties (« on part de la maison »). */
+  --type-maison: #5CC9BC;
   /* Mini-jeu brossage de dents (cf. #bouche-ouverte/#bouche-fermee) —
      tokens dédiés plutôt que réutiliser --skin/--rouge, pour ajuster
      l'illustration sans toucher au reste de l'avatar. */
@@ -213,9 +216,87 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 
 #horloge { text-align: center; font-size: 15px; color: var(--text-faint); margin-bottom: 10px; }
 
-#titre-menu { text-align: center; font-size: 21px; font-weight: 700; margin-bottom: 12px; }
+/* ---------- Liste du jour (le menu de l'enfant) ---------- */
+/* Maintenant en grand, après en moyen, plus tard en petit ; ce qui est
+   fait se résume à une rangée de pictogrammes en haut. Liseré gauche de
+   la couleur de la nature, comme sur "Ma journée". */
+#liste-journee { display: flex; flex-direction: column; gap: 12px; }
+.jour-faits { display: flex; flex-wrap: wrap; gap: 8px; }
+.picto-jour {
+  position: relative; min-width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+  font-size: 26px; background: var(--surface); border: 2px solid var(--surface-high); border-bottom-width: 5px;
+  padding: 0 4px; white-space: nowrap;
+}
+.picto-jour.fait::after {
+  content: "✓"; position: absolute; right: -6px; bottom: -8px; font-size: 13px; font-weight: 800;
+  color: var(--deep); background: var(--accent); padding: 0 4px;
+}
+.picto-jour.estompe { opacity: .4; }
+.picto-jour.type-routine { border-bottom-color: var(--type-routine); }
+.picto-jour.type-repas { border-bottom-color: var(--type-repas); }
+.picto-jour.type-sortie { border-bottom-color: var(--type-aventure); }
+.picto-jour.type-maison { border-bottom-color: var(--type-maison); }
+.carte-jour {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px 16px;
+  background: var(--surface-active); border: 3px solid var(--surface-high); border-left-width: 8px;
+}
+.carte-jour.type-routine { border-left-color: var(--type-routine); }
+.carte-jour.type-repas { border-left-color: var(--type-repas); }
+.carte-jour.type-sortie { border-left-color: var(--type-aventure); }
+.carte-jour.type-maison { border-left-color: var(--type-maison); }
+.carte-jour-label { font-size: 12px; letter-spacing: 1.5px; font-weight: 800; color: var(--text-faint); }
+.carte-jour-corps { display: flex; align-items: center; gap: 14px; }
+.carte-jour-emoji { font-size: 28px; flex-shrink: 0; }
+.carte-jour-texte { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.carte-jour-nom { font-size: 18px; font-weight: 700; }
+.carte-jour-heure { font-size: 14px; font-weight: 600; color: var(--text-faint); }
+.carte-maintenant { padding: 16px 18px; border-color: var(--accent); border-left-width: 8px; box-shadow: var(--shadow-hard); }
+.carte-maintenant .carte-jour-label { color: var(--accent); }
+.carte-maintenant .carte-jour-emoji { font-size: 54px; }
+.carte-maintenant .carte-jour-nom { font-size: 26px; font-weight: 800; }
+.btn-cest-parti-jour { width: 100%; margin-top: 6px; }
+.btn-cest-parti-jour.verrouille {
+  padding: 14px; font-size: 18px; font-weight: 800; color: var(--text-mute);
+  background: var(--surface); border: 3px dashed var(--surface-high);
+}
+.carte-apres .carte-jour-emoji { font-size: 36px; }
+.carte-apres .carte-jour-nom { font-size: 21px; }
+.carte-plus-tard { padding: 7px 14px; border-width: 2px; border-left-width: 6px; background: var(--surface); }
+.carte-plus-tard .carte-jour-emoji { font-size: 22px; }
+.carte-plus-tard .carte-jour-nom { font-size: 16px; font-weight: 600; color: var(--text-soft); }
+.jour-plus-tard-titre { margin: 6px 0 -4px; }
+.jour-message { text-align: center; font-size: 20px; font-weight: 700; padding: 18px; color: var(--text-soft); }
+.carte-jour.clignote { animation: clignoterCarte .6s ease-in-out 3; }
 
-#liste-routines { display: flex; flex-direction: column; gap: 12px; }
+/* ---------- Écoute (🔊 maintenant, 🗓️🔊 toute la journée) ---------- */
+.groupe-ecoute { display: flex; gap: 8px; flex-shrink: 0; }
+.btn-ecoute-journee { position: relative; padding: 0; }
+.ecoute-cal { font-size: 28px; }
+.ecoute-badge { position: absolute; right: 1px; bottom: 0; font-size: 15px; }
+/* Bande de la journée sous le bandeau des écrans d'activité : repère
+   permanent « où j'en suis », l'élément en cours entouré. */
+.bande-journee {
+  display: flex; gap: 6px; overflow-x: auto; flex-shrink: 0;
+  padding: 3px 3px 12px; margin-top: -6px; scrollbar-width: none;
+}
+.bande-journee::-webkit-scrollbar { display: none; }
+.picto-bande {
+  min-width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-size: 19px; background: var(--surface); border: 2px solid var(--surface-high); border-bottom-width: 4px;
+  padding: 0 3px; white-space: nowrap;
+}
+.picto-bande.type-routine { border-bottom-color: var(--type-routine); }
+.picto-bande.type-repas { border-bottom-color: var(--type-repas); }
+.picto-bande.type-sortie { border-bottom-color: var(--type-aventure); }
+.picto-bande.type-maison { border-bottom-color: var(--type-maison); }
+.picto-bande.passe { opacity: .4; }
+.picto-bande.en-cours { border-color: var(--accent); outline: 3px solid var(--accent); outline-offset: 1px; }
+/* Élément en train d'être lu par 🗓️🔊 : bien visible, même estompé. */
+.lue {
+  opacity: 1 !important; outline: 4px solid var(--accent-edge) !important; outline-offset: 2px;
+  background: rgba(240,149,47,.3) !important; transform: scale(1.04); transition: transform .15s ease;
+}
+
 .carte-routine {
   display: flex; align-items: center; justify-content: space-between;
   min-height: 64px; padding: 12px 18px; background: var(--surface-active);
@@ -227,27 +308,13 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .carte-routine.faite { background: rgba(240,149,47,.14); border-color: var(--accent); box-shadow: none; opacity: .85; }
 .carte-routine.verrouillee { opacity: .45; box-shadow: none; }
 /* attire l'attention sur la routine à faire avant de partir, sans
-   naviguer de force (l'enfant a pu appuyer sur la voiture par erreur) */
-.carte-routine.clignote { animation: clignoterCarte .6s ease-in-out 3; }
+   naviguer de force (cf. partirSiPret() dans app.js) */
 @keyframes clignoterCarte {
   0%, 100% { border-color: var(--surface-high); box-shadow: var(--shadow-hard); }
   50% { border-color: var(--accent-edge); box-shadow: 0 0 0 4px rgba(240,149,47,.5); }
 }
 
-/* Bouton "partir à l'aventure" : volontairement différent des cartes de
-   routine (plus grand, centré, coloré) — c'est un vrai portail de sortie,
-   pas une simple ligne de liste, façon écran de niveau d'un jeu. */
-#btn-depart {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  margin: 20px auto 0; padding: 16px 28px; background: var(--accent);
-  border: 3px solid var(--accent-edge); box-shadow: var(--shadow-hard); color: var(--deep);
-}
-#btn-depart:active { transform: translate(2px, 2px); box-shadow: none; }
-#depart-icone { font-size: 44px; }
-#depart-texte { font-size: 17px; font-weight: 800; }
-
-/* Bouton secondaire générique : accès à un écran de consultation
-   (ex. "Ma journée"), moins mis en avant que le portail #btn-depart. */
+/* Bouton secondaire générique, moins mis en avant qu'un .btn-continuer. */
 .btn-secondaire {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   margin: 10px auto 0; padding: 12px 20px; background: var(--surface-active);
@@ -256,6 +323,14 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .btn-secondaire:active { transform: translate(2px, 2px); }
 
 #missions-emoji { font-size: 80px; }
+
+/* ---------- Activité à la maison ---------- */
+#maison-endroit { font-size: 15px; font-weight: 700; color: var(--text-faint); }
+#maison-emoji { font-size: 96px; line-height: 1; }
+#maison-minuteur { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#maison-minuteur-jauge { width: 100%; height: 22px; background: var(--surface); border: 2px solid var(--surface-high); overflow: hidden; }
+#maison-minuteur-remplissage { height: 100%; background: var(--type-maison); transition: width 1s linear; }
+#maison-minuteur-chrono { font-size: 26px; font-weight: 800; font-family: monospace; color: var(--accent-edge); }
 #seance-emoji { font-size: 80px; }
 #missions-liste { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 8px; }
 
@@ -679,6 +754,7 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .ligne-journee.type-routine { border-left: 5px solid var(--type-routine); }
 .ligne-journee.type-repas { border-left: 5px solid var(--type-repas); }
 .ligne-journee.type-aventure { border-left: 5px solid var(--type-aventure); }
+.ligne-journee.type-maison { border-left: 5px solid var(--type-maison); }
 
 /* Repère "maintenant/ensuite" (cf. reperesJournee() dans app.js) : une
    mise en avant visuelle, jamais une logique de blocage. */
@@ -688,6 +764,10 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
   align-self: flex-start; font-size: 11px; font-weight: 800; letter-spacing: .5px;
   color: var(--accent-edge); background: var(--accent); padding: 3px 8px; flex-shrink: 0;
 }
+/* Aujourd'hui seulement : ce qui est fait (✓) et ce qu'un parent a sauté. */
+.badge-fait { font-size: 20px; font-weight: 800; color: var(--accent); flex-shrink: 0; }
+.ligne-journee.item-passe { opacity: .45; }
+.ligne-journee.item-passe .texte-journee > span:first-child { text-decoration: line-through; }
 
 /* Mode édition (protégé par le code parent, cf. app.js) : petits
    boutons de réordonnancement/suppression accolés à chaque ligne, et
@@ -830,6 +910,8 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .pc-swatch.choisi { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(240,149,47,.35) inset; }
 .pc-swatch:active { transform: translate(1px, 1px); }
 .champ-parent { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 700; color: var(--text-soft); }
+/* Groupe de champs propre à une nature d'activité (cf. #na-sortie-bloc). */
+.groupe-champs { display: flex; flex-direction: column; gap: 14px; }
 .champ-parent input[type="text"] {
   font: inherit; font-size: 17px; font-weight: 600; color: var(--text);
   background: var(--surface); border: 2px solid var(--surface-high); padding: 10px 12px;

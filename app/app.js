@@ -65,10 +65,13 @@
 })();
 function modeDebugActif() {
   if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return true;
-  // `leon_debug` : ancienne clé (avant le support multi-profil), lue en
+  // `<prénom>_debug` : ancienne clé (avant le support multi-profil), lue en
   // secours pour ne pas redemander `?debug=1` sur un appareil qui l'avait
   // déjà activé — jamais réécrite.
-  try { return localStorage.getItem("acolyte_debug") === "1" || localStorage.getItem("leon_debug") === "1"; } catch (e) { return false; }
+  try {
+    if (localStorage.getItem("acolyte_debug") === "1") return true;
+    return Object.keys(localStorage).some(k => k.endsWith("_debug") && localStorage.getItem(k) === "1");
+  } catch (e) { return false; }
 }
 
 // `dateDebugForcee` (Date, null = heure réelle) simule le moment présent
@@ -794,6 +797,12 @@ function sauverSemaineType(st) {
   try { localStorage.setItem(cle("semaine_type"), JSON.stringify(st)); } catch (e) {}
 }
 
+// Le coucher : la routine débloquée par l'heure (`disponibleApresHeure`),
+// qui clôt la journée de l'enfant.
+function estItemCoucher(item) {
+  return item.type === "routine" && (routineParId(item.id) || {}).disponibleApresHeure !== undefined;
+}
+
 // Planning d'une journée qui n'a pas été préparée à l'avance : celui de
 // son jour dans la semaine type. `dateKey` absent = aujourd'hui.
 function planningParDefaut(dateKey) {
@@ -806,15 +815,15 @@ function planningParDefaut(dateKey) {
 function migrerDatesUneFois() {
   try { if (localStorage.getItem(cle("migration_dates")) === "1") return; } catch (e) { return; }
   const aujourdhui = cleJour();
-  const { planningFutur, pourAujourdhui } = migrerActivitesDatees(toutesLesAventures(), chargerPlanningFutur(), aujourdhui, planningParDefaut);
+  const { planningFutur, pourAujourdhui } = migrerActivitesDatees(toutesLesAventures(), chargerPlanningFutur(), aujourdhui, planningParDefaut, estItemCoucher);
   let journee = null;
   try { journee = JSON.parse(localStorage.getItem(cle("journee"))); } catch (e) {}
   if (pourAujourdhui.length && journee && journee.jour === aujourdhui && Array.isArray(journee.planning)) {
-    pourAujourdhui.forEach(a => { journee.planning = insererActivite(journee.planning, a); });
+    pourAujourdhui.forEach(a => { journee.planning = insererActivite(journee.planning, a, estItemCoucher); });
     sauverEtat(journee);
   } else if (pourAujourdhui.length) {
     let base = planningFutur[aujourdhui] || planningParDefaut(aujourdhui);
-    pourAujourdhui.forEach(a => { base = insererActivite(base, a); });
+    pourAujourdhui.forEach(a => { base = insererActivite(base, a, estItemCoucher); });
     planningFutur[aujourdhui] = base;
   }
   sauverPlanningFutur(planningFutur);
@@ -847,8 +856,8 @@ function cleJour() { return cleJourPour(new Date()); }
 // squelette générique dès que ce jour devient "aujourd'hui".
 function etatParDefaut(planningSeed) {
   const routines = {};
-  toutesLesRoutines().forEach(r => { routines[r.id] = { fait: [], valide: false }; });
-  return { jour: cleJour(), routines, etoiles: 0, journeeFaite: false, reveilFait: false, reveil: { bienDormi: null, humeur: null }, planning: planningSeed || planningParDefaut(), seances: [] };
+  toutesLesRoutines().forEach(r => { routines[r.id] = { fait: [], valide: false, etoileDonnee: false }; });
+  return { jour: cleJour(), routines, etoiles: 0, journeeFaite: false, reveilFait: false, reveil: { bienDormi: null, humeur: null }, planning: planningSeed || planningParDefaut(), seances: [], itemsMigres: true };
 }
 // Répare un état du jour dont la forme est incomplète (ex. un champ
 // ajouté par une mise à jour de l'app depuis la dernière sauvegarde de
@@ -865,10 +874,19 @@ function etatRepare(etat) {
   if (!etat.routines || typeof etat.routines !== "object") return null;
   toutesLesRoutines().forEach(r => {
     if (!etat.routines[r.id] || !Array.isArray(etat.routines[r.id].fait)) {
-      etat.routines[r.id] = { fait: [], valide: false };
+      etat.routines[r.id] = { fait: [], valide: false, etoileDonnee: false };
     }
+    // L'étoile est acquise une fois par jour (cf. ouvrirCoffreRoutine()) ;
+    // un état d'avant ce champ la déduit de `valide`.
+    if (typeof etat.routines[r.id].etoileDonnee !== "boolean") etat.routines[r.id].etoileDonnee = !!etat.routines[r.id].valide;
   });
   if (!Array.isArray(etat.planning)) etat.planning = planningParDefaut();
+  // Avancement par item (liste du jour) : une journée commencée avant
+  // marque une seule fois le premier item de chaque routine déjà validée.
+  if (!etat.itemsMigres) {
+    toutesLesRoutines().forEach(r => { if (etat.routines[r.id].valide) marquerItemFait(etat, "routine", r.id); });
+    etat.itemsMigres = true;
+  }
   if (typeof etat.etoiles !== "number") etat.etoiles = 0;
   if (typeof etat.journeeFaite !== "boolean") etat.journeeFaite = false;
   if (typeof etat.reveilFait !== "boolean") etat.reveilFait = false;
@@ -899,7 +917,7 @@ function archiverJournee(etat) {
       // jamais montrées à l'enfant (aucun écran enfant ne lit
       // `etat.seances`) — c'est pour ça qu'elles doivent survivre au
       // changement de jour comme le reste de l'historique, plutôt que
-      // d'être jetées avec `leon_journee`.
+      // d'être jetées avec `cle("journee")`.
       seances: Array.isArray(etat.seances) ? etat.seances : [],
     });
     while (historique.length > 90) historique.shift();
@@ -928,6 +946,13 @@ function chargerEtat() {
 }
 function sauverEtat(etat) {
   try { localStorage.setItem(cle("journee"), JSON.stringify(etat)); } catch (e) {}
+}
+// Une routine ou une activité terminée fait avancer la liste du jour :
+// c'est le premier item restant de ce type et de cet id (cf. journee.js)
+// qui passe à `fait`. Modifie `etat` sans le sauver.
+function marquerItemFait(etat, type, id) {
+  const i = indexAMarquer(etat.planning, type, id);
+  if (i !== -1) etat.planning[i].fait = true;
 }
 
 // Planning à venir — carnet de jours FUTURS que l'espace parent permet
@@ -1084,6 +1109,9 @@ function tachesFaitesPartout(etat) {
 // ---------------------------------------------------------------------
 let derniereEtapeAnnoncee = null;
 function dire(texte) {
+  // Une seule voix à la fois : toute annonce coupe la lecture de la
+  // journée (cf. lireJournee()).
+  if (lectureJourneeEnCours()) arreterLectureJournee();
   try {
     const u = new SpeechSynthesisUtterance(texte);
     u.lang = "fr-FR";
@@ -1134,8 +1162,13 @@ function jouerAlerte() {
 }
 
 function afficherEcran(id) {
+  const precedent = document.querySelector(".screen.active");
+  if (lectureJourneeEnCours() && (!precedent || precedent.id !== id)) arreterLectureJournee();
+  if (id !== "screen-maison") arreterMinuteurMaison();
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+  const ecran = document.getElementById(id);
+  ecran.classList.add("active");
+  if (ecran.querySelector(".bande-journee") && profilActifId()) construireBandeJournee(ecran);
 }
 
 // ---------------------------------------------------------------------
@@ -1257,80 +1290,284 @@ function construireMenu() {
 
   synchroniserAvatar(etat);
 
-  // jauge de journée : une étoile par routine, gagnée une fois validée
+  // jauge de journée : une étoile par routine, acquise une fois par jour
   const jauge = document.getElementById("jauge-jour");
   jauge.innerHTML = "";
   toutesLesRoutines().forEach(r => {
     const etoile = document.createElement("div");
-    etoile.className = "etoile-jauge" + (etat.routines[r.id].valide ? " gagnee" : "");
+    etoile.className = "etoile-jauge" + (etat.routines[r.id].etoileDonnee ? " gagnee" : "");
     etoile.textContent = "⭐";
     jauge.appendChild(etoile);
   });
   const piecesTotal = chargerPieces();
   document.getElementById("pieces-total").textContent = piecesTotal > 0 ? "🪙 " + piecesTotal : "";
 
-  // cartes de routines : la première non validée est jouable, les
-  // suivantes restent grisées tant que TOUTES les précédentes ne sont
-  // pas validées — pas juste l'immédiatement précédente. Distinction qui
-  // ne se voyait pas tant que les routines s'enchaînaient forcément dans
-  // l'ordre, mais compte depuis qu'un parent peut relancer une routine
-  // du milieu (cf. relancerRoutine()) : sans ça, une routine plus loin
-  // dans la liste réapparaîtrait débloquée juste parce que celle qui la
-  // précède immédiatement est restée validée, en sautant celle qu'on
-  // vient de relancer.
-  //
-  // Une routine avec `disponibleApresHeure` (ex. "Aller se coucher")
-  // sort volontairement de ce chaînage : ni bloquée par les précédentes,
-  // ni prise en compte pour bloquer une éventuelle suivante — débloquée
-  // par l'heure plutôt que par les autres routines (cf. sa définition
-  // dans routinesDemarrage() pour le pourquoi).
-  //
-  // De même, seules les routines marquées `chainee: true` s'enchaînent
-  // entre elles — posé sur "shabiller"/"partir" au moment où
-  // finaliserPremiereConfiguration() les sème dans routines_perso (préservé
-  // ensuite si un parent les modifie, cf. creerNouvelleRoutine() qui
-  // fusionne sur l'objet d'origine). Une routine ajoutée après coup par un
-  // parent (via "+ Nouvelle routine") ne l'a jamais : toujours disponible,
-  // ni bloquée par les précédentes ni prise en compte pour bloquer une
-  // suivante — sinon un petit-déjeuner ajouté par un parent se
-  // retrouverait verrouillé derrière "S'habiller"/"Se préparer à partir"
-  // du seul fait d'avoir été créé après elles, sans aucun rapport réel
-  // entre les deux.
-  const liste = document.getElementById("liste-routines");
-  liste.innerHTML = "";
-  let toutPrecedentValide = true;
-  toutesLesRoutines().forEach(r => {
-    const etatR = etat.routines[r.id];
-    const carte = document.createElement("div");
-    carte.dataset.id = r.id;
-
-    if (r.disponibleApresHeure !== undefined) {
-      const heureAtteinte = dateActuelle().getHours() >= r.disponibleApresHeure;
-      const debloquee = heureAtteinte && !etatR.valide;
-      carte.className = "carte-routine" + (etatR.valide ? " faite" : (!heureAtteinte ? " verrouillee" : ""));
-      carte.innerHTML = `<div class="carte-routine-nom">${r.nom}</div><div class="carte-routine-etat">${etatR.valide ? "✓" : (heureAtteinte ? "" : "🕒")}</div>`;
-      if (debloquee) carte.onclick = () => demarrerRoutine(r.id);
-      else if (!etatR.valide) carte.onclick = () => dire("Ce n'est pas encore l'heure pour « " + r.nom + " ».");
-      liste.appendChild(carte);
-      return;
-    }
-
-    const chainee = !!r.chainee;
-    const verrouillee = chainee && !toutPrecedentValide;
-    const debloquee = !verrouillee && !etatR.valide;
-    // "verrouillee" ne s'applique qu'à une routine PAS ENCORE validée —
-    // sinon une routine déjà faite (ex. "Se préparer à partir") peut se
-    // retrouver visuellement "verrouillée" après qu'un parent a relancé
-    // une routine précédente depuis l'espace parent, alors qu'elle reste
-    // bel et bien validée.
-    carte.className = "carte-routine" + (etatR.valide ? " faite" : (verrouillee ? " verrouillee" : ""));
-    carte.innerHTML = `<div class="carte-routine-nom">${r.nom}</div><div class="carte-routine-etat">${etatR.valide ? "✓" : (verrouillee ? "🔒" : "")}</div>`;
-    if (debloquee) carte.onclick = () => demarrerRoutine(r.id);
-    liste.appendChild(carte);
-    if (chainee) toutPrecedentValide = toutPrecedentValide && etatR.valide;
-  });
-
+  construireListeJour(etat);
   afficherEcran("screen-menu");
+}
+
+// ---------------------------------------------------------------------
+// Liste du jour : le menu de l'enfant EST sa journée, dans l'ordre du
+// planning (`etat.planning`, choisi par les parents) — plus de chaînage
+// entre routines ni de porte « Partir à l'aventure » séparée. Statuts
+// calculés par journee.js : seul « maintenant » se lance ; le coucher
+// (`disponibleApresHeure`) devient « maintenant » à son heure, même si
+// tout n'est pas fait ; un item sauté par un parent n'est pas montré.
+// ---------------------------------------------------------------------
+function horaireItem(item) {
+  if (item.type !== "routine") return null;
+  const r = routineParId(item.id);
+  if (!r || r.disponibleApresHeure === undefined) return null;
+  return dateActuelle().getHours() >= r.disponibleApresHeure;
+}
+
+// Nature d'un item pour sa couleur : une activité sans `nature` est une
+// sortie (séance comprise — violet = « on part de la maison »).
+function natureItem(item) {
+  if (item.type !== "aventure") return item.type;
+  const a = aventureParId(item.id);
+  return a && a.nature === "maison" ? "maison" : "sortie";
+}
+
+function nomItemPlanning(item) {
+  const lib = libelleItemPlanning(item);
+  return lib ? lib.nom : null;
+}
+
+let listeJourConstruite = false;
+// Lecture suivie de toute la journée (cf. lireJournee()) : `null` hors
+// lecture.
+let lectureJournee = null;
+function lectureJourneeEnCours() { return lectureJournee !== null; }
+
+function construireListeJour(etat) {
+  listeJourConstruite = true;
+  const planning = etat.planning;
+  const resultat = statutsJournee(planning, horaireItem);
+  const liste = document.getElementById("liste-journee");
+  liste.innerHTML = "";
+
+  const visibles = planning.map((item, i) => ({ item, i, lib: libelleItemPlanning(item), statut: resultat.statuts[i] }))
+    .filter(v => v.lib && v.statut !== "passe");
+  if (visibles.length === 0) {
+    liste.appendChild(messageListeJour("Rien de prévu aujourd'hui."));
+    return;
+  }
+
+  // Déjà fait (ou dépassé) : une rangée de pictogrammes, en haut.
+  const passes = visibles.filter(v => ["fait", "repere-passe", "rate"].includes(v.statut));
+  if (passes.length) {
+    const rangee = document.createElement("div");
+    rangee.className = "jour-faits";
+    passes.forEach(v => {
+      const picto = document.createElement("button");
+      picto.type = "button";
+      picto.className = "picto-jour type-" + natureItem(v.item) + (v.statut === "fait" ? " fait" : " estompe");
+      picto.dataset.index = v.i;
+      picto.textContent = v.lib.emoji;
+      picto.setAttribute("aria-label", v.lib.nom);
+      picto.onclick = () => dire(v.statut === "fait" ? "C'est fait : " + v.lib.nom + "." : v.lib.nom + ".");
+      rangee.appendChild(picto);
+    });
+    liste.appendChild(rangee);
+  }
+
+  const aVenir = visibles.filter(v => ["maintenant", "apres", "plus-tard"].includes(v.statut));
+  if (aVenir.length === 0) liste.appendChild(messageListeJour("Tout est fait pour aujourd'hui ! 🎉"));
+  let titrePlusTard = false;
+  aVenir.forEach(v => {
+    if (v.statut === "plus-tard" && !titrePlusTard) {
+      const titre = document.createElement("div");
+      titre.className = "groupe-journee-titre jour-plus-tard-titre";
+      titre.textContent = "PLUS TARD";
+      liste.appendChild(titre);
+      titrePlusTard = true;
+    }
+    liste.appendChild(carteListeJour(v, resultat));
+  });
+}
+
+function messageListeJour(texte) {
+  const div = document.createElement("div");
+  div.className = "jour-message";
+  div.textContent = texte;
+  return div;
+}
+
+function carteListeJour(v, resultat) {
+  const carte = document.createElement("div");
+  carte.className = "carte-jour carte-" + v.statut + " type-" + natureItem(v.item);
+  carte.dataset.index = v.i;
+  carte.dataset.id = v.item.id;
+  const label = v.statut === "maintenant" ? "MAINTENANT" : v.statut === "apres" ? "APRÈS" : "";
+  const heure = v.item.heure ? `<span class="carte-jour-heure">🕒 ${v.item.heure}</span>` : "";
+  carte.innerHTML = (label ? `<div class="carte-jour-label">${label}</div>` : "")
+    + `<div class="carte-jour-corps"><span class="carte-jour-emoji">${v.lib.emoji}</span>`
+    + `<span class="carte-jour-texte"><span class="carte-jour-nom">${v.lib.nom}</span>${heure}</span></div>`;
+  if (v.statut !== "maintenant") {
+    const prefixe = v.statut === "apres" ? "Après : " : "Plus tard : ";
+    carte.onclick = () => dire(prefixe + v.lib.nom + ".");
+    return carte;
+  }
+  const bouton = document.createElement("button");
+  bouton.type = "button";
+  if (resultat.verrouille) {
+    bouton.className = "btn-cest-parti-jour verrouille";
+    bouton.textContent = "🕒 Pas encore l'heure";
+    bouton.onclick = () => dire("Ce n'est pas encore l'heure pour « " + v.lib.nom + " ».");
+  } else {
+    bouton.className = "btn-continuer btn-cest-parti-jour";
+    bouton.textContent = "C'est parti ▶";
+    bouton.onclick = () => lancerItemJour(v.i);
+  }
+  carte.appendChild(bouton);
+  return carte;
+}
+
+// ---------------------------------------------------------------------
+// Tout s'écoute : sur chaque écran de l'enfant, 🔊 redit le moment en
+// cours (et ce qui vient après) et 🗓️🔊 lit toute la journée, chaque
+// élément s'allumant quand il est lu — les cartes sur la liste, une bande
+// de pictogrammes ailleurs. Jamais sur la séance (la praticienne tient la
+// tablette) ni côté parents.
+// ---------------------------------------------------------------------
+const ECRANS_ECOUTE = ["screen-menu", "screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-recompenses", "screen-dents", "screen-histoire"];
+const ECRANS_BANDE = ["screen-routine", "screen-trajet", "screen-arrivee", "screen-maison", "screen-recompenses"];
+// Le calendrier en grand, le haut-parleur en badge : distinct du 🔊 seul.
+const ICONE_ECOUTE_JOURNEE = '<span class="ecoute-cal">🗓️</span><span class="ecoute-badge">🔊</span>';
+
+// Ajoute 🗓️🔊 à côté du 🔊 existant (ou les deux, s'il n'y en a pas) et
+// la bande sous le bandeau. Une seule fois, au démarrage.
+function installerEcoute() {
+  ECRANS_ECOUTE.forEach(id => {
+    const ecran = document.getElementById(id);
+    const barre = ecran && ecran.querySelector(".barre-haut");
+    if (!barre || barre.querySelector(".btn-ecoute-journee")) return;
+    const groupe = document.createElement("div");
+    groupe.className = "groupe-ecoute";
+    let voix = barre.querySelector(".btn-voix");
+    if (voix) {
+      voix.replaceWith(groupe);
+    } else {
+      voix = document.createElement("button");
+      voix.className = "btn-voix";
+      voix.textContent = "🔊";
+      voix.setAttribute("aria-label", "Écouter maintenant");
+      voix.onclick = () => dire(phraseMaintenantDuJour());
+      barre.insertBefore(groupe, barre.lastElementChild);
+    }
+    const journee = document.createElement("button");
+    journee.className = "btn-voix btn-ecoute-journee";
+    journee.innerHTML = ICONE_ECOUTE_JOURNEE;
+    journee.setAttribute("aria-label", "Écouter toute ma journée");
+    journee.onclick = basculerLectureJournee;
+    groupe.append(voix, journee);
+  });
+  ECRANS_BANDE.forEach(id => {
+    const ecran = document.getElementById(id);
+    if (!ecran || ecran.querySelector(".bande-journee")) return;
+    const bande = document.createElement("div");
+    bande.className = "bande-journee";
+    bande.setAttribute("aria-hidden", "true");
+    ecran.querySelector(".barre-haut").after(bande);
+  });
+}
+
+function phraseMaintenantDuJour() {
+  const etat = chargerEtat();
+  return phraseMaintenant(etat.planning, statutsJournee(etat.planning, horaireItem), nomItemPlanning);
+}
+
+// Pendant une sortie ou une activité, 🔊 redit l'écran puis annonce la
+// suite : « … Après : le déjeuner. »
+function suiteApres() {
+  const etat = chargerEtat();
+  const r = statutsJournee(etat.planning, horaireItem);
+  const nom = r.apres === null ? null : nomItemPlanning(etat.planning[r.apres]);
+  return nom ? " Après : " + nom + "." : "";
+}
+
+function construireBandeJournee(ecran) {
+  const bande = ecran.querySelector(".bande-journee");
+  if (!bande) return;
+  const etat = chargerEtat();
+  const r = statutsJournee(etat.planning, horaireItem);
+  bande.innerHTML = "";
+  etat.planning.forEach((item, i) => {
+    const lib = libelleItemPlanning(item);
+    if (!lib || r.statuts[i] === "passe") return;
+    const picto = document.createElement("span");
+    picto.className = "picto-bande type-" + natureItem(item)
+      + (r.statuts[i] === "maintenant" ? " en-cours" : "")
+      + (["fait", "repere-passe", "rate"].includes(r.statuts[i]) ? " passe" : "");
+    picto.dataset.index = i;
+    picto.textContent = lib.emoji;
+    bande.appendChild(picto);
+  });
+}
+
+function basculerLectureJournee() {
+  if (lectureJourneeEnCours()) { arreterLectureJournee(); return; }
+  lireJournee();
+}
+
+// Une phrase courte par élément, en file : chacune allume son élément au
+// moment où elle commence (`onstart`). Le jeton ignore les événements
+// d'une lecture déjà arrêtée (cancel() en déclenche sur la file restante).
+function lireJournee() {
+  const etat = chargerEtat();
+  const phrases = phrasesJournee(etat.planning, statutsJournee(etat.planning, horaireItem), nomItemPlanning);
+  try { speechSynthesis.cancel(); } catch (e) {}
+  const jeton = {};
+  lectureJournee = jeton;
+  majBoutonsLecture(true);
+  try {
+    phrases.forEach((ph, n) => {
+      const u = new SpeechSynthesisUtterance(ph.texte);
+      u.lang = "fr-FR";
+      u.rate = 0.92;
+      u.onstart = () => { if (lectureJournee === jeton) allumerElementJournee(ph.index); };
+      if (n === phrases.length - 1) u.onend = u.onerror = () => { if (lectureJournee === jeton) arreterLectureJournee(false); };
+      speechSynthesis.speak(u);
+    });
+  } catch (e) { arreterLectureJournee(false); }
+}
+
+function allumerElementJournee(index) {
+  document.querySelectorAll(".lue").forEach(el => el.classList.remove("lue"));
+  if (index === null) return;
+  const ecran = document.querySelector(".screen.active");
+  const el = ecran && ecran.querySelector('#liste-journee [data-index="' + index + '"], .bande-journee [data-index="' + index + '"]');
+  if (!el) return;
+  el.classList.add("lue");
+  el.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+// `couper` : false quand la lecture s'est terminée d'elle-même.
+function arreterLectureJournee(couper = true) {
+  lectureJournee = null;
+  if (couper) { try { speechSynthesis.cancel(); } catch (e) {} }
+  document.querySelectorAll(".lue").forEach(el => el.classList.remove("lue"));
+  majBoutonsLecture(false);
+}
+
+function majBoutonsLecture(actif) {
+  document.querySelectorAll(".btn-ecoute-journee").forEach(b => {
+    if (actif) b.textContent = "⏹️"; else b.innerHTML = ICONE_ECOUTE_JOURNEE;
+    b.setAttribute("aria-label", actif ? "Arrêter la lecture" : "Écouter toute ma journée");
+  });
+}
+
+// « C'est parti » sur la carte « maintenant ».
+function lancerItemJour(index) {
+  const item = chargerEtat().planning[index];
+  if (!item) return;
+  if (item.type === "routine") { demarrerRoutine(item.id); return; }
+  if (item.type !== "aventure") return;
+  const a = aventureParId(item.id);
+  if (!a) return;
+  if (a.nature === "maison") { demarrerAventure(a.id); return; }
+  partirSiPret(a.id, index);
 }
 
 // Activité en cours (`etat.enCours`) : routine ou étape d'aventure
@@ -1371,6 +1608,7 @@ function reprendreEnCours() {
   if (enCours.type === "aventure") {
     const a = aventureParId(enCours.id);
     if (!a) return false;
+    if (enCours.etape === "maison" && a.nature === "maison") { ouvrirActiviteMaison(a, enCours.debut || Date.now()); return true; }
     aventureActuelleId = a.id;
     sensTrajet = enCours.sens === "retour" ? "retour" : "aller";
     if (enCours.etape === "arrivee") allerAArrivee();
@@ -1399,6 +1637,14 @@ function reprendreDialogueMinuteur() {
 }
 
 function demarrerRoutine(id) {
+  // Routine déjà validée qui revient dans la journée (placée deux fois au
+  // planning) : nouveau passage, tâches décochées — l'étoile reste acquise.
+  const etat = chargerEtat();
+  if (etat.routines[id] && etat.routines[id].valide) {
+    etat.routines[id].fait = [];
+    etat.routines[id].valide = false;
+    sauverEtat(etat);
+  }
   routineActuelleId = id;
   memoriserEnCours({ type: "routine", id: id });
   derniereEtapeAnnoncee = null;
@@ -1418,23 +1664,22 @@ function retourMenuDepuisRoutine() {
 // coucher" n'en fait pas partie (sans rapport avec la sortie).
 const ROUTINES_REQUISES_DEPART = ["shabiller", "partir"];
 
-// Porte de sortie du menu vers les aventures/missions. Si des routines
-// indispensables manquent, on NE NAVIGUE PAS de force vers l'une d'elles
-// — l'enfant a pu appuyer sur la voiture par erreur. On reste sur le
-// menu, on rappelle à voix haute ce qu'il reste à faire, et on fait
-// clignoter la routine de rang 1 (la seule débloquée) pour attirer
-// l'attention dessus sans forcer le geste.
-function allerVersDepart() {
-  const etat = chargerEtat();
-  const manquantes = toutesLesRoutines().filter(r => ROUTINES_REQUISES_DEPART.includes(r.id) && !etat.routines[r.id].valide);
-  if (manquantes.length === 0) {
-    dire("On part à l'aventure !");
-    construireMissions();
-    afficherEcran("screen-missions");
-    return;
-  }
-  const noms = manquantes.map(r => r.nom).join(", ");
-  dire("Avant de partir à l'aventure, il faut d'abord faire : " + noms + ".");
+// Une sortie ne démarre que si l'enfant est prêt : les routines
+// indispensables placées AVANT elle dans le planning du jour (ni sautées
+// ni absentes) doivent être validées. Sinon on ne navigue pas de force :
+// la voix rappelle ce qu'il reste à faire et la carte clignote. Une
+// routine placée après la sortie, sautée ou retirée du jour ne bloque
+// jamais (sinon la sortie resterait coincée pour toute la journée).
+function routinesManquantesAvantDepart(etat, indexSortie) {
+  return ROUTINES_REQUISES_DEPART.filter(id =>
+    etat.planning.some((it, i) => i < indexSortie && it.type === "routine" && it.id === id && !it.passe)
+    && etat.routines[id] && !etat.routines[id].valide
+  ).map(routineParId).filter(Boolean);
+}
+function partirSiPret(id, indexSortie) {
+  const manquantes = routinesManquantesAvantDepart(chargerEtat(), indexSortie);
+  if (manquantes.length === 0) { demarrerAventure(id); return; }
+  dire("Avant de partir, il faut d'abord faire : " + manquantes.map(r => r.nom).join(", ") + ".");
   clignoterRoutine(manquantes[0].id);
 }
 
@@ -1464,9 +1709,87 @@ function construireMissions() {
 }
 
 function demarrerAventure(id) {
+  const a = aventureParId(id);
+  if (a && a.nature === "maison") { ouvrirActiviteMaison(a, Date.now()); return; }
   aventureActuelleId = id;
   sensTrajet = "aller";
   allerAuTrajet();
+}
+
+// ---------------------------------------------------------------------
+// Activité à la maison (lecture, temps calme...) : pas de trajet. L'écran
+// dit la consigne ; un minuteur facultatif part de `debut` (mémorisé dans
+// `enCours`, pour reprendre au bon endroit si l'app est fermée) et continue
+// pendant l'écoute de la journée. « J'ai fini » → félicitations → code
+// parent → coffre s'il y a une pièce, sinon retour à la liste.
+// ---------------------------------------------------------------------
+let minuteurMaison = null;
+function ouvrirActiviteMaison(a, debut) {
+  aventureActuelleId = a.id;
+  memoriserEnCours({ type: "aventure", id: a.id, etape: "maison", debut });
+  document.getElementById("maison-nom").textContent = a.lieu;
+  document.getElementById("maison-endroit").textContent = ENDROITS[a.endroit] || "";
+  document.getElementById("maison-emoji").textContent = a.emoji;
+  document.getElementById("maison-consigne").textContent = a.consigne;
+  afficherEcran("screen-maison");
+  demarrerMinuteurMaison(a, debut);
+  dire(a.consigne);
+}
+
+function demarrerMinuteurMaison(a, debut) {
+  arreterMinuteurMaison();
+  const duree = (a.minuteurMinutes || 0) * 60000;
+  document.getElementById("maison-minuteur").classList.toggle("hidden", !duree);
+  if (!duree) return;
+  // Déjà écoulé à la reprise : on affiche 00:00 sans réannoncer.
+  let annonce = Date.now() - debut >= duree;
+  const maj = () => {
+    const reste = Math.max(0, duree - (Date.now() - debut));
+    document.getElementById("maison-minuteur-remplissage").style.width = (100 * reste / duree) + "%";
+    const s = Math.ceil(reste / 1000);
+    document.getElementById("maison-minuteur-chrono").textContent =
+      String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    if (reste > 0) return;
+    arreterMinuteurMaison();
+    if (!annonce) { annonce = true; jouerSon(); dire("C'est l'heure ! Tu as fini ?"); }
+  };
+  maj();
+  if (minuteurMaison === null && Date.now() - debut < duree) minuteurMaison = setInterval(maj, 1000);
+}
+
+function arreterMinuteurMaison() {
+  if (minuteurMaison !== null) { clearInterval(minuteurMaison); minuteurMaison = null; }
+}
+
+function finActiviteMaison() {
+  const a = aventureParId(aventureActuelleId);
+  if (!a) { construireMenu(); return; }
+  arreterMinuteurMaison();
+  const titre = "Bravo " + profilActif().prenom + ", tu as fini : " + a.lieu + " !";
+  const suite = "Maintenant va chercher papa ou maman.";
+  document.getElementById("bravo-routine-titre").textContent = titre;
+  document.getElementById("bravo-routine-soustitre").textContent = suite;
+  suiteBravo = allerValidationMaison;
+  afficherEcran("screen-bravo-routine");
+  dire(titre + " " + suite);
+}
+
+function allerValidationMaison() {
+  ecranAvantValidation = document.querySelector(".screen.active").id;
+  const a = aventureParId(aventureActuelleId);
+  codeSaisi = "";
+  modeCode = "verifier";
+  document.getElementById("validation-sous-titre").textContent = "Un parent entre le code pour valider « " + a.lieu + " ».";
+  document.getElementById("correction-wrap").classList.add("hidden");
+  document.getElementById("pavecode-wrap").classList.remove("hidden");
+  document.getElementById("pavecode-erreur").textContent = "";
+  construireClavier(document.getElementById("pavecode-clavier"), appuyerTouche);
+  majCasesCode(document.getElementById("pavecode-cases"), codeSaisi);
+  apresCodeValide = () => {
+    terminerAventure(a);
+    if (!(a.recompensePieces > 0)) dire("Bravo, c'est fait !");
+  };
+  afficherEcran("screen-validation");
 }
 
 // Écran "Ma journée" : le planning du jour (`etat.planning`), affiché
@@ -1567,13 +1890,19 @@ function construireJournee() {
     // styles.css) : volontairement pas --accent/--rouge, déjà pris par
     // "fait"/"retirer" ailleurs dans l'app — un double sens rendrait ces
     // couleurs moins lisibles là où elles existent déjà.
-    ligne.className = "ligne-journee type-" + item.type
+    // Avancement (`fait`) et saut (`passe`) n'existent que pour aujourd'hui :
+    // la semaine type et les jours à venir ne portent que le programme.
+    const aujourdhui = planningCibleEstAujourdhui();
+    ligne.className = "ligne-journee type-" + (natureItem(item) === "maison" ? "maison" : item.type)
       + (i === courantIdx ? " journee-maintenant" : "")
-      + (i === suivantIdx ? " journee-suivant" : "");
+      + (i === suivantIdx ? " journee-suivant" : "")
+      + (aujourdhui && item.passe ? " item-passe" : "");
     const sousLigneHeure = item.heure ? `<span class="texte-journee-reveil">🕒 ${item.heure}</span>` : "";
     const sousLigneEntourage = lib.entourage
       ? `<span class="texte-journee-reveil">👪 ${lib.entourage.map(p => p.emoji + " " + p.nom).join(", ")}</span>` : "";
-    const badge = i === courantIdx ? `<span class="badge-maintenant">MAINTENANT</span>` : "";
+    const badge = aujourdhui && item.passe ? `<span class="badge-maintenant">SAUTÉ</span>`
+      : aujourdhui && item.fait ? `<span class="badge-fait">✓</span>`
+      : i === courantIdx ? `<span class="badge-maintenant">MAINTENANT</span>` : "";
     ligne.innerHTML = `<span class="emoji-journee">${lib.emoji}</span>`
       + `<span class="texte-journee"><span>${lib.nom}</span>${sousLigneHeure}${sousLigneEntourage}</span>${badge}`;
     if (journeeEnEdition) {
@@ -1596,7 +1925,19 @@ function construireJournee() {
       const btnRetirer = document.createElement("button");
       btnRetirer.className = "btn-mini-edition btn-retirer"; btnRetirer.textContent = "✕";
       btnRetirer.onclick = () => retirerItemPlanning(i);
-      controles.append(champHeure, btnHaut, btnBas, btnRetirer);
+      controles.append(champHeure, btnHaut, btnBas);
+      // Sauter un élément d'aujourd'hui sans le retirer (ex. une sortie
+      // annulée) : il n'est plus jamais « maintenant » dans la liste de
+      // l'enfant, et se reprend d'un appui.
+      if (aujourdhui && estAFaire(item) && !item.fait) {
+        const btnSauter = document.createElement("button");
+        btnSauter.className = "btn-mini-edition";
+        btnSauter.textContent = item.passe ? "↩︎" : "⏭";
+        btnSauter.setAttribute("aria-label", (item.passe ? "Reprendre « " : "Sauter « ") + lib.nom + " »");
+        btnSauter.onclick = () => basculerPasseItemPlanning(i);
+        controles.appendChild(btnSauter);
+      }
+      controles.appendChild(btnRetirer);
       ligne.appendChild(controles);
     }
     liste.appendChild(ligne);
@@ -1659,6 +2000,13 @@ function retirerItemPlanning(i) {
   construireJournee();
 }
 
+function basculerPasseItemPlanning(i) {
+  const planning = chargerPlanningCible();
+  if (planning[i].passe) delete planning[i].passe; else planning[i].passe = true;
+  sauverPlanningCible(planning);
+  construireJournee();
+}
+
 // Valeur vide (`<input type="time">` vidé par le parent) : `heure`
 // retiré plutôt que mis à "", pour que `item.heure` reste testable en
 // simple booléen partout ailleurs (`if (item.heure)`, cf. reperesJournee/
@@ -1670,9 +2018,13 @@ function definirHeureItemPlanning(i, valeur) {
   construireJournee();
 }
 
+// Ajouté juste avant le coucher (routine à `disponibleApresHeure`) plutôt
+// qu'en toute fin : dans la liste de l'enfant, rien ne se lance après le
+// coucher, qui clôt la journée.
 function ajouterItemPlanning(type, id) {
   const planning = chargerPlanningCible();
-  planning.push({ type, id });
+  const posCoucher = planning.findIndex(estItemCoucher);
+  if (posCoucher === -1) planning.push({ type, id }); else planning.splice(posCoucher, 0, { type, id });
   sauverPlanningCible(planning);
   construireJournee();
 }
@@ -1719,7 +2071,7 @@ function construireAjoutPlanning(planning) {
   // édité : elle y est ajoutée à la création (cf. formulaireDepuisPlanning).
   const creer = document.createElement("div");
   creer.className = "creer-depuis-planning";
-  [["sortie", "+ Nouvelle sortie"], ["seance", "+ Nouvelle séance"]].forEach(([nature, texte]) => {
+  [["sortie", "+ Nouvelle sortie"], ["maison", "+ À la maison"], ["seance", "+ Nouvelle séance"]].forEach(([nature, texte]) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "btn-secondaire";
@@ -2080,7 +2432,7 @@ function faireBrillier(el) {
 }
 
 function clignoterRoutine(id) {
-  const carte = document.querySelector('.carte-routine[data-id="' + id + '"]');
+  const carte = document.querySelector('#liste-journee [data-id="' + id + '"]');
   if (!carte) return;
   carte.classList.remove("clignote");
   void carte.offsetWidth; // relance l'animation même si elle vient de jouer
@@ -2960,7 +3312,11 @@ function majAffichageDents() {
 // ---------------------------------------------------------------------
 // 2. Fin de routine : félicitations puis appel au parent
 // ---------------------------------------------------------------------
+// Ce que fait « Un parent est avec moi » sur l'écran de félicitations :
+// valider une routine (par défaut) ou une activité à la maison.
+let suiteBravo = null;
 function finDeRoutine() {
+  suiteBravo = allerValidation;
   const routine = routineParId(routineActuelleId);
   const suite = "Maintenant va chercher papa ou maman pour obtenir ta récompense.";
   const felicitation = accorderPourEnfant(routine.felicitation);
@@ -3009,9 +3365,12 @@ function allerValidation() {
   construireClavier(document.getElementById("pavecode-clavier"), appuyerTouche);
   majCasesCode(document.getElementById("pavecode-cases"), codeSaisi);
   apresCodeValide = () => {
+    // Routine déjà faite une fois aujourd'hui (s'habiller à nouveau...) :
+    // son étoile est acquise, ce passage se valide sans coffre.
+    const etoileDejaDonnee = chargerEtat().routines[routine.id].etoileDonnee;
     document.getElementById("correction-note").textContent = "Décoche ce qui n'a pas vraiment été fait, puis valide.";
-    document.getElementById("btn-valider-routine").textContent = "Déverrouiller le coffre 🔒";
-    actionCorrection = ouvrirCoffreRoutine;
+    document.getElementById("btn-valider-routine").textContent = etoileDejaDonnee ? "Valider ✅" : "Déverrouiller le coffre 🔒";
+    actionCorrection = etoileDejaDonnee ? validerRoutineSansCoffre : ouvrirCoffreRoutine;
     construireCorrection();
     document.getElementById("correction-wrap").classList.remove("hidden");
   };
@@ -3138,7 +3497,9 @@ function ouvrirCoffreRoutine() {
   ouvrirCoffre(null, null, () => { routineActuelleId = null; construireMenu(); }, () => {
     const etat = chargerEtat();
     etat.routines[idRoutine].valide = true;
+    etat.routines[idRoutine].etoileDonnee = true;
     etat.etoiles = (etat.etoiles || 0) + 1;
+    marquerItemFait(etat, "routine", idRoutine);
     sauverEtat(etat);
     const felicitation = accorderPourEnfant(routineParId(idRoutine).felicitation);
     document.getElementById("coffre-texte").textContent = felicitation;
@@ -3147,10 +3508,25 @@ function ouvrirCoffreRoutine() {
   });
 }
 
+// Second passage d'une routine dans la journée : validé par le parent
+// comme le premier, mais sans coffre ni nouvelle étoile.
+function validerRoutineSansCoffre() {
+  const idRoutine = routineActuelleId;
+  const etat = chargerEtat();
+  etat.routines[idRoutine].valide = true;
+  marquerItemFait(etat, "routine", idRoutine);
+  sauverEtat(etat);
+  jouerSon();
+  if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+  routineActuelleId = null;
+  construireMenu();
+  dire("Bravo, c'est fait !");
+}
+
 // ---------------------------------------------------------------------
 // Espace parent — hub protégé par le code, pour que les changements
 // faits ici aient un effet direct sur ce que l'enfant voit (même état
-// `leon_journee`/`localStorage`, pas un outil séparé). Cf.
+// `cle("journee")`/`localStorage`, pas un outil séparé). Cf.
 // docs/produit/concept.md pour la philosophie.
 // ---------------------------------------------------------------------
 function ouvrirEspaceParent() {
@@ -3372,24 +3748,29 @@ function relancerRoutine(id) {
   afficherEcran("screen-validation");
 }
 
-// Si la routine était validée, on retire l'étoile qu'elle avait
-// rapportée : elle sera regagnée quand l'enfant la revalidera pour de
-// bon, sinon le compteur d'étoiles serait gonflé. `journeeFaite` et le
-// verrou de sommeil (`cle("reveil")`, cf. `endormir`) ne repassent à faux
-// que si c'est "Aller se coucher" qu'on relance — cf. construireMenu() :
-// c'est la seule routine qui conditionne la journée "finie", relancer
-// une autre routine (ex. correction sur "S'habiller" après coup) n'a pas
-// à rouvrir l'écran de clôture ni à réveiller l'app.
+// Une étoile n'est jamais reprise : relancer une routine validée dont des
+// tâches ont été décochées la rend juste à refaire — son dernier passage
+// redevient à faire dans la liste du jour, l'étoile reste acquise (et le
+// nouveau passage n'en redonne pas, cf. validerRoutineSansCoffre()).
+// `journeeFaite` et le verrou de sommeil (`cle("reveil")`, cf. `endormir`)
+// ne repassent à faux que si c'est "Aller se coucher" qu'on rouvre — cf.
+// construireMenu() : c'est la seule routine qui conditionne la journée
+// "finie".
 function confirmerRelanceRoutine() {
   const etat = chargerEtat();
   const etatR = etat.routines[routineActuelleId];
-  if (etatR.valide) {
+  const routine = routineParId(routineActuelleId);
+  const toutFait = routine.taches.every(t => etatR.fait.includes(t.id));
+  if (etatR.valide && !toutFait) {
     etatR.valide = false;
-    etat.etoiles = Math.max(0, (etat.etoiles || 0) - 1);
-  }
-  if (routineActuelleId === "soir") {
-    etat.journeeFaite = false;
-    try { localStorage.removeItem(cle("reveil")); } catch (e) {}
+    for (let i = etat.planning.length - 1; i >= 0; i--) {
+      const it = etat.planning[i];
+      if (it.type === "routine" && it.id === routineActuelleId && it.fait) { delete it.fait; break; }
+    }
+    if (routineActuelleId === "soir") {
+      etat.journeeFaite = false;
+      try { localStorage.removeItem(cle("reveil")); } catch (e) {}
+    }
   }
   sauverEtat(etat);
   synchroniserAvatar(etat);
@@ -3593,9 +3974,18 @@ let entourageChoisiActivite = [];
 // finale de creerNouvelleAventure() change (mise à jour en place plutôt
 // que nouvelle entrée).
 let aventureEnEditionId = null;
-// "sortie" | "seance" — une séance est une aventure qui porte `personne`
-// (cf. terminerVisite()) : le formulaire demande alors avec qui.
+// "sortie" | "seance" | "maison" — une séance est une aventure qui porte
+// `personne` (cf. terminerVisite()) : le formulaire demande alors avec qui ;
+// une activité à la maison (`nature: "maison"`) n'a ni trajet ni étapes,
+// mais un endroit, une phrase et un minuteur facultatif.
 let natureFormulaireActivite = "sortie";
+const NATURES_ACTIVITE = [["sortie", "🚗 Sortie"], ["maison", "🏠 À la maison"], ["seance", "🧑‍⚕️ Séance"]];
+const ENDROITS = { chambre: "🛏️ Chambre", salon: "🛋️ Salon", cuisine: "🍳 Cuisine" };
+const MINUTEURS_MAISON = [0, 10, 20, 30];
+const ETAPES_SEANCE = ["On dit bonjour", "On fait la séance", "On dit au revoir"];
+const EMOJI_MAISON_DEFAUT = "📖";
+let endroitChoisi = "salon";
+let minuteurChoisi = 0;
 // Formulaire ouvert depuis l'éditeur de journée (cf. construireAjoutPlanning())
 // plutôt que depuis la bibliothèque : l'activité créée est ajoutée au jour
 // édité, et ← comme la création ramènent à ce jour.
@@ -3625,10 +4015,64 @@ function construireChoixPersonneSeance() {
   });
 }
 
+// La nature se choisit à la création ; en modification, elle est fixée.
+// Chaque nature ne montre que ses champs.
 function afficherNatureFormulaireActivite() {
-  const seance = natureFormulaireActivite === "seance";
-  document.getElementById("na-seance-bloc").classList.toggle("hidden", !seance);
-  if (seance) construireChoixPersonneSeance();
+  const nature = natureFormulaireActivite;
+  document.getElementById("na-nature-bloc").classList.toggle("hidden", !!aventureEnEditionId);
+  construireChoixUnique(document.getElementById("na-nature-grille"), NATURES_ACTIVITE, nature, choisirNatureFormulaire);
+  document.getElementById("na-seance-bloc").classList.toggle("hidden", nature !== "seance");
+  document.getElementById("na-sortie-bloc").classList.toggle("hidden", nature === "maison");
+  document.getElementById("na-maison-bloc").classList.toggle("hidden", nature !== "maison");
+  document.getElementById("na-nom").placeholder = nature === "maison" ? "Ex : Lecture" : "Ex : La piscine";
+  if (nature === "seance") construireChoixPersonneSeance();
+  if (nature === "maison") {
+    construireChoixUnique(document.getElementById("na-endroit-grille"), Object.entries(ENDROITS), endroitChoisi,
+      v => { endroitChoisi = v; afficherNatureFormulaireActivite(); });
+    construireChoixUnique(document.getElementById("na-minuteur-grille"), MINUTEURS_MAISON.map(m => [m, m ? m + " min" : "Aucun"]), minuteurChoisi,
+      v => { minuteurChoisi = v; afficherNatureFormulaireActivite(); });
+  }
+  if (!aventureEnEditionId) {
+    document.getElementById("nouvelle-aventure-titre").textContent =
+      nature === "seance" ? "Nouvelle séance" : nature === "maison" ? "Nouvelle activité à la maison" : "Nouvelle sortie";
+  }
+}
+
+// Puces à choix unique (`options` : [valeur, texte]), même style que
+// l'entourage.
+function construireChoixUnique(grille, options, valeur, choisir) {
+  grille.innerHTML = "";
+  options.forEach(([v, texte]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip-entourage" + (v === valeur ? " choisi" : "");
+    b.textContent = texte;
+    b.onclick = () => choisir(v);
+    grille.appendChild(b);
+  });
+}
+
+function choisirNatureFormulaire(nature) {
+  natureFormulaireActivite = nature;
+  appliquerDefautsNature();
+  afficherNatureFormulaireActivite();
+}
+
+// Valeurs par défaut d'une nature, en création : étapes d'une séance
+// (sans écraser des étapes déjà tapées), pièce pour une sortie seulement.
+function appliquerDefautsNature() {
+  const champs = ["na-etape1", "na-etape2", "na-etape3"].map(id => document.getElementById(id));
+  const valeurs = champs.map(c => c.value.trim());
+  const vides = valeurs.every(v => !v);
+  const defautsSeance = valeurs.every((v, i) => v === ETAPES_SEANCE[i]);
+  if (natureFormulaireActivite === "seance" && vides) champs.forEach((c, i) => { c.value = ETAPES_SEANCE[i]; });
+  if (natureFormulaireActivite !== "seance" && defautsSeance) champs.forEach(c => { c.value = ""; });
+  document.getElementById("na-piece").checked = natureFormulaireActivite === "sortie";
+  // Icône par défaut de la nature, tant que le parent n'en a pas choisi une.
+  if (emojiChoisiActivite === EMOJI_ACTIVITE[0] || emojiChoisiActivite === EMOJI_MAISON_DEFAUT) {
+    emojiChoisiActivite = natureFormulaireActivite === "maison" ? EMOJI_MAISON_DEFAUT : EMOJI_ACTIVITE[0];
+  }
+  construireDeclencheurEmoji("na-emoji-trigger", emojiChoisiActivite);
 }
 
 function ouvrirNouvelleAventure(options = {}) {
@@ -3636,21 +4080,14 @@ function ouvrirNouvelleAventure(options = {}) {
   natureFormulaireActivite = options.nature || "sortie";
   formulaireDepuisPlanning = !!options.depuisPlanning;
   personneSeanceId = null;
-  const seance = natureFormulaireActivite === "seance";
-  document.getElementById("nouvelle-aventure-titre").textContent =
-    seance ? "Nouvelle séance" : formulaireDepuisPlanning ? "Nouvelle sortie" : "Nouvelle activité";
+  endroitChoisi = "salon";
+  minuteurChoisi = 0;
   document.getElementById("btn-creer-aventure").textContent = "Créer l'activité";
-  ["na-nom", "na-trajet", "na-arrivee", "na-etape1", "na-etape2", "na-etape3", "na-mots-cles"]
+  ["na-nom", "na-trajet", "na-arrivee", "na-etape1", "na-etape2", "na-etape3", "na-mots-cles", "na-consigne"]
     .forEach(id => { document.getElementById(id).value = ""; });
-  if (seance) {
-    document.getElementById("na-etape1").value = "On dit bonjour";
-    document.getElementById("na-etape2").value = "On fait la séance";
-    document.getElementById("na-etape3").value = "On dit au revoir";
-  }
-  document.getElementById("na-piece").checked = true;
-  document.getElementById("na-erreur").textContent = "";
   emojiChoisiActivite = EMOJI_ACTIVITE[0];
-  construireDeclencheurEmoji("na-emoji-trigger", emojiChoisiActivite);
+  appliquerDefautsNature();
+  document.getElementById("na-erreur").textContent = "";
   entourageChoisiActivite = [];
   construireChoixEntourage(document.getElementById("na-entourage-grille"), entourageChoisiActivite);
   afficherNatureFormulaireActivite();
@@ -3688,7 +4125,7 @@ function ouvrirEditionAventure(id) {
   if (!a) return;
   aventureEnEditionId = id;
   formulaireDepuisPlanning = false;
-  natureFormulaireActivite = a.personne ? "seance" : "sortie";
+  natureFormulaireActivite = a.nature === "maison" ? "maison" : a.personne ? "seance" : "sortie";
   // Retrouvée par son nom : `personne` ne garde que { emoji, nom }. Une
   // praticienne absente de l'entourage n'est simplement pas présélectionnée
   // — sa `personne` est conservée telle quelle (cf. creerNouvelleAventure()).
@@ -3697,11 +4134,16 @@ function ouvrirEditionAventure(id) {
   document.getElementById("nouvelle-aventure-titre").textContent = "Modifier l'activité";
   document.getElementById("btn-creer-aventure").textContent = "Enregistrer les modifications";
   document.getElementById("na-nom").value = a.lieu;
-  document.getElementById("na-trajet").value = a.texteTrajet;
-  document.getElementById("na-arrivee").value = a.texteArrivee;
-  document.getElementById("na-etape1").value = sansNumeroEtape(a.programme[0]);
-  document.getElementById("na-etape2").value = sansNumeroEtape(a.programme[1]);
-  document.getElementById("na-etape3").value = sansNumeroEtape(a.programme[2]);
+  // Une activité à la maison n'a ni trajet ni programme (et inversement).
+  const programme = a.programme || [];
+  document.getElementById("na-trajet").value = a.texteTrajet || "";
+  document.getElementById("na-arrivee").value = a.texteArrivee || "";
+  document.getElementById("na-etape1").value = sansNumeroEtape(programme[0]);
+  document.getElementById("na-etape2").value = sansNumeroEtape(programme[1]);
+  document.getElementById("na-etape3").value = sansNumeroEtape(programme[2]);
+  document.getElementById("na-consigne").value = a.consigne || "";
+  endroitChoisi = a.endroit || "salon";
+  minuteurChoisi = a.minuteurMinutes || 0;
   document.getElementById("na-piece").checked = a.recompensePieces > 0;
   document.getElementById("na-mots-cles").value = (a.motsCles || []).join(", ");
   document.getElementById("na-erreur").textContent = "";
@@ -3745,9 +4187,21 @@ function creerNouvelleAventure() {
     return;
   }
 
-  if (!nom || !texteTrajet || !texteArrivee || !e1 || !e2 || !e3) {
-    document.getElementById("na-erreur").textContent = "Remplis tous les champs avant de créer l'activité.";
-    return;
+  // Champs propres à la nature (le reste est commun : entourage, mots-clés).
+  let champs;
+  if (natureFormulaireActivite === "maison") {
+    const consigne = document.getElementById("na-consigne").value.trim();
+    if (!nom || !consigne) {
+      document.getElementById("na-erreur").textContent = "Donne un nom à l'activité et ce que dit l'acolyte.";
+      return;
+    }
+    champs = { lieu: nom, emoji: emojiChoisiActivite, nature: "maison", endroit: endroitChoisi, consigne, minuteurMinutes: minuteurChoisi, recompensePieces: pieceOui ? 1 : 0 };
+  } else {
+    if (!nom || !texteTrajet || !texteArrivee || !e1 || !e2 || !e3) {
+      document.getElementById("na-erreur").textContent = "Remplis tous les champs avant de créer l'activité.";
+      return;
+    }
+    champs = { lieu: nom, emoji: emojiChoisiActivite, texteTrajet, texteArrivee, programme: ["1. " + e1, "2. " + e2, "3. " + e3], recompensePieces: pieceOui ? 1 : 0 };
   }
 
   const motsCles = document.getElementById("na-mots-cles").value.trim();
@@ -3762,14 +4216,7 @@ function creerNouvelleAventure() {
   // toutesLesAventures()).
   if (aventureEnEditionId) {
     const original = aventureParId(aventureEnEditionId);
-    const maj = Object.assign({}, original, {
-      lieu: nom,
-      emoji: emojiChoisiActivite,
-      texteTrajet,
-      texteArrivee,
-      programme: ["1. " + e1, "2. " + e2, "3. " + e3],
-      recompensePieces: pieceOui ? 1 : 0,
-    });
+    const maj = Object.assign({}, original, champs);
     if (entourageChoisiActivite.length) maj.entourageIds = [...entourageChoisiActivite]; else delete maj.entourageIds;
     if (motsCles) maj.motsCles = motsCles.split(",").map(m => m.trim()).filter(Boolean); else delete maj.motsCles;
     if (personneSeance) attacherPersonneSeance(maj, personneSeance);
@@ -3789,16 +4236,8 @@ function creerNouvelleAventure() {
   // la place ensuite sur un jour. Depuis l'éditeur de journée (« + Nouvelle
   // sortie/séance », cf. formulaireDepuisPlanning), elle est ajoutée au
   // jour édité — aujourd'hui, un jour à venir ou un jour de la semaine type.
-  const nouvelle = {
-    id: "perso-" + Date.now(),
-    lieu: nom,
-    emoji: emojiChoisiActivite,
-    texteTrajet,
-    texteArrivee,
-    programme: ["1. " + e1, "2. " + e2, "3. " + e3],
-    recompensePieces: pieceOui ? 1 : 0,
-    texteTrajetRetour: "On a fini, on rentre à la maison.",
-  };
+  const nouvelle = Object.assign({ id: "perso-" + Date.now() }, champs,
+    champs.nature === "maison" ? {} : { texteTrajetRetour: "On a fini, on rentre à la maison." });
   // Champs optionnels omis (plutôt que mis à `[]`/`""`) si vides : garde
   // une activité sans entourage/mots-clés indistinguable d'une activité
   // créée avant l'existence de ces champs. `personne` seulement pour une
@@ -4613,7 +5052,7 @@ function etapeReveilHumeur(bienDormi) {
 
 // `humeurId` : un des `id` de EMOJI_HUMEUR, choisi par le bouton tapé
 // dans `construireGrilleHumeur()`. Stocké dans `etat.reveil` (jour
-// courant) puis, au changement de jour, recopié dans `leon_historique`
+// courant) puis, au changement de jour, recopié dans `cle("historique")`
 // par `archiverJournee()` — pas d'écran dédié pour le consulter encore,
 // juste le stockage (même approche que l'a été l'historique au départ).
 function finReveil(humeurId) {
@@ -4734,7 +5173,9 @@ function prochaineAventureSansEscale(id) {
   if (pos === -1) return null;
   const suivant = etat.planning[pos + 1];
   if (!suivant || suivant.type !== "aventure") return null;
-  return aventureParId(suivant.id) || null;
+  const a = aventureParId(suivant.id);
+  // Une activité à la maison qui suit : on rentre bien d'abord.
+  return a && a.nature !== "maison" ? a : null;
 }
 
 // ---------------------------------------------------------------------
@@ -4955,6 +5396,9 @@ function allerValidationArrivee() {
 // (cf. `avantOuverture` dans `ouvrirCoffre()`/`ouvrirCadenasCoffre()`).
 function terminerAventure(a) {
   aventureActuelleId = null;
+  const etat = chargerEtat();
+  marquerItemFait(etat, "aventure", a.id);
+  sauverEtat(etat);
   if (a.recompensePieces > 0) {
     ouvrirCoffre(null, null, () => construireMenu(), () => {
       const total = ajouterPieces(a.recompensePieces);
@@ -5041,6 +5485,10 @@ function construireDebug() {
   const aventures = document.getElementById("debug-aventures");
   aventures.innerHTML = "";
   toutesLesAventures().forEach(a => {
+    if (a.nature === "maison") {
+      aventures.appendChild(boutonDebug("🏠 Activité — " + a.lieu, puisFermerDebug(() => ouvrirActiviteMaison(a, Date.now()))));
+      return;
+    }
     aventures.appendChild(boutonDebug("🚗 Trajet — " + a.lieu, puisFermerDebug(() => { aventureActuelleId = a.id; sensTrajet = "aller"; allerAuTrajet(); })));
     aventures.appendChild(boutonDebug("📍 Arrivée — " + a.lieu, puisFermerDebug(() => { aventureActuelleId = a.id; allerAArrivee(); })));
     if (a.personne) {
@@ -5107,6 +5555,12 @@ function tickHorloge() {
   majHorloge();
   const ecranJournee = document.getElementById("screen-journee");
   if (!journeeEnEdition && ecranJournee && ecranJournee.classList.contains("active")) construireJournee();
+  // Liste du jour ouverte : le coucher se déverrouille tout seul à son
+  // heure — sauf pendant la lecture de la journée, qui allume les cartes.
+  // Jamais au tout premier tick (avant demarrer()) : seulement une liste
+  // déjà construite.
+  const ecranMenu = document.getElementById("screen-menu");
+  if (listeJourConstruite && ecranMenu.classList.contains("active") && !lectureJourneeEnCours()) construireListeJour(chargerEtat());
 }
 tickHorloge();
 setInterval(tickHorloge, 15000);
@@ -5114,6 +5568,7 @@ setInterval(tickHorloge, 15000);
 // ---------------------------------------------------------------------
 // Câblage des boutons + démarrage
 // ---------------------------------------------------------------------
+installerEcoute();
 document.getElementById("btn-retour-routine").onclick = retourMenuDepuisRoutine;
 document.getElementById("btn-voix-routine").onclick = () => dire(document.getElementById("etape-courante").textContent);
 document.getElementById("btn-retour-dents").onclick = quitterBrossageDents;
@@ -5127,8 +5582,8 @@ document.getElementById("btn-minuteur-verif-non").onclick = () => repondreVerifi
 document.getElementById("btn-minuteur-verif-oui").onclick = () => repondreVerificationMinuteur(true);
 document.getElementById("btn-minuteur-bloque-code").onclick = debloquerMinuteurAvecCode;
 document.getElementById("btn-voix-coffre").onclick = () => dire(document.getElementById("coffre-texte").textContent);
-document.getElementById("btn-voix-trajet").onclick = () => dire(document.getElementById("trajet-texte").textContent);
-document.getElementById("btn-voix-arrivee").onclick = () => dire(document.getElementById("arrivee-texte").textContent);
+document.getElementById("btn-voix-trajet").onclick = () => dire(document.getElementById("trajet-texte").textContent + suiteApres());
+document.getElementById("btn-voix-arrivee").onclick = () => dire(document.getElementById("arrivee-texte").textContent + suiteApres());
 document.getElementById("btn-voix-reveil-bonjour").onclick = () => dire(document.getElementById("reveil-bonjour-texte").textContent);
 document.getElementById("btn-voix-reveil-dormi").onclick = () => dire(document.getElementById("reveil-dormi-texte").textContent);
 document.getElementById("btn-voix-reveil-humeur").onclick = () => dire(document.getElementById("reveil-humeur-texte").textContent);
@@ -5148,7 +5603,10 @@ document.getElementById("input-restaurer").onchange = (ev) => {
   if (fichier) importerDonneesAppareil(fichier);
 };
 
-document.getElementById("btn-un-parent").onclick = allerValidation;
+document.getElementById("btn-un-parent").onclick = () => (suiteBravo || allerValidation)();
+document.getElementById("btn-maison-fini").onclick = finActiviteMaison;
+document.getElementById("btn-retour-maison").onclick = () => { arreterMinuteurMaison(); aventureActuelleId = null; construireMenu(); };
+document.getElementById("btn-voix-maison").onclick = () => dire(document.getElementById("maison-consigne").textContent + suiteApres());
 document.getElementById("btn-valider-routine").onclick = () => { if (actionCorrection) actionCorrection(); };
 // Retour discret : ramène à l'écran actif juste avant l'ouverture de
 // screen-validation (cf. ecranAvantValidation, capturé à chacune de ses
@@ -5157,10 +5615,8 @@ document.getElementById("btn-valider-routine").onclick = () => { if (actionCorre
 // qui reste tel quel, cf. construireCorrection()).
 document.getElementById("btn-retour-validation").onclick = () => afficherEcran(ecranAvantValidation || "screen-menu");
 
-document.getElementById("btn-depart").onclick = allerVersDepart;
 document.getElementById("btn-retour-menu").onclick = construireMenu;
 
-document.getElementById("btn-journee").onclick = () => { ciblerAujourdhui(); construireJournee(); afficherEcran("screen-journee"); };
 // Un jour à venir ou de la semaine type s'ouvre depuis l'écran Planning : on
 // y revient, plutôt que de sauter au menu de l'enfant.
 document.getElementById("btn-retour-menu-journee").onclick = () => {

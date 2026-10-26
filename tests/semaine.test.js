@@ -57,3 +57,11 @@ test("migrerActivitesDatees : jour futur absent semé depuis planningPour", () =
   const { planningFutur } = S.migrerActivitesDatees([{ id: "f", date: "2026-12-1" }], {}, "2026-10-25", () => [{ type: "repas", id: "diner" }]);
   assert.deepEqual(planningFutur["2026-12-1"].map(i => i.id), ["diner", "f"]);
 });
+
+test("insererActivite : sans `apres`, juste avant le coucher s'il est indiqué", () => {
+  const base = [{ type: "routine", id: "shabiller" }, { type: "routine", id: "soir" }];
+  const estCoucher = (it) => it.type === "routine" && it.id === "soir";
+  assert.deepEqual(S.insererActivite(base, { id: "x" }, estCoucher).map(i => i.id), ["shabiller", "x", "soir"]);
+  const { planningFutur } = S.migrerActivitesDatees([{ id: "m", date: "2026-10-27" }], {}, "2026-10-25", () => base, estCoucher);
+  assert.deepEqual(planningFutur["2026-10-27"].map(i => i.id), ["shabiller", "m", "soir"]);
+});
