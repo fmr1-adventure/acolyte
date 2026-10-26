@@ -39,6 +39,33 @@
  */
 
 // ---------------------------------------------------------------------
+// Version de l'app : la même ici, dans index.html (meta "acolyte-version")
+// et dans le nom du cache de sw.js ("acolyte-v<VERSION_APP>"). Filet de
+// sécurité contre une page faite de deux versions (index.html de l'une,
+// app.js de l'autre — possible pendant la mise à jour du cache hors-ligne) :
+// le câblage des boutons planterait au démarrage. Dans ce cas on vide les
+// caches et on recharge, une seule fois par session, avant d'exécuter
+// quoi que ce soit d'autre.
+// ---------------------------------------------------------------------
+const VERSION_APP = "19";
+(function verifierVersionPage() {
+  const meta = document.querySelector('meta[name="acolyte-version"]');
+  if (meta && meta.content === VERSION_APP) {
+    try { sessionStorage.removeItem("acolyte_rechargement_version"); } catch (e) {}
+    // Caches d'une version précédente : plus jamais lus, on les retire.
+    try { caches.keys().then(noms => noms.filter(n => n !== "acolyte-v" + VERSION_APP).forEach(n => caches.delete(n))); } catch (e) {}
+    return;
+  }
+  try {
+    if (sessionStorage.getItem("acolyte_rechargement_version") === "1") return; // déjà tenté : on n'insiste pas
+    sessionStorage.setItem("acolyte_rechargement_version", "1");
+  } catch (e) { return; }
+  const recharger = () => location.reload();
+  try { caches.keys().then(noms => Promise.all(noms.map(n => caches.delete(n)))).then(recharger, recharger); } catch (e) { recharger(); }
+  throw new Error("Acolyte : versions mélangées, rechargement.");
+})();
+
+// ---------------------------------------------------------------------
 // Mode debug (tests) : toujours actif sur un serveur de dev local
 // (localhost/127.0.0.1, quel que soit le port — évite d'avoir à rouvrir
 // `?debug=1` à chaque fois que le port change d'une session de test à

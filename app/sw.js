@@ -10,9 +10,15 @@
  * Nécessite HTTPS (ou localhost) — les navigateurs n'activent pas les
  * service workers sur http:// simple (ex. une IP locale), cf. app/README.md.
  *
- * Incrémenter CACHE_NAME à chaque changement de cette liste (ou pour
- * forcer un rafraîchissement) : `activate` supprime les caches d'un nom
- * différent.
+ * Incrémenter CACHE_NAME à chaque publication, au même numéro que
+ * VERSION_APP (app.js) et la meta "acolyte-version" (index.html) :
+ * `activate` supprime les caches d'un nom différent, et app.js recharge
+ * une page dont index.html et app.js ne sont pas de la même version.
+ *
+ * Le service worker ne lit QUE son propre cache (jamais `caches.match()`
+ * sur tous les caches) : un cache d'une version précédente, même recréé
+ * par une mise à jour tardive de l'ancien service worker, ne peut plus
+ * se mélanger à la version en cours.
  *
  * Avatar personnalisable (cf. PEAUX/CHEVEUX_COULEURS/COUPES_PAR_GENRE/
  * YEUX_COULEURS dans app.js) : 320 combinaisons possibles pour le corps/
@@ -25,7 +31,7 @@
  * ci-dessous — jamais un problème en usage réel, seulement le tout
  * premier écran de configuration doit être en ligne.
  */
-const CACHE_NAME = "acolyte-v18";
+const CACHE_NAME = "acolyte-v19";
 const A_METTRE_EN_CACHE = [
   "./",
   "./index.html",
@@ -53,7 +59,9 @@ const A_METTRE_EN_CACHE = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(A_METTRE_EN_CACHE))
+    // `reload` : jamais une copie du cache HTTP du navigateur, pour que
+    // l'installation prenne un jeu de fichiers d'une seule version.
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(A_METTRE_EN_CACHE.map(u => new Request(u, { cache: "reload" }))))
   );
   self.skipWaiting();
 });
@@ -70,17 +78,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then((reponseEnCache) => {
-      const misAJour = fetch(event.request)
-        .then((reponseReseau) => {
-          if (reponseReseau && reponseReseau.ok) {
-            const copie = reponseReseau.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copie));
-          }
-          return reponseReseau;
-        })
-        .catch(() => reponseEnCache);
-      return reponseEnCache || misAJour;
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.match(event.request).then((reponseEnCache) => {
+        const misAJour = fetch(event.request)
+          .then((reponseReseau) => {
+            if (reponseReseau && reponseReseau.ok) cache.put(event.request, reponseReseau.clone());
+            return reponseReseau;
+          })
+          .catch(() => reponseEnCache);
+        return reponseEnCache || misAJour;
+      })
+    )
   );
 });

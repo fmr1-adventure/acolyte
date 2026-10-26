@@ -22,6 +22,13 @@ puis "Ajouter à l'écran d'accueil" : `manifest.json` fournit l'icône,
 développement) reste utile pour tester en cours de route, mais n'est
 jamais ce qu'une tablette réelle doit charger au quotidien.
 
+**Version à chaque publication** : `VERSION_APP` (`app.js`), la meta
+`acolyte-version` (`index.html`) et `CACHE_NAME` (`sw.js`, `acolyte-v<n>`)
+portent toujours le même numéro, incrémenté ensemble. Le service worker ne
+lit que son propre cache, et `app.js` recharge (une fois, caches vidés) une
+page dont `index.html` et `app.js` ne sont pas de la même version — sans
+quoi le câblage des boutons plantait au démarrage pendant une mise à jour.
+
 **Piège de test une fois le service worker actif** : après avoir modifié
 `app.js`/`styles.css`/`index.html`, un simple rechargement du navigateur
 peut continuer à servir l'ancienne version depuis le cache
