@@ -372,13 +372,18 @@ appareil).
 - **Cet appareil** — indique quel profil cet appareil affiche, pour le
   configurer une bonne fois pour toutes, ou pour ajouter un enfant
   supplémentaire (« + Nouvel enfant », cf. "Première configuration"
-  ci-dessus).
+  ci-dessus). En bas, un **journal technique** note les démarrages, les
+  rechargements et les erreurs de l'appareil : en cas de souci, une photo
+  de cet écran aide à comprendre ce qui s'est passé.
 
 ## En bref, côté technique
 
 Installée une fois sur la tablette, l'application continue de
 fonctionner **sans connexion internet**. Pas de compte à créer, pas de
-donnée envoyée à un serveur : tout reste sur la tablette.
+donnée envoyée à un serveur : tout reste sur la tablette. Si elle ne peut
+vraiment pas se charger (ni copie sur la tablette, ni connexion), elle
+affiche « Acolyte n'arrive pas à se charger » avec un bouton
+« Réessayer », jamais un écran noir.
 
 ## Et ensuite
 

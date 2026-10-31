@@ -1236,3 +1236,8 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 @media (prefers-reduced-motion: reduce) {
   *, .pop { animation: none !important; }
 }
+
+/* Journal technique (« Cet appareil ») : petit, lisible sur une photo. */
+.journal-technique { margin-top: 4px; font-size: 13px; color: var(--text-mute); max-height: 50vh; overflow-y: auto; }
+.journal-ligne { padding: 4px 0; border-bottom: 1px solid var(--surface); overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
+.journal-erreur { color: var(--rouge); }

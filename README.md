@@ -80,7 +80,8 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
 - **Espace parent** (code), en cinq blocs : la journée (planning,
   relancer une routine), la bibliothèque (activités, routines,
   entourage), le suivi (historique, notes des séances), les récompenses
-  (chemin, à donner), les réglages (code parent, profils de l'appareil).
+  (chemin, à donner), les réglages (code parent, profils et journal
+  technique de l'appareil, utile pour comprendre un souci après coup).
 - **Reprise automatique** : quittée en pleine routine ou sortie, l'app
   rouvre là où on en était plutôt que de revenir à la liste. Sur une
   tablette jamais fermée, elle repart d'elle-même au changement de jour
@@ -199,7 +200,9 @@ Workflow :
   continue de fonctionner **hors-ligne**, sans dépendre d'aucun serveur
   (ni GitHub, ni la machine utilisée pour développer) — voir
   `app/README.md` pour le détail technique. La première configuration
-  doit se faire avec une connexion internet.
+  doit se faire avec une connexion internet. Si l'app ne peut vraiment
+  pas se charger (ni copie sur la tablette, ni connexion), elle affiche
+  un bouton « Réessayer » plutôt qu'un écran noir.
 - **Mises à jour** : la tablette récupère la nouvelle version en tâche
   de fond quand elle est connectée ; elle s'affiche à une ouverture
   suivante de l'app (pas forcément la toute prochaine).

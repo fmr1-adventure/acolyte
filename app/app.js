@@ -47,7 +47,31 @@
 // caches et on recharge, une seule fois par session, avant d'exécuter
 // quoi que ce soit d'autre.
 // ---------------------------------------------------------------------
-const VERSION_APP = "21";
+const VERSION_APP = "22";
+
+// Journal technique de l'appareil (`acolyte_journal`, partagé par appareil
+// comme le code parent) : démarrages, rechargements et erreurs non
+// rattrapées, pour comprendre après coup un écran resté noir — consultable
+// dans « Cet appareil » (cf. construireParentAppareil()). 40 entrées au plus.
+const CLE_JOURNAL = "acolyte_journal";
+function lireJournal() {
+  try { const j = JSON.parse(localStorage.getItem(CLE_JOURNAL)); return Array.isArray(j) ? j : []; } catch (e) { return []; }
+}
+function noterJournal(type, detail) {
+  try {
+    const j = lireJournal();
+    j.push({ t: new Date().toISOString(), v: VERSION_APP, type, detail: String(detail || "").slice(0, 300) });
+    localStorage.setItem(CLE_JOURNAL, JSON.stringify(j.slice(-40)));
+  } catch (e) {}
+}
+// Tout rechargement passe par ici, avec sa raison dans le journal.
+function rechargerPage(raison) {
+  noterJournal("rechargement", raison);
+  location.reload();
+}
+window.addEventListener("error", (e) => noterJournal("erreur", (e.message || "?") + " — " + String(e.filename || "").split("/").pop() + ":" + (e.lineno || "?")));
+window.addEventListener("unhandledrejection", (e) => noterJournal("erreur", "promesse : " + (e.reason && (e.reason.message || e.reason))));
+
 (function verifierVersionPage() {
   const meta = document.querySelector('meta[name="acolyte-version"]');
   if (meta && meta.content === VERSION_APP) {
@@ -60,7 +84,7 @@ const VERSION_APP = "21";
     if (sessionStorage.getItem("acolyte_rechargement_version") === "1") return; // déjà tenté : on n'insiste pas
     sessionStorage.setItem("acolyte_rechargement_version", "1");
   } catch (e) { return; }
-  const recharger = () => location.reload();
+  const recharger = () => rechargerPage("versions mélangées (page " + (meta ? meta.content : "?") + ")");
   try { caches.keys().then(noms => Promise.all(noms.map(n => caches.delete(n)))).then(recharger, recharger); } catch (e) { recharger(); }
   throw new Error("Acolyte : versions mélangées, rechargement.");
 })();
@@ -556,7 +580,7 @@ function finaliserPremiereConfiguration() {
   etat.reveilFait = true;
   sauverEtat(etat);
 
-  location.reload();
+  rechargerPage("première configuration");
 }
 
 // `calque` = data-calque (ou tableau de data-calque) à révéler sur le
@@ -4654,6 +4678,23 @@ function construireParentAppareil() {
     if (p.id !== actif) carte.onclick = () => changerProfilAppareil(p.id);
     liste.appendChild(carte);
   });
+  construireJournalTechnique();
+}
+
+// Les dernières entrées du journal technique (cf. noterJournal()), la plus
+// récente en haut : à lire ou à photographier après un écran noir.
+function construireJournalTechnique() {
+  const bloc = document.getElementById("parent-appareil-journal");
+  const entrees = lireJournal().slice().reverse();
+  bloc.replaceChildren();
+  if (!entrees.length) { bloc.textContent = "Rien de noté pour l'instant."; return; }
+  entrees.forEach(e => {
+    const ligne = document.createElement("div");
+    ligne.className = "journal-ligne" + (e.type === "erreur" ? " journal-erreur" : "");
+    const quand = new Date(e.t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    ligne.textContent = quand + " · v" + e.v + " · " + e.type + (e.detail ? " : " + e.detail : "");
+    bloc.appendChild(ligne);
+  });
 }
 
 // Rejoue le même accueil que le tout premier lancement (cf.
@@ -4673,7 +4714,7 @@ function ouvrirNouveauProfilDepuisAppareil() {
 // main depuis ce seul écran.
 function changerProfilAppareil(id) {
   try { localStorage.setItem("acolyte_enfant", id); } catch (e) {}
-  location.reload();
+  rechargerPage("changement d'enfant");
 }
 
 // Exporte tout le localStorage de cet appareil (profils, routines,
@@ -6603,7 +6644,7 @@ function rechargerSiNouvelleVersion(auRetourALaListe) {
   if (!nouvelleVersionEnAttente) return false;
   const ecran = document.querySelector(".screen.active");
   if (!auRetourALaListe && ecran && !["screen-menu", "screen-dodo"].includes(ecran.id)) return false;
-  location.reload();
+  rechargerPage("nouvelle version");
   return true;
 }
 
@@ -6616,7 +6657,7 @@ function rechargerSiNouvelleVersion(auRetourALaListe) {
 const JOUR_AU_DEMARRAGE = cleJour();
 function rechargerSiNouveauJour() {
   if (cleJour() === JOUR_AU_DEMARRAGE) return false;
-  location.reload();
+  rechargerPage("nouveau jour");
   return true;
 }
 
@@ -6860,6 +6901,7 @@ if ("serviceWorker" in navigator) {
   const avaitUneVersion = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!avaitUneVersion) return;
+    noterJournal("nouvelle version", "en attente de la liste ou du dodo");
     nouvelleVersionEnAttente = true;
     rechargerSiNouvelleVersion();
   });
@@ -6917,7 +6959,9 @@ setInterval(tickMinuteurGlobal, 1000);
     if (!reprendreEnCours()) construireMenu();
     reprendreDialogueMinuteur();
   } catch (e) {
+    noterJournal("erreur", "démarrage, journée repartie de zéro : " + (e && e.message));
     try { localStorage.removeItem(cle("journee")); } catch (e2) {}
     construireMenu();
   }
 })();
+noterJournal("démarrage", (document.querySelector(".screen.active") || { id: "aucun écran" }).id);

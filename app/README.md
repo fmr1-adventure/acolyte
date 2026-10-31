@@ -28,6 +28,19 @@ portent toujours le même numéro, incrémenté ensemble. Le service worker ne
 lit que son propre cache, et `app.js` recharge (une fois, caches vidés) une
 page dont `index.html` et `app.js` ne sont pas de la même version — sans
 quoi le câblage des boutons plantait au démarrage pendant une mise à jour.
+Le rafraîchissement en tâche de fond redemande chaque fichier au serveur
+(`cache: "no-cache"`), jamais au cache HTTP du navigateur, pour ne pas
+mettre en cache un `index.html` neuf à côté d'un `app.js` ancien. Une
+navigation retombe sur `index.html` en cache quelle que soit l'adresse ;
+sans cache ni réseau, elle reçoit une page de secours (« Réessayer »),
+jamais une page vide — c'était l'écran noir sans roue ⚙️ qu'il fallait
+fermer.
+
+**Journal technique** (`acolyte_journal`, par appareil, 40 entrées) :
+démarrages (avec l'écran affiché), rechargements avec leur raison (tous
+passent par `rechargerPage()`), nouvelle version en attente et erreurs
+non rattrapées (`error`/`unhandledrejection`). Lisible dans l'espace
+parent, « Cet appareil » (`construireJournalTechnique()`).
 
 **Piège de test une fois le service worker actif** : après avoir modifié
 `app.js`/`styles.css`/`index.html`, un simple rechargement du navigateur
@@ -372,7 +385,8 @@ Séquence :
      page) ou d'en créer un nouveau ("+ Nouvel enfant", réutilise l'écran
      de première configuration). Pas un sélecteur destiné à l'enfant :
      sert à configurer un appareil une bonne fois pour toutes, ou à en
-     réattribuer un — cf. "Profils" plus bas.
+     réattribuer un — cf. "Profils" plus bas. En bas, le journal
+     technique de l'appareil (cf. plus haut).
 
 Voix : synthèse vocale native du navigateur (`SpeechSynthesis`, `fr-FR`),
 annoncée automatiquement à chaque nouvelle étape, rejouable via le bouton
