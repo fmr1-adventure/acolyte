@@ -90,16 +90,36 @@ repas, chacun avec sa couleur. En haut, une rangée de pictogrammes
 rappelle ce qui est **déjà fait** ; en dessous, en grand, ce qu'on fait
 **maintenant**, avec un gros bouton « C'est parti ▶ » ; puis ce qui vient
 **après**, en moyen, et le reste **plus tard**, en petit. Seul
-« maintenant » se lance : une chose à la fois. Toucher une autre carte
+« maintenant » se lance : une chose à la fois — sauf les sorties, qui
+ont leur propre bouton (voir plus bas). Toucher une autre carte
 dit simplement son nom. Les repas sont des repères : ils s'affichent à
 leur place mais ne se « font » pas.
 
 Quand une routine ou une activité est terminée, la liste avance toute
-seule. Le coucher devient « maintenant » à son heure, même si tout n'a
-pas été fait (sans reproche) ; avant, il attend, verrouillé (« Pas
-encore l'heure »). Une sortie ne part que si l'enfant est prêt : si
-« Se préparer à partir » (placée avant elle) n'est pas faite, la voix le
-rappelle et la carte clignote.
+seule. Une routine ou une activité qui a une heure dans le planning
+n'est jamais « maintenant » avant cette heure : elle attend plus tard
+dans la liste, et ce qui n'a pas d'heure passe devant. À son heure, elle
+reprend sa place. Le coucher, lui, devient « maintenant » à son heure
+même si tout n'a pas été fait (sans reproche). Quand il n'y a plus
+rien d'autre à faire (le matin, une fois parti à l'école), la liste dit
+« Rien à faire pour l'instant » et montre la suite de la journée.
+
+**Une tablette jamais fermée.** L'app se remet d'elle-même à jour quand
+on la retrouve : au changement de jour, elle repart du début (écran de
+nuit, rituel du réveil, nouvelle journée) au lieu de garder l'écran, les
+étoiles et l'avatar de la veille ; au retour au premier plan, la liste
+est redessinée ; et une nouvelle version publiée s'installe dès que
+l'enfant est sur sa liste, jamais au milieu d'une activité. Pendant une
+activité, la petite bande de pictogrammes allume l'activité en cours.
+
+**Partir à l'aventure.** Juste au-dessus de la prochaine sortie de la
+liste, un gros bouton violet 🚗 « Partir à l'aventure » : l'enfant sait
+qu'il part à l'aventure, et c'est le seul moyen de partir. Dès qu'il
+est prêt, il peut partir, même si la sortie n'est pas encore
+« maintenant » : la voix dit « On part à l'aventure ! » et l'écran « Les
+sorties du jour » lui montre la sortie, qu'il touche pour partir. S'il
+n'est pas prêt (« Se préparer à partir », placée avant la sortie, n'est
+pas faite), la voix le rappelle et la carte de la routine clignote.
 
 L'avatar de l'enfant, habillé progressivement au fil de ses tâches, et
 une jauge d'étoiles restent en haut de l'écran.
@@ -141,7 +161,9 @@ comme un repère, en gris et en pointillés : rien à faire, elle se lit
 telle quelle quand on écoute la journée. Un **moment au choix** (le
 week-end : vélo, Lego ou lecture) propose 2 ou 3 idées préparées par les
 parents : quand c'est son tour, l'enfant les entend, en touche une, puis
-« C'est parti » lance l'activité choisie — sans attendre personne.
+« C'est parti » lance l'activité choisie — sans attendre personne. Si
+c'est une sortie, le bouton 🚗 apparaît au-dessus d'elle, et c'est lui
+qui la lance.
 
 ### Les routines
 
@@ -163,8 +185,8 @@ bouton « J'ai fini ». Deux tâches ont un traitement particulier :
   c'est le parent, présent pour la lecture, qui valide la fin de
   l'étape — pas l'enfant.
 
-La routine du coucher se débloque à une heure fixe, indépendamment des
-autres routines : un enfant qui n'a rien fait d'autre de la journée
+La routine du coucher se débloque à l'heure prévue dans le planning
+(18 h si aucune heure n'est réglée), indépendamment des autres routines : un enfant qui n'a rien fait d'autre de la journée
 peut toujours aller se coucher normalement.
 
 Si l'application est quittée en pleine activité (tablette mise en
@@ -210,9 +232,11 @@ façon, mais sans coffre — son étoile est déjà acquise.
 donne son étoile (une fois par jour, même si la routine se refait),
 comptée en « étoiles d'aujourd'hui » en haut de la liste.
 
-**Le soir, pas de fête.** Après « Aller se coucher », ni coffre ni
-confettis : « Bonne nuit, tes étoiles t'attendent demain matin. » Les
-étoiles du jour sont mises de côté.
+**Le soir, les étoiles du jour.** Après « Aller se coucher », un coffre
+s'ouvre et montre le nombre d'étoiles gagnées dans la journée : c'est le
+moment de la récompense. « Terminé ! » endort l'application. Les étoiles
+sont mises de côté : elles ne remplissent la jauge que le lendemain
+matin.
 
 **Le matin, la jauge se remplit.** À partir de 8 h 30 (heure réglable),
 une carte « Ce matin » apparaît en haut de la liste (jamais au milieu
@@ -278,8 +302,10 @@ activités et repas dans l'ordre, avec une couleur propre à chaque nature
 est coché, et un parent peut **sauter** un élément (une sortie annulée)
 sans le retirer : il disparaît de la liste de l'enfant et se reprend d'un
 appui. Un parent peut aussi régler une heure pour un ou plusieurs
-moments : c'est une simple annotation, affichée sur la carte de l'enfant,
-jamais lue à voix haute et jamais un verrou. Pour ajouter
+moments : affichée sur la carte de l'enfant, jamais lue à voix haute.
+Pour une routine ou une activité, l'heure compte : elle n'apparaît pas
+comme « maintenant » avant cette heure. Pour un repas ou une info, c'est
+une simple indication. Pour ajouter
 plusieurs éléments d'un coup, un parent peut aussi taper (ou dicter, au
 micro) une phrase comme « vélo 15h, goûter chez mamie 17h » : l'app
 reconnaît les heures et propose les activités correspondantes, à

@@ -39,23 +39,25 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   sommeil, humeur).
 - **La journée en une seule liste** : déjà fait, **maintenant** (seul
   élément qui se lance), après, plus tard — routines, activités, sorties
-  et repas dans l'ordre choisi par les parents. Le coucher passe en
-  premier à son heure.
+  et repas dans l'ordre choisi par les parents. Une routine ou une
+  activité qui a une heure dans le planning n'est jamais « maintenant »
+  avant cette heure ; le coucher passe devant le reste à son heure, et
+  jamais avant (« Rien à faire pour l'instant » s'il ne reste que lui).
 - **Tout s'écoute** : sur chaque écran, 🔊 redit le moment présent et la
   suite, 🗓️🔊 lit toute la journée en allumant chaque élément au moment
   où il est lu.
 - **Routines** : une suite de tâches, une à la fois, validées en glissant
   une icône vers l'avatar qui s'habille au fur et à mesure. Mini-jeu pour
   le brossage des dents, écran dédié pour l'histoire du soir. Le coucher
-  se débloque à heure fixe.
+  se débloque à l'heure du planning (18 h par défaut).
 - **Minuteur visuel** (optionnel) sur une tâche ou une routine entière,
   en jauge ou en cadran, avec un bouton 🆘 « Besoin d'aide » et une
   alerte au parent si l'enfant reste bloqué.
 - **Validation par un parent** (code, relecture/correction), puis
   l'enfant ouvre lui-même un coffre qui lui donne son étoile.
-- **Récompenses** : les étoiles du jour sont mises de côté le soir (coucher
-  calme, sans fête) et remplissent le lendemain matin, à 8 h 30, une jauge
-  qui donne une pièce toutes les 20 étoiles ; l'enfant pose ses pièces à la
+- **Récompenses** : après « Aller se coucher », un coffre montre les
+  étoiles du jour ; elles remplissent le lendemain matin, à 8 h 30, une
+  jauge qui donne une pièce toutes les 20 étoiles ; l'enfant pose ses pièces à la
   main sur un chemin bordé de récompenses, que les parents règlent et
   marquent « données ». La pièce Acolyte est un dessin original en pixel art.
 - **Activités à la maison** (lecture, temps calme...) : une consigne dite
@@ -64,9 +66,11 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   dans la journée ; un moment au choix laisse l'enfant choisir parmi 2 ou
   3 idées préparées par les parents.
 - **Sorties** (école, courses, séance chez une praticienne...), en
-  voiture, à vélo ou à pied : trajet
-  puis arrivée, avec un déroulé à part pour les séances (la praticienne
-  démarre la séance et laisse une note réservée aux parents).
+  voiture, à vélo ou à pied : un gros bouton 🚗 « Partir à l'aventure »
+  au-dessus de la prochaine sortie (« On part à l'aventure ! », dès que
+  l'enfant est prêt), puis trajet et arrivée, avec un déroulé à part
+  pour les séances (la praticienne démarre la séance et laisse une note
+  réservée aux parents).
 - **Préparer une journée** (côté parents) : réordonner, ajouter, retirer
   ou sauter un élément, ajout rapide par phrase tapée ou dictée.
 - **Semaine type** : un modèle pour chaque jour de la semaine, d'où part
@@ -78,7 +82,10 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   entourage), le suivi (historique, notes des séances), les récompenses
   (chemin, à donner), les réglages (code parent, profils de l'appareil).
 - **Reprise automatique** : quittée en pleine routine ou sortie, l'app
-  rouvre là où on en était plutôt que de revenir à la liste.
+  rouvre là où on en était plutôt que de revenir à la liste. Sur une
+  tablette jamais fermée, elle repart d'elle-même au changement de jour
+  (écran de nuit, réveil, nouvelle journée) et installe une nouvelle
+  version dès que l'enfant est sur sa liste.
 
 ## D'où vient ce projet (historique)
 
@@ -132,10 +139,6 @@ reliés à l'app — seul l'avatar l'est.
   vocal).
 - Vrais décors de pièces dans l'app.
 - Récompense de fin de journée différenciée selon les étoiles gagnées.
-- Notes libres dans le planning ("un parent emmène un autre enfant à
-  l'école"), mode de transport par sortie (voiture, vélo, à pied).
-- Annoncer à l'enfant ce qui vient après ("On fait... / après on
-  fait...").
 
 ## Structure du dépôt
 

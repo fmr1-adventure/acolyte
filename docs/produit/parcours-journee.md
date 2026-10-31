@@ -16,8 +16,11 @@ dans `concept.md` ; les entités de données dans `modele-de-donnees.md`.
 3. Selon sa nature, « maintenant » ouvre : une routine (l'écran
    drag-and-drop, à faire **jusqu'au bout** pour obtenir l'étoile), une
    activité à la maison (consigne, minuteur facultatif, « J'ai fini »), ou
-   une sortie (trajet → arrivée → retour ; seulement si « Se préparer à
-   partir », placée avant, est faite).
+   une sortie (trajet → arrivée → retour). Une sortie part toujours par
+   le bouton 🚗 « Partir à l'aventure », posé au-dessus de la prochaine
+   sortie : « On part à l'aventure ! », puis l'écran des sorties du jour
+   où l'enfant la touche — dès que « Se préparer à partir », placée
+   avant, est faite, même si la sortie n'est pas encore « maintenant ».
 4. **Fin de routine — félicitations puis appel au parent** : message
    écrit + dit, spécifique à la routine et personnalisé avec le prénom de
    l'enfant (ex. "Bravo Sacha, tu t'es habillé·e tout seul·e !"), suivi de
@@ -33,9 +36,12 @@ dans `concept.md` ; les entités de données dans `modele-de-donnees.md`.
 7. Retour à la liste du jour, où « maintenant » a avancé — avec l'avatar
    de l'enfant **dans son état actuel** (habillé ou non...) en haut.
 8. Répétition des étapes 2 à 7 jusqu'au coucher, qui devient
-   « maintenant » à son heure, même si tout n'a pas été fait.
-9. **Coucher calme** : après « Aller se coucher », ni coffre ni fête ;
-   les étoiles du jour attendent le lendemain matin, où une carte « Ce
+   « maintenant » à son heure (celle du planning, 18 h par défaut), même
+   si tout n'a pas été fait. Une routine ou une activité avec une heure
+   attend cette heure avant d'être « maintenant ».
+9. **Coffre du soir** : après « Aller se coucher », un coffre montre les
+   étoiles gagnées dans la journée, puis l'app s'endort ; ces étoiles
+   attendent le lendemain matin, où une carte « Ce
    matin » les verse dans la jauge (une pièce toutes les 20 étoiles), puis
    l'enfant pose ses pièces sur son chemin (cf. `concept.md`).
 

@@ -270,10 +270,6 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .carte-maintenant .carte-jour-emoji { font-size: 54px; }
 .carte-maintenant .carte-jour-nom { font-size: 26px; font-weight: 800; }
 .btn-cest-parti-jour { width: 100%; margin-top: 6px; }
-.btn-cest-parti-jour.verrouille {
-  padding: 14px; font-size: 18px; font-weight: 800; color: var(--text-mute);
-  background: var(--surface); border: 3px dashed var(--surface-high);
-}
 .carte-apres .carte-jour-emoji { font-size: 36px; }
 .carte-apres .carte-jour-nom { font-size: 21px; }
 .carte-plus-tard { padding: 7px 14px; border-width: 2px; border-left-width: 6px; background: var(--surface); }
@@ -282,6 +278,18 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .jour-plus-tard-titre { margin: 6px 0 -4px; }
 .jour-message { text-align: center; font-size: 20px; font-weight: 700; padding: 18px; color: var(--text-soft); }
 .carte-jour.clignote { animation: clignoterCarte .6s ease-in-out 3; }
+
+/* Bouton « Partir à l'aventure », au-dessus de la prochaine sortie :
+   volontairement différent des cartes (plus grand, centré, violet des
+   sorties) — un vrai portail de sortie, façon écran de niveau d'un jeu. */
+.btn-depart {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 14px;
+  padding: 12px 20px; background: var(--type-aventure); color: var(--deep);
+  border: 3px solid var(--accent-edge); box-shadow: var(--shadow-hard); font: inherit;
+}
+.btn-depart:active { transform: translate(2px, 2px); box-shadow: none; }
+.depart-icone { font-size: 40px; line-height: 1; }
+.depart-texte { font-size: 20px; font-weight: 800; }
 
 /* Carte « Ce matin » : les étoiles d'hier entrent dans la jauge. */
 .carte-matin {

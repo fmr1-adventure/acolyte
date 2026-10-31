@@ -47,7 +47,7 @@
 // caches et on recharge, une seule fois par session, avant d'exécuter
 // quoi que ce soit d'autre.
 // ---------------------------------------------------------------------
-const VERSION_APP = "20";
+const VERSION_APP = "21";
 (function verifierVersionPage() {
   const meta = document.querySelector('meta[name="acolyte-version"]');
   if (meta && meta.content === VERSION_APP) {
@@ -768,14 +768,6 @@ function aventureParId(id) { return toutesLesAventures().find(a => a.id === id);
 // deux, comme demandé : ajouter/retirer une activité du planning
 // l'ajoute/la retire de "Partir à l'aventure", que ce soit via "Ajouter
 // à la journée" ou en créant une nouvelle activité.
-function aventuresPlanifieesAujourdhui() {
-  const etat = chargerEtat();
-  return etat.planning
-    .filter(it => it.type === "aventure")
-    .map(it => aventureParId(it.id))
-    .filter(Boolean);
-}
-
 // Journée par défaut d'origine : une suite d'items `{ type:
 // "routine"|"aventure"|"repas", id }` dans l'ordre chronologique attendu,
 // qui sert à initialiser la semaine type (cf. journeeTypeHistorique()).
@@ -1499,6 +1491,7 @@ function synchroniserAvatar(etat) {
 // 0. Menu de la journée
 // ---------------------------------------------------------------------
 function construireMenu() {
+  if (rechargerSiNouvelleVersion(true)) return;
   const etat = chargerEtat();
   // Retour au menu = plus rien en cours à reprendre au prochain lancement
   // (cf. memoriserEnCours()/reprendreEnCours()).
@@ -1532,16 +1525,24 @@ function construireMenu() {
 // ---------------------------------------------------------------------
 // Liste du jour : le menu de l'enfant EST sa journée, dans l'ordre du
 // planning (`etat.planning`, choisi par les parents) — plus de chaînage
-// entre routines ni de porte « Partir à l'aventure » séparée. Statuts
-// calculés par journee.js : seul « maintenant » se lance ; le coucher
-// (`disponibleApresHeure`) devient « maintenant » à son heure, même si
-// tout n'est pas fait ; un item sauté par un parent n'est pas montré.
+// entre routines. Statuts calculés par journee.js : seul « maintenant » se
+// lance, sauf la prochaine sortie, qui part par le bouton 🚗 « Partir à
+// l'aventure » posé au-dessus d'elle (cf. partirALAventure()) ; le coucher
+// devient « maintenant » à son heure (celle du planning, sinon
+// `disponibleApresHeure`), même si tout n'est pas fait ; un item avec une
+// heure attend cette heure, un item sans heure suit l'ordre ; un item
+// sauté par un parent n'est pas montré.
 // ---------------------------------------------------------------------
+// L'heure prévue dans le planning débloque l'item (cf. heureAtteinte()) ;
+// le coucher sans heure garde son `disponibleApresHeure`.
 function horaireItem(item) {
-  if (item.type !== "routine") return null;
-  const r = routineParId(item.id);
-  if (!r || r.disponibleApresHeure === undefined) return null;
-  return dateActuelle().getHours() >= r.disponibleApresHeure;
+  const r = item.type === "routine" ? routineParId(item.id) : null;
+  const parDefaut = r && r.disponibleApresHeure !== undefined ? String(r.disponibleApresHeure).padStart(2, "0") + ":00" : null;
+  return heureAtteinte(item, heureActuelleHHMM(), parDefaut);
+}
+// Statuts de la liste du jour : seul le coucher passe devant à son heure.
+function statutsDuJour(planning) {
+  return statutsJournee(planning, horaireItem, estItemCoucher);
 }
 
 // Nature d'un item pour sa couleur : une activité sans `nature` est une
@@ -1550,6 +1551,14 @@ function natureItem(item) {
   if (item.type !== "aventure") return item.type;
   const a = aventureParId(item.id);
   return a && a.nature === "maison" ? "maison" : "sortie";
+}
+
+// Une sortie de la liste (activité hors de la maison, séance comprise) :
+// un moment au choix n'en est une qu'une fois la sortie choisie.
+function estSortieListe(item) {
+  const id = item.type === "aventure" ? item.id : item.type === "choix" ? item.choisi : null;
+  const a = id ? aventureParId(id) : null;
+  return !!a && a.nature !== "maison";
 }
 
 function nomItemPlanning(item) {
@@ -1714,7 +1723,7 @@ function finirMatin() {
 function construireListeJour(etat) {
   listeJourConstruite = true;
   const planning = planningDeLaListe(etat);
-  const resultat = statutsJournee(planning, horaireItem);
+  const resultat = statutsDuJour(planning);
   const liste = document.getElementById("liste-journee");
   liste.innerHTML = "";
   construireCarteMatin(liste);
@@ -1745,7 +1754,11 @@ function construireListeJour(etat) {
   }
 
   const aVenir = visibles.filter(v => ["maintenant", "apres", "plus-tard"].includes(v.statut));
+  const indexSortie = indexProchaineSortie(planning, resultat.statuts, estSortieListe);
   if (aVenir.length === 0) liste.appendChild(messageListeJour("Tout est fait pour aujourd'hui ! 🎉"));
+  // Plus rien à faire avant l'heure du coucher (ex. le matin, une fois
+  // parti à l'école) : la suite reste visible, sans rien à lancer.
+  else if (resultat.maintenant === null) liste.appendChild(messageListeJour("Rien à faire pour l'instant 🙂"));
   let titrePlusTard = false;
   aVenir.forEach(v => {
     if (v.statut === "plus-tard" && !titrePlusTard) {
@@ -1755,8 +1768,23 @@ function construireListeJour(etat) {
       liste.appendChild(titre);
       titrePlusTard = true;
     }
-    liste.appendChild(carteListeJour(v, resultat));
+    if (v.i === indexSortie) liste.appendChild(boutonDepart(v.i));
+    liste.appendChild(carteListeJour(v, resultat, v.i === indexSortie));
   });
+}
+
+// Le portail « Partir à l'aventure », juste au-dessus de la prochaine
+// sortie : l'enfant a besoin de savoir qu'il part à l'aventure (le bouton, la
+// voix). Toujours là, même avant l'heure ; c'est partirALAventure() qui
+// dit s'il est prêt.
+function boutonDepart(index) {
+  const bouton = document.createElement("button");
+  bouton.type = "button";
+  bouton.className = "btn-depart";
+  bouton.setAttribute("aria-label", "Partir à l'aventure");
+  bouton.innerHTML = `<span class="depart-icone">🚗</span><span class="depart-texte">Partir à l'aventure</span>`;
+  bouton.onclick = () => partirALAventure(index);
+  return bouton;
 }
 
 function messageListeJour(texte) {
@@ -1766,7 +1794,9 @@ function messageListeJour(texte) {
   return div;
 }
 
-function carteListeJour(v, resultat) {
+// `estSortie` : la prochaine sortie, qui part par le bouton 🚗 au-dessus
+// d'elle, jamais par un « C'est parti » à elle.
+function carteListeJour(v, resultat, estSortie) {
   const carte = document.createElement("div");
   carte.className = "carte-jour carte-" + v.statut + " type-" + natureItem(v.item);
   carte.dataset.index = v.i;
@@ -1776,22 +1806,16 @@ function carteListeJour(v, resultat) {
   carte.innerHTML = (label ? `<div class="carte-jour-label">${label}</div>` : "")
     + `<div class="carte-jour-corps"><span class="carte-jour-emoji">${v.lib.emoji}</span>`
     + `<span class="carte-jour-texte"><span class="carte-jour-nom">${v.lib.nom}</span>${heure}</span></div>`;
-  if (v.statut !== "maintenant") {
-    const prefixe = v.statut === "apres" ? "Après : " : "Plus tard : ";
+  if (v.statut !== "maintenant" || estSortie) {
+    const prefixe = v.statut === "maintenant" ? "Maintenant : " : v.statut === "apres" ? "Après : " : "Plus tard : ";
     carte.onclick = () => dire(prefixe + v.lib.nom + ".");
     return carte;
   }
   const bouton = document.createElement("button");
   bouton.type = "button";
-  if (resultat.verrouille) {
-    bouton.className = "btn-cest-parti-jour verrouille";
-    bouton.textContent = "🕒 Pas encore l'heure";
-    bouton.onclick = () => dire("Ce n'est pas encore l'heure pour « " + v.lib.nom + " ».");
-  } else {
-    bouton.className = "btn-continuer btn-cest-parti-jour";
-    bouton.textContent = "C'est parti ▶";
-    bouton.onclick = () => lancerItemJour(v.i);
-  }
+  bouton.className = "btn-continuer btn-cest-parti-jour";
+  bouton.textContent = "C'est parti ▶";
+  bouton.onclick = () => lancerItemJour(v.i);
   carte.appendChild(bouton);
   return carte;
 }
@@ -1848,14 +1872,14 @@ function installerEcoute() {
 function phraseMaintenantDuJour() {
   const etat = chargerEtat();
   const planning = planningDeLaListe(etat);
-  return phraseMaintenant(planning, statutsJournee(planning, horaireItem), nomItemPlanning);
+  return phraseMaintenant(planning, statutsDuJour(planning), nomItemPlanning);
 }
 
 // Pendant une sortie ou une activité, 🔊 redit l'écran puis annonce la
 // suite : « … Après : le déjeuner. »
 function suiteApres() {
   const etat = chargerEtat();
-  const r = statutsJournee(planningDeLaListe(etat), horaireItem);
+  const r = statutsDuJour(planningDeLaListe(etat));
   const nom = r.apres === null ? null : nomItemPlanning(etat.planning[r.apres]);
   return nom ? " " + finPhrase("Après : " + nom) : "";
 }
@@ -1864,14 +1888,19 @@ function construireBandeJournee(ecran) {
   const bande = ecran.querySelector(".bande-journee");
   if (!bande) return;
   const etat = chargerEtat();
-  const r = statutsJournee(planningDeLaListe(etat), horaireItem);
+  const r = statutsDuJour(planningDeLaListe(etat));
+  // Pendant une activité, c'est elle qui est allumée, pas forcément le
+  // « maintenant » de la liste (une sortie part par le bouton 🚗 avant son
+  // tour).
+  const enCours = etat.enCours ? indexAMarquer(etat.planning, etat.enCours.type, etat.enCours.id) : -1;
+  const allume = enCours !== -1 ? enCours : r.maintenant;
   bande.innerHTML = "";
   etat.planning.forEach((item, i) => {
     const lib = libelleItemPlanning(item);
     if (!lib || r.statuts[i] === "passe") return;
     const picto = document.createElement("span");
     picto.className = "picto-bande type-" + natureItem(item)
-      + (r.statuts[i] === "maintenant" ? " en-cours" : "")
+      + (i === allume ? " en-cours" : "")
       + (["fait", "repere-passe", "rate"].includes(r.statuts[i]) ? " passe" : "");
     picto.dataset.index = i;
     picto.textContent = lib.emoji;
@@ -1890,7 +1919,7 @@ function basculerLectureJournee() {
 function lireJournee() {
   const etat = chargerEtat();
   const planning = planningDeLaListe(etat);
-  const phrases = phrasesJournee(planning, statutsJournee(planning, horaireItem), nomItemPlanning);
+  const phrases = phrasesJournee(planning, statutsDuJour(planning), nomItemPlanning);
   try { speechSynthesis.cancel(); } catch (e) {}
   const jeton = {};
   lectureJournee = jeton;
@@ -1989,9 +2018,9 @@ function construireOptionsChoix() {
   document.getElementById("btn-choix-valider").disabled = !choixEnCours.selection;
 }
 
-// Enregistre le choix puis repasse par la liste : l'activité choisie y est
-// « maintenant » et se lance comme les autres (une sortie pas prête y fait
-// clignoter la routine à faire).
+// Enregistre le choix puis repasse par la liste : une activité à la
+// maison choisie se lance tout de suite ; une sortie choisie attend le
+// bouton 🚗 apparu au-dessus d'elle.
 function validerChoix() {
   if (!choixEnCours || !choixEnCours.selection) return;
   const { index, selection } = choixEnCours;
@@ -2000,7 +2029,11 @@ function validerChoix() {
   const item = etat.planning[index];
   if (item && item.type === "choix") { item.choisi = selection; sauverEtat(etat); }
   construireMenu();
-  if (item && item.type === "choix") lancerItemJour(index);
+  if (!item || item.type !== "choix") return;
+  // Une sortie choisie part, comme les autres, par le bouton 🚗 qui vient
+  // d'apparaître au-dessus d'elle.
+  if (estSortieListe(item)) dire("Pour partir, appuie sur : Partir à l'aventure.");
+  else lancerItemJour(index);
 }
 
 // Activité en cours (`etat.enCours`) : routine ou étape d'aventure
@@ -2116,29 +2149,48 @@ function partirSiPret(id, indexSortie) {
   clignoterRoutine(manquantes[0].id);
 }
 
-// Écran des sorties du jour : liste les aventures du planning
-// (`aventuresPlanifieesAujourdhui()`), sinon garde le texte d'origine
+// Bouton 🚗 : dès que l'enfant est prêt (les routines de départ placées
+// avant la sortie sont faites), il part — même si la sortie n'est pas
+// encore « maintenant » dans la liste. Sinon la voix dit ce qu'il reste à
+// faire et la routine clignote (cf. partirSiPret()).
+function partirALAventure(index) {
+  const manquantes = routinesManquantesAvantDepart(chargerEtat(), index);
+  if (manquantes.length) {
+    dire("Avant de partir à l'aventure, il faut d'abord faire : " + manquantes.map(r => r.nom).join(", ") + ".");
+    clignoterRoutine(manquantes[0].id);
+    return;
+  }
+  dire("On part à l'aventure !");
+  construireMissions();
+  afficherEcran("screen-missions");
+}
+
+// Écran des sorties du jour : seulement la prochaine sortie de la liste
+// (cf. indexProchaineSortie()), que l'enfant touche pour partir ; sinon
 // "Rien de prévu aujourd'hui !".
 function construireMissions() {
-  const duJour = aventuresPlanifieesAujourdhui();
+  const etat = chargerEtat();
+  const planning = planningDeLaListe(etat);
+  const index = indexProchaineSortie(planning, statutsDuJour(planning).statuts, estSortieListe);
+  const item = planning[index];
+  const a = item ? aventureParId(item.type === "choix" ? item.choisi : item.id) : null;
   const emoji = document.getElementById("missions-emoji");
   const texte = document.getElementById("missions-texte");
   const liste = document.getElementById("missions-liste");
   liste.innerHTML = "";
-  if (duJour.length === 0) {
+  if (!a) {
     emoji.textContent = "🚗";
     texte.textContent = "Rien de prévu aujourd'hui !";
     return;
   }
-  emoji.textContent = duJour[0].emoji;
-  texte.textContent = "";
-  duJour.forEach(a => {
-    const carte = document.createElement("div");
-    carte.className = "carte-routine";
-    carte.innerHTML = `<div class="carte-routine-nom">${a.emoji} ${a.lieu}</div><div class="carte-routine-etat"></div>`;
-    carte.onclick = () => demarrerAventure(a.id);
-    liste.appendChild(carte);
-  });
+  emoji.textContent = "🚗";
+  texte.textContent = "Où est-ce qu'on va ?";
+  const carte = document.createElement("button");
+  carte.type = "button";
+  carte.className = "carte-choix type-sortie";
+  carte.innerHTML = `<span class="carte-jour-emoji">${a.emoji}</span><span class="carte-jour-nom">${a.lieu}</span>`;
+  carte.onclick = () => demarrerAventure(a.id);
+  liste.appendChild(carte);
 }
 
 function demarrerAventure(id) {
@@ -4076,7 +4128,8 @@ function allerValidation() {
   apresCodeValide = () => {
     // Routine déjà faite une fois aujourd'hui (s'habiller à nouveau...) :
     // son étoile est acquise, ce passage se valide sans coffre.
-    // Le coucher se valide aussi sans coffre : pas de fête avant de dormir.
+    // Le coucher se valide sans coffre fermé : le coffre de fin de journée
+    // (déjà ouvert) montre les étoiles du jour, cf. allerDormir().
     const coucher = estItemCoucher({ type: "routine", id: routine.id });
     const etoileDejaDonnee = chargerEtat().routines[routine.id].etoileDonnee;
     document.getElementById("correction-note").textContent = "Décoche ce qui n'a pas vraiment été fait, puis valide.";
@@ -4220,7 +4273,8 @@ function ouvrirCoffreRoutine() {
 }
 
 // Le coucher validé : son étoile est donnée sans coffre (si ce n'est déjà
-// fait), puis la journée se termine en douceur (cf. allerDormir()).
+// fait), puis le coffre de fin de journée montre les étoiles du jour (cf.
+// allerDormir()).
 function validerCoucher() {
   const idRoutine = routineActuelleId;
   const etat = chargerEtat();
@@ -5890,12 +5944,13 @@ function creerNouvellePersonne() {
 // 4. Récompense de fin de journée (une fois "Aller se coucher" validée),
 // puis endormissement de l'app jusqu'au lendemain HEURE_REVEIL
 // ---------------------------------------------------------------------
-// Message de clôture de la journée, dit au coucher (cf. allerDormir()) :
-// calme, sans récapitulatif ni fête — les étoiles du jour se découvrent le
-// lendemain matin. Fonction (pas une constante) : dépend du prénom du
-// profil actif.
-function texteFinJournee(profil) {
-  return "Bonne nuit " + profil.prenom + ", tes étoiles t'attendent demain matin.";
+// Message de clôture de la journée, sur le coffre du coucher (cf.
+// allerDormir()) : le nombre d'étoiles du jour marque la récompense, la
+// jauge ne se remplit que le lendemain matin. Fonction (pas une
+// constante) : dépend du prénom du profil actif.
+function texteFinJournee(profil, etoiles) {
+  const gagnees = etoiles === 1 ? "1 étoile" : etoiles + " étoiles";
+  return "Bravo pour ta journée " + profil.prenom + ", tu as gagné " + gagnees + " aujourd'hui. Elles rempliront ta jauge demain matin. Bonne nuit !";
 }
 const HEURE_REVEIL = 7;
 // `profil.naissance` ("AAAA-M-J", cf. `finaliserPremiereConfiguration()`)
@@ -6034,15 +6089,19 @@ function finReveil(humeurId) {
   construireMenu();
 }
 
-// Fin de journée, après « Aller se coucher » : ni coffre ni confettis, pour
-// un coucher calme. Les étoiles du jour sont mises de côté et attendent le
-// lendemain matin (carte « Ce matin », cf. construireCarteMatin()).
+// Fin de journée, après « Aller se coucher » : le coffre montre les étoiles
+// du jour, puis « Terminé ! » endort l'app. Elles sont mises de côté dès
+// maintenant et ne remplissent la jauge que le lendemain matin (carte « Ce
+// matin », cf. construireCarteMatin()).
 function allerDormir() {
   const etat = chargerEtat();
   mettreDeCoteEtoiles(etat);
   sauverEtat(etat);
-  endormir();
-  dire(texteFinJournee(profilActif()));
+  const etoiles = etat.etoiles || 0;
+  const texte = texteFinJournee(profilActif(), etoiles);
+  document.getElementById("coffre-texte").textContent = texte;
+  document.getElementById("coffre-recompense-texte").textContent = "+ " + etoiles + " ⭐ aujourd'hui";
+  ouvrirCoffre(texte, ["⭐", "✨", "🎉", "⭐", "✨"], endormir);
 }
 
 // Écran coffre : partagé entre la récompense de fin de journée (étoiles),
@@ -6536,11 +6595,37 @@ function majHorloge() {
 // ouverte — coupé en mode édition pour ne pas effacer sous la main d'un
 // parent un `<input type="time">` en cours de saisie (cf.
 // definirHeureItemPlanning/construireJournee).
+// Nouvelle version publiée en attente (cf. "controllerchange" plus bas) :
+// rechargée sur la liste ou l'écran dodo, ou au retour à la liste
+// (`auRetourALaListe`, cf. construireMenu()).
+let nouvelleVersionEnAttente = false;
+function rechargerSiNouvelleVersion(auRetourALaListe) {
+  if (!nouvelleVersionEnAttente) return false;
+  const ecran = document.querySelector(".screen.active");
+  if (!auRetourALaListe && ecran && !["screen-menu", "screen-dodo"].includes(ecran.id)) return false;
+  location.reload();
+  return true;
+}
+
+// Une tablette ne recharge presque jamais l'app : elle la retrouve, le
+// matin, telle qu'elle l'a laissée la veille (écran, avatar habillé,
+// étoiles d'hier, routine du coucher restée ouverte). Au changement de
+// jour, on repart donc d'un vrai démarrage (cf. demarrer() : écran dodo,
+// rituel du réveil, nouvelle journée) plutôt que de rafraîchir un écran
+// à moitié.
+const JOUR_AU_DEMARRAGE = cleJour();
+function rechargerSiNouveauJour() {
+  if (cleJour() === JOUR_AU_DEMARRAGE) return false;
+  location.reload();
+  return true;
+}
+
 function tickHorloge() {
+  if (rechargerSiNouveauJour()) return;
   majHorloge();
   const ecranJournee = document.getElementById("screen-journee");
   if (!journeeEnEdition && ecranJournee && ecranJournee.classList.contains("active")) construireJournee();
-  // Liste du jour ouverte : le coucher se déverrouille tout seul à son
+  // Liste du jour ouverte : un item se débloque tout seul à son
   // heure — sauf pendant la lecture de la journée, qui allume les cartes.
   // Jamais au tout premier tick (avant demarrer()) : seulement une liste
   // déjà construite.
@@ -6549,6 +6634,20 @@ function tickHorloge() {
 }
 tickHorloge();
 setInterval(tickHorloge, 15000);
+
+// Retour de l'app au premier plan (tablette rallumée, app rouverte sans
+// rechargement) : les minuteries ont pu dormir des heures. Nouveau jour →
+// vrai démarrage ; sinon la liste du jour est reconstruite en entier
+// (avatar, jauge, carte « Ce matin »), pas seulement au prochain tick.
+// On en profite pour demander une éventuelle nouvelle version publiée.
+function auRetourAuPremierPlan() {
+  if (document.visibilityState !== "visible") return;
+  if (rechargerSiNouveauJour()) return;
+  if (listeJourConstruite && document.getElementById("screen-menu").classList.contains("active") && !lectureJourneeEnCours()) construireMenu();
+  try { navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); } catch (e) {}
+}
+document.addEventListener("visibilitychange", auRetourAuPremierPlan);
+window.addEventListener("pageshow", (e) => { if (e.persisted) auRetourAuPremierPlan(); });
 
 // ---------------------------------------------------------------------
 // Câblage des boutons + démarrage
@@ -6749,7 +6848,21 @@ document.getElementById("btn-reset-test").classList.toggle("hidden", !modeDebugA
 // locale par ex.) — les navigateurs n'activent les service workers que
 // sur HTTPS ou localhost ; l'app fonctionne quand même, juste sans cache
 // hors-ligne dans ce cas.
+//
+// Nouvelle version publiée : le nouveau service worker prend la main
+// (skipWaiting/clients.claim) mais la page ouverte reste l'ancienne tant
+// qu'on ne la recharge pas — des jours, sur une tablette jamais fermée.
+// On recharge donc dès que l'enfant est sur sa liste ou endormi, jamais
+// au milieu d'une activité (sinon au prochain retour à la liste, cf.
+// construireMenu()). Pas au tout premier chargement (aucune ancienne
+// version à remplacer).
 if ("serviceWorker" in navigator) {
+  const avaitUneVersion = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!avaitUneVersion) return;
+    nouvelleVersionEnAttente = true;
+    rechargerSiNouvelleVersion();
+  });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   });

@@ -62,9 +62,9 @@ qu'il avance.
 
 - Chaque routine faite dans la journée rapporte une **étoile**, une fois
   par jour, et une étoile **n'est jamais reprise**.
-- **Le soir reste calme** : pas de fête après le coucher, les étoiles du
-  jour sont mises de côté. **Le lendemain matin** (8 h 30 par défaut),
-  l'enfant les verse lui-même dans une **jauge** ; une jauge pleine
+- **Le soir, un coffre montre les étoiles du jour** : c'est le moment de
+  la récompense ; elles sont mises de côté. **Le lendemain matin**
+  (8 h 30 par défaut), l'enfant les verse lui-même dans une **jauge** ; une jauge pleine
   (20 étoiles par défaut) devient une **pièce**, avec des sons classiques
   de ce genre de mécanique, jamais en même temps que la voix.
 - Les pièces se posent **à la main** sur un vrai **chemin** bordé de
@@ -106,12 +106,12 @@ mission(s) du jour, repas mélangés dans une seule liste plutôt que
 groupés par nature.
 
 Chaque item peut recevoir une **heure facultative** (réglée par un parent
-en mode édition) : purement un repère visuel, jamais lu par la logique de
-déblocage des routines (`disponibleApresHeure`, menu du jour) — les deux
-restent deux mécanismes séparés, la leçon retenue du bug "Aller se
-coucher" (cf. plus haut, "Ordre et blocage"). L'ordre du planning reste la
-seule source de vérité ; l'heure n'est qu'une annotation dessus, jamais un
-tri. Quand au moins un item a une heure, un repère **"maintenant"**
+en mode édition). Sur une routine ou une activité, elle débloque l'item :
+avant cette heure, il n'est jamais « maintenant » dans la liste de
+l'enfant ; le coucher prend aussi son heure du planning (sinon
+`disponibleApresHeure`, 18 h). Sur un repas ou une info, ce n'est qu'un
+repère visuel. L'ordre du planning reste la seule source de vérité ;
+l'heure ne trie jamais la liste. Quand au moins un item a une heure, un repère **"maintenant"**
 (dérivé de l'horloge déjà affichée au menu) met en avant l'item en cours
 et, s'il y en a un, le suivant — pour qu'un enfant ou un parent voie d'un
 coup d'œil où on en est dans la journée, pas seulement ce qui reste à

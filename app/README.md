@@ -121,16 +121,29 @@ Séquence :
    grand (bouton « C'est parti ▶ », `lancerItemJour()`), **après** en
    moyen, **plus tard** en petit ; couleur par nature (`natureItem()`).
    Les statuts viennent de `statutsJournee()` (`journee.js`) : seul
-   « maintenant » se lance ; une routine à `disponibleApresHeure` (le
-   coucher) devient « maintenant » à son heure, même si tout n'est pas
-   fait (`horaireItem()`), et reste verrouillée (🕒) avant ; un item
+   « maintenant » se lance ; une routine ou une activité avec une `heure`
+   dans le planning n'est jamais « maintenant » avant cette heure
+   (`horaireItem()` → `heureAtteinte()`) : elle attend « plus tard », un
+   item sans heure passe devant, et à son heure elle reprend sa place dans
+   l'ordre. Le coucher prend l'heure du planning, sinon
+   `disponibleApresHeure`, et lui seul passe devant ce qui n'est pas fait
+   (`statutsDuJour()` → `statutsJournee(…, estItemCoucher)`) ; s'il ne
+   reste rien d'autre : « Rien à faire pour l'instant » ; un item
    `passe` (sauté par un parent) n'est pas montré. Une sortie ne part
    que si les routines de `ROUTINES_REQUISES_DEPART` placées avant elle
    sont validées (`partirSiPret()` — voix + clignotement sinon). Le
    chaînage `chainee` n'est plus lu. L'avatar dans son état réel, la
    jauge (une étoile par routine acquise aujourd'hui, `etoileDonnee`) et
    l'horloge restent en haut ; le tick de l'horloge reconstruit la liste
-   (sauf pendant une lecture), pour que le coucher se déverrouille seul.
+   (sauf pendant une lecture), pour que le coucher arrive seul à son
+   heure. **Tablette jamais fermée** : au changement de jour (tick ou
+   retour au premier plan, `rechargerSiNouveauJour()`), l'app se
+   recharge pour un vrai démarrage ; au retour au premier plan le même
+   jour, `auRetourAuPremierPlan()` reconstruit la liste ; une nouvelle
+   version (`controllerchange` du service worker) recharge sur la liste
+   ou l'écran dodo, sinon au prochain `construireMenu()`. La bande de
+   pictogrammes (`construireBandeJournee()`) allume l'activité en cours
+   (`etat.enCours`) plutôt que le « maintenant » de la liste.
    **Écoute** (`installerEcoute()`) : sur chaque écran de
    `ECRANS_ECOUTE`, 🔊 (`phraseMaintenant()`, ou le texte de l'écran +
    « Après : … » via `suiteApres()`) et 🗓️🔊 (`lireJournee()` : une
@@ -174,17 +187,25 @@ Séquence :
    valider. La validation déverrouille le coffre de la routine
    (`screen-coffre`) : c'est l'enfant qui tape dessus pour l'ouvrir et
    faire sortir l'étoile (`ouvrirCoffreRoutine()`).
-6. **Coucher calme** — « Aller se coucher » (la routine à
-   `disponibleApresHeure`) se valide sans coffre (`validerCoucher()`) ;
+6. **Coffre du soir** — « Aller se coucher » (la routine à
+   `disponibleApresHeure`) se valide sans coffre fermé (`validerCoucher()`) ;
    `allerDormir()` met les étoiles du jour de côté
    (`mettreDeCoteEtoiles()`, `etat.etoilesMisesDeCote` empêche tout double
-   compte), dit « Bonne nuit…, tes étoiles t'attendent demain matin » et
-   endort l'app. Les étoiles d'un jour sans coucher sont mises de côté au
+   compte), puis ouvre le coffre (`ouvrirCoffre()`) avec le nombre
+   d'étoiles du jour (`texteFinJournee()`) ; « Terminé ! » endort l'app.
+   La jauge ne se remplit que le lendemain matin. Les étoiles d'un jour sans coucher sont mises de côté au
    changement de jour (`chargerEtat()`).
 7. **Aventures** (`AVENTURES_COMMUNES` dans `app.js` — un catalogue de
    départ commun, un exemple générique ; un profil n'a par ailleurs
    aucune aventure propre en dur, cf. "Profils" plus bas) — lancées
-   depuis la carte « maintenant » de la liste (`demarrerAventure()`) :
+   depuis la carte « maintenant » de la liste (`demarrerAventure()`) ;
+   une **sortie** part, elle, par le bouton 🚗 « Partir à l'aventure »
+   posé au-dessus de la prochaine sortie (`boutonDepart()`,
+   `partirALAventure()`) : dès que les routines de départ placées avant
+   elle sont faites, même si elle n'est pas encore « maintenant » ; la
+   voix dit « On part à l'aventure ! » et `screen-missions` ne montre que
+   cette sortie, à toucher pour partir. Un moment au choix n'a le bouton
+   qu'une fois une sortie choisie :
    - **Mode de transport** (`modeTransport` : voiture par défaut, vélo,
      à pied) — texte de trajet suggéré (`texteTrajetSuggere()`), et hors
      voiture la fenêtre de voiture est remplacée par un grand pictogramme
@@ -192,7 +213,7 @@ Séquence :
    - **Moment au choix** (item `choix` du planning) — `screen-choix`
      (`ouvrirChoix()`/`validerChoix()`) : les 2 ou 3 idées, toucher =
      nom dit + sélection, « C'est parti » enregistre `choisi` et lance
-     l'activité via la liste ; sa fin marque le moment au choix fait.
+     l'activité via la liste (une sortie attend le bouton 🚗) ; sa fin marque le moment au choix fait.
      Ajouté depuis l'éditeur (« + Moment au choix », bloc en ligne), comme
      une **info** (item `note`, « + Info »).
    - **Activité à la maison** (`nature: "maison"`) — `screen-maison`
@@ -625,8 +646,9 @@ le mécanisme principal.
   sinon une pièce sort du coffre une fois le retour à la maison
   confirmé). Ajouter une aventure commune = ajouter une entrée à ce
   tableau. **Ce qui la rend accessible dans "Partir à l'aventure" est sa
-  présence dans `etat.planning` du jour** (`aventuresPlanifieesAujourdhui()`,
-  utilisée par `construireMissions()`). L'ancien champ `date` n'est plus
+  présence dans `etat.planning` du jour** : le bouton 🚗 se pose
+  au-dessus de la prochaine sortie de la liste et `construireMissions()`
+  ne montre qu'elle (`indexProchaineSortie()`, `journee.js`). L'ancien champ `date` n'est plus
   lu : `migrerDatesUneFois()` recopie une seule fois les aventures datées
   d'aujourd'hui ou d'un jour à venir dans le planning de ce jour-là.
 - `semaine.js` — logique pure de la **semaine type** (`creerSemaineType`,

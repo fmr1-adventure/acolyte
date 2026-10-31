@@ -8,20 +8,39 @@
 function estAFaire(item) { return item.type === "routine" || item.type === "aventure" || item.type === "choix"; }
 function resteAFaire(item) { return estAFaire(item) && !item.fait && !item.passe; }
 
+// L'heure de déblocage d'un item à faire : son heure dans le planning,
+// sinon `heureParDefaut` ("HH:MM", celle du coucher), sinon aucune. Renvoie
+// `null` sans heure, sinon `true`/`false` selon que `heureHHMM` l'atteint.
+// Un repère (repas, info) n'attend jamais : son heure est une indication.
+function heureAtteinte(item, heureHHMM, heureParDefaut) {
+  if (!estAFaire(item)) return null;
+  const h = item.heure || heureParDefaut;
+  return h ? heureHHMM >= h : null;
+}
+
 // `horaire(item)` : `null` si l'item n'a pas d'heure de déblocage, sinon
-// `true`/`false` selon qu'elle est atteinte (le coucher). Un item débloqué
-// par son heure passe devant ce qui n'est pas fait (statut "rate", sans
-// reproche) ; avant son heure, il peut être « maintenant » mais verrouillé.
-function statutsJournee(planning, horaire) {
-  let maintenant = planning.findIndex(it => resteAFaire(it) && horaire(it) === true);
-  if (maintenant === -1) maintenant = planning.findIndex(resteAFaire);
+// `true`/`false` selon qu'elle est atteinte (cf. heureAtteinte()). Avant
+// son heure, un item n'est jamais « maintenant » ni raté : il attend plus
+// tard, même quand il ne reste rien d'autre à faire (le matin, une fois
+// parti à l'école, la liste ne propose pas d'aller se coucher). À son
+// heure, il reprend sa place dans l'ordre de la liste — sauf s'il est
+// `prioritaire(item)` (le coucher) : il passe alors devant ce qui n'est
+// pas fait (statut "rate", sans reproche). Sans `prioritaire`, tout item
+// débloqué par son heure l'est.
+function statutsJournee(planning, horaire, prioritaire) {
+  const attendSonHeure = (it) => horaire(it) === false;
+  const passeDevant = prioritaire || (() => true);
+  let maintenant = planning.findIndex(it => resteAFaire(it) && horaire(it) === true && passeDevant(it));
+  if (maintenant === -1) maintenant = planning.findIndex(it => resteAFaire(it) && !attendSonHeure(it));
   const statuts = planning.map(it => (it.fait ? "fait" : it.passe ? "passe" : null));
 
   let debutSuite;
   if (maintenant !== -1) {
     statuts[maintenant] = "maintenant";
     for (let i = 0; i < maintenant; i++) {
-      if (statuts[i] === null) statuts[i] = estAFaire(planning[i]) ? "rate" : "repere-passe";
+      if (statuts[i] !== null) continue;
+      statuts[i] = resteAFaire(planning[i]) && attendSonHeure(planning[i]) ? "plus-tard"
+        : estAFaire(planning[i]) ? "rate" : "repere-passe";
     }
     debutSuite = maintenant + 1;
   } else {
@@ -30,7 +49,9 @@ function statutsJournee(planning, horaire) {
     // dernière routine).
     let dernierFait = -1;
     planning.forEach((it, i) => { if (it.fait) dernierFait = i; });
-    for (let i = 0; i <= dernierFait; i++) if (statuts[i] === null) statuts[i] = "repere-passe";
+    for (let i = 0; i <= dernierFait; i++) {
+      if (statuts[i] === null) statuts[i] = resteAFaire(planning[i]) ? "plus-tard" : "repere-passe";
+    }
     debutSuite = dernierFait + 1;
   }
 
@@ -43,7 +64,6 @@ function statutsJournee(planning, horaire) {
     statuts,
     maintenant: maintenant === -1 ? null : maintenant,
     apres,
-    verrouille: maintenant !== -1 && horaire(planning[maintenant]) === false,
   };
 }
 
@@ -91,4 +111,12 @@ function indexAMarquer(planning, type, id) {
     && ((it.type === type && it.id === id) || (type === "aventure" && it.type === "choix" && it.choisi === id)));
 }
 
-if (typeof module !== "undefined") module.exports = { estAFaire, statutsJournee, phrasesJournee, phraseMaintenant, indexAMarquer, finPhrase };
+// La prochaine sortie de la liste, où se pose le bouton « Partir à
+// l'aventure » : la première encore à venir (maintenant, après ou plus
+// tard) — `-1` s'il n'y en a plus. `estSortie(item)` dit si un item est une
+// sortie (un moment au choix ne l'est qu'une fois une sortie choisie).
+function indexProchaineSortie(planning, statuts, estSortie) {
+  return planning.findIndex((it, i) => ["maintenant", "apres", "plus-tard"].includes(statuts[i]) && estSortie(it));
+}
+
+if (typeof module !== "undefined") module.exports = { estAFaire, heureAtteinte, statutsJournee, phrasesJournee, phraseMaintenant, indexAMarquer, indexProchaineSortie, finPhrase };

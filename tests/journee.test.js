@@ -27,7 +27,6 @@ test("journée neuve : maintenant = première routine, le repas d'avant est pass
   const r = J.statutsJournee(journee(), horaire(false));
   assert.equal(r.maintenant, 1);
   assert.equal(r.apres, 2);
-  assert.equal(r.verrouille, false);
   assert.deepEqual(r.statuts, ["repere-passe", "maintenant", "apres", "plus-tard", "plus-tard"]);
 });
 
@@ -44,18 +43,32 @@ test("le coucher débloqué passe devant ce qui n'est pas fait", () => {
   const r = J.statutsJournee(journee(), horaire(true));
   assert.equal(r.maintenant, 4);
   assert.equal(r.apres, null);
-  assert.equal(r.verrouille, false);
   assert.deepEqual(r.statuts, ["repere-passe", "rate", "rate", "repere-passe", "maintenant"]);
 });
 
-test("tout fait sauf le coucher avant son heure : maintenant verrouillé", () => {
+// Le coucher n'est jamais « maintenant » avant son heure : le matin, une
+// fois l'école partie, la liste ne propose pas d'aller se coucher, et les
+// repas de la journée restent à venir.
+test("tout fait sauf le coucher avant son heure : rien maintenant, la suite reste à venir", () => {
   const p = journee();
   p[1].fait = true;
   p[2].fait = true;
   const r = J.statutsJournee(p, horaire(false));
-  assert.equal(r.maintenant, 4);
-  assert.equal(r.verrouille, true);
-  assert.deepEqual(r.statuts, ["repere-passe", "fait", "fait", "repere-passe", "maintenant"]);
+  assert.equal(r.maintenant, null);
+  assert.equal(r.apres, 3);
+  assert.deepEqual(r.statuts, ["repere-passe", "fait", "fait", "apres", "plus-tard"]);
+  assert.equal(J.phraseMaintenant(p, r, nomDe), "Après : Déjeuner.");
+});
+
+test("le coucher pas encore à son heure, placé avant une activité, ne la bloque pas", () => {
+  const p = [
+    { type: "routine", id: "shabiller", fait: true },
+    { type: "routine", id: "soir" },
+    { type: "aventure", id: "lecture" },
+  ];
+  const r = J.statutsJournee(p, horaire(false));
+  assert.equal(r.maintenant, 2);
+  assert.deepEqual(r.statuts, ["fait", "plus-tard", "maintenant"]);
 });
 
 test("un item sauté n'est jamais maintenant", () => {
@@ -172,4 +185,83 @@ test("pas de double ponctuation quand le texte en a déjà une", () => {
   const nom = (it) => it.type === "note" ? it.texte : NOMS[it.id];
   assert.equal(J.phraseMaintenant(p, r, nom), "Maintenant : S'habiller. Après : Maman vient te chercher.");
   assert.deepEqual(J.phrasesJournee(p, r, nom).map(ph => ph.texte).slice(1), ["Après : Maman vient te chercher.", "Ensuite : On va au parc !"]);
+});
+
+// Le bouton 🚗 se pose au-dessus de la prochaine sortie à venir (ni faite,
+// ni sautée, ni dépassée) ; un moment au choix ne compte qu'une fois une
+// sortie choisie.
+test("indexProchaineSortie : la première sortie encore à venir", () => {
+  const SORTIES = { ecole: true, ortho: true };
+  const estSortie = (it) => (it.type === "aventure" && SORTIES[it.id]) || (it.type === "choix" && SORTIES[it.choisi]) || false;
+  const planning = [
+    { type: "routine", id: "shabiller", fait: true },
+    { type: "aventure", id: "ecole", passe: true },
+    { type: "routine", id: "partir" },
+    { type: "aventure", id: "lecture" },
+    { type: "choix", options: ["lecture", "ortho"] },
+    { type: "aventure", id: "ortho" },
+  ];
+  const r = J.statutsJournee(planning, () => null);
+  assert.equal(J.indexProchaineSortie(planning, r.statuts, estSortie), 5);
+  planning[4].choisi = "ortho";
+  assert.equal(J.indexProchaineSortie(planning, r.statuts, estSortie), 4);
+  planning[4].fait = true; planning[5].fait = true;
+  assert.equal(J.indexProchaineSortie(planning, J.statutsJournee(planning, () => null).statuts, estSortie), -1);
+});
+
+test("indexProchaineSortie : une sortie restée pas faite derrière « maintenant » ne compte plus", () => {
+  const estSortie = (it) => it.type === "aventure";
+  const planning = [{ type: "aventure", id: "ecole" }, { type: "routine", id: "soir" }];
+  const r = J.statutsJournee(planning, (it) => (it.id === "soir" ? true : null));
+  assert.equal(r.statuts[0], "rate");
+  assert.equal(J.indexProchaineSortie(planning, r.statuts, estSortie), -1);
+});
+
+// L'heure d'un élément à faire est son heure de déblocage : avant, il
+// attend « plus tard » ; sans heure, il peut être « maintenant ». Le coucher
+// suit l'heure du planning, et son heure par défaut sans elle.
+test("heureAtteinte : l'heure du planning, sinon l'heure par défaut, jamais pour un repère", () => {
+  assert.equal(J.heureAtteinte({ type: "aventure", id: "lecture" }, "15:00", null), null);
+  assert.equal(J.heureAtteinte({ type: "aventure", id: "lecture", heure: "16:00" }, "15:59", null), false);
+  assert.equal(J.heureAtteinte({ type: "aventure", id: "lecture", heure: "16:00" }, "16:00", null), true);
+  assert.equal(J.heureAtteinte({ type: "routine", id: "soir" }, "18:30", "18:00"), true);
+  assert.equal(J.heureAtteinte({ type: "routine", id: "soir", heure: "19:00" }, "18:30", "18:00"), false);
+  assert.equal(J.heureAtteinte({ type: "routine", id: "soir", heure: "19:00" }, "19:05", "18:00"), true);
+  assert.equal(J.heureAtteinte({ type: "repas", id: "gouter", heure: "16:00" }, "15:00", null), null);
+});
+
+test("une activité avec une heure attend son heure, une activité sans heure passe devant", () => {
+  const p = [
+    { type: "routine", id: "partir", fait: true },
+    { type: "aventure", id: "ortho", heure: "16:00" },
+    { type: "aventure", id: "lecture" },
+    { type: "routine", id: "soir", heure: "19:00" },
+  ];
+  const a = (hhmm) => (it) => J.heureAtteinte(it, hhmm, it.id === "soir" ? "18:00" : null);
+  const coucher = (it) => it.id === "soir";
+  let r = J.statutsJournee(p, a("10:00"), coucher);
+  assert.equal(r.maintenant, 2);
+  assert.deepEqual(r.statuts, ["fait", "plus-tard", "maintenant", "apres"]);
+  r = J.statutsJournee(p, a("16:00"), coucher);
+  assert.equal(r.maintenant, 1);
+  r = J.statutsJournee(p, a("18:30"), coucher);
+  assert.equal(r.maintenant, 1);
+  assert.equal(r.statuts[3], "plus-tard");
+  r = J.statutsJournee(p, a("19:00"), coucher);
+  assert.equal(r.maintenant, 3);
+  assert.equal(r.statuts[1], "rate");
+});
+
+// Un enfant en retard le matin garde sa routine : passée son heure, elle
+// reste « maintenant » au lieu d'être doublée par la suivante.
+test("une routine en retard n'est pas doublée par la suivante à son heure", () => {
+  const p = [
+    { type: "routine", id: "shabiller", heure: "07:30" },
+    { type: "routine", id: "partir", heure: "08:00" },
+    { type: "routine", id: "soir" },
+  ];
+  const a = (it) => J.heureAtteinte(it, "08:10", it.id === "soir" ? "18:00" : null);
+  const r = J.statutsJournee(p, a, (it) => it.id === "soir");
+  assert.equal(r.maintenant, 0);
+  assert.deepEqual(r.statuts, ["maintenant", "apres", "plus-tard"]);
 });
