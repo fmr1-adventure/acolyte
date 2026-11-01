@@ -99,8 +99,11 @@ Quand une routine ou une activité est terminée, la liste avance toute
 seule. Une routine ou une activité qui a une heure dans le planning
 n'est jamais « maintenant » avant cette heure : elle attend plus tard
 dans la liste, et ce qui n'a pas d'heure passe devant. À son heure, elle
-reprend sa place. Le coucher, lui, devient « maintenant » à son heure
-même si tout n'a pas été fait (sans reproche). Quand il n'y a plus
+reprend sa place. Le coucher attend son heure **et** son tour : il ne
+passe jamais devant une routine ou une activité pas encore faite, même
+en retard, prévue plus tard dans la soirée ou placée après lui dans la
+liste — rien n'est sauté, seul un parent peut
+passer une activité depuis l'espace parents. Quand il n'y a plus
 rien d'autre à faire (le matin, une fois parti à l'école), la liste dit
 « Rien à faire pour l'instant » et montre la suite de la journée.
 

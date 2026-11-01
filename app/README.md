@@ -138,9 +138,11 @@ Séquence :
    dans le planning n'est jamais « maintenant » avant cette heure
    (`horaireItem()` → `heureAtteinte()`) : elle attend « plus tard », un
    item sans heure passe devant, et à son heure elle reprend sa place dans
-   l'ordre. Le coucher prend l'heure du planning, sinon
-   `disponibleApresHeure`, et lui seul passe devant ce qui n'est pas fait
-   (`statutsDuJour()` → `statutsJournee(…, estItemCoucher)`) ; s'il ne
+   l'ordre, sans jamais passer devant ce qui n'est pas fait. Le coucher
+   prend l'heure du planning, sinon `disponibleApresHeure`, et attend en
+   plus que tout le reste soit fait, où qu'il soit dans la liste, même
+   un item qui attend son heure (`statutsDuJour()` → `statutsJournee(…, estItemCoucher)`) :
+   rien n'est jamais sauté ; s'il ne
    reste rien d'autre : « Rien à faire pour l'instant » ; un item
    `passe` (sauté par un parent) n'est pas montré. Une sortie ne part
    que si les routines de `ROUTINES_REQUISES_DEPART` placées avant elle

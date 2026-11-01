@@ -47,7 +47,7 @@
 // caches et on recharge, une seule fois par session, avant d'exécuter
 // quoi que ce soit d'autre.
 // ---------------------------------------------------------------------
-const VERSION_APP = "22";
+const VERSION_APP = "23";
 
 // Journal technique de l'appareil (`acolyte_journal`, partagé par appareil
 // comme le code parent) : démarrages, rechargements et erreurs non
@@ -1551,11 +1551,11 @@ function construireMenu() {
 // planning (`etat.planning`, choisi par les parents) — plus de chaînage
 // entre routines. Statuts calculés par journee.js : seul « maintenant » se
 // lance, sauf la prochaine sortie, qui part par le bouton 🚗 « Partir à
-// l'aventure » posé au-dessus d'elle (cf. partirALAventure()) ; le coucher
-// devient « maintenant » à son heure (celle du planning, sinon
-// `disponibleApresHeure`), même si tout n'est pas fait ; un item avec une
-// heure attend cette heure, un item sans heure suit l'ordre ; un item
-// sauté par un parent n'est pas montré.
+// l'aventure » posé au-dessus d'elle (cf. partirALAventure()) ; un item
+// avec une heure attend cette heure (le coucher : celle du planning, sinon
+// `disponibleApresHeure`), puis tout suit l'ordre de la liste — le coucher
+// ne saute jamais une activité pas faite ; un item sauté par un parent
+// n'est pas montré.
 // ---------------------------------------------------------------------
 // L'heure prévue dans le planning débloque l'item (cf. heureAtteinte()) ;
 // le coucher sans heure garde son `disponibleApresHeure`.
@@ -1564,7 +1564,8 @@ function horaireItem(item) {
   const parDefaut = r && r.disponibleApresHeure !== undefined ? String(r.disponibleApresHeure).padStart(2, "0") + ":00" : null;
   return heureAtteinte(item, heureActuelleHHMM(), parDefaut);
 }
-// Statuts de la liste du jour : seul le coucher passe devant à son heure.
+// Le coucher clôt la journée : il attend que tout le reste soit fait, même
+// une activité du soir qui attend son heure ou un item placé après lui.
 function statutsDuJour(planning) {
   return statutsJournee(planning, horaireItem, estItemCoucher);
 }
@@ -1760,7 +1761,7 @@ function construireListeJour(etat) {
   }
 
   // Déjà fait (ou dépassé) : une rangée de pictogrammes, en haut.
-  const passes = visibles.filter(v => ["fait", "repere-passe", "rate"].includes(v.statut));
+  const passes = visibles.filter(v => ["fait", "repere-passe"].includes(v.statut));
   if (passes.length) {
     const rangee = document.createElement("div");
     rangee.className = "jour-faits";
@@ -1925,7 +1926,7 @@ function construireBandeJournee(ecran) {
     const picto = document.createElement("span");
     picto.className = "picto-bande type-" + natureItem(item)
       + (i === allume ? " en-cours" : "")
-      + (["fait", "repere-passe", "rate"].includes(r.statuts[i]) ? " passe" : "");
+      + (["fait", "repere-passe"].includes(r.statuts[i]) ? " passe" : "");
     picto.dataset.index = i;
     picto.textContent = lib.emoji;
     bande.appendChild(picto);
@@ -5602,9 +5603,10 @@ function creerNouvelleRoutine() {
   // semaine type, où elle est ajoutée aux 7 jours.
   const etat = chargerEtat();
   etat.routines[nouvelle.id] = { fait: [], valide: false };
-  etat.planning.push({ type: "routine", id: nouvelle.id });
+  const posCoucher = etat.planning.findIndex(estItemCoucher);
+  etat.planning.splice(posCoucher === -1 ? etat.planning.length : posCoucher, 0, { type: "routine", id: nouvelle.id });
   sauverEtat(etat);
-  sauverSemaineType(ajouterAuxSeptJours(chargerSemaineType(), { type: "routine", id: nouvelle.id }));
+  sauverSemaineType(ajouterAuxSeptJours(chargerSemaineType(), { type: "routine", id: nouvelle.id }, estItemCoucher));
 
   dire("Nouvelle routine créée : " + nom + ".");
   construireRoutinesCatalogue();

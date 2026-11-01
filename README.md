@@ -41,8 +41,9 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   élément qui se lance), après, plus tard — routines, activités, sorties
   et repas dans l'ordre choisi par les parents. Une routine ou une
   activité qui a une heure dans le planning n'est jamais « maintenant »
-  avant cette heure ; le coucher passe devant le reste à son heure, et
-  jamais avant (« Rien à faire pour l'instant » s'il ne reste que lui).
+  avant cette heure ; le coucher attend son heure et que tout le reste
+  de la journée soit fait — rien n'est sauté (« Rien à faire pour
+  l'instant » s'il ne reste que lui avant son heure).
 - **Tout s'écoute** : sur chaque écran, 🔊 redit le moment présent et la
   suite, 🗓️🔊 lit toute la journée en allumant chaque élément au moment
   où il est lu.

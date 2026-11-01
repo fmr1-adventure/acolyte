@@ -26,6 +26,12 @@ test("planningDuJour : copie du bon jour", () => {
   assert.equal(st["2"].length, 1);
 });
 
+test("ajouterAuxSeptJours : juste avant le coucher s'il est indiqué", () => {
+  const st = S.creerSemaineType([{ type: "routine", id: "r1" }, { type: "routine", id: "soir" }]);
+  const apres = S.ajouterAuxSeptJours(st, { type: "routine", id: "r2" }, (it) => it.id === "soir");
+  assert.deepEqual(apres["3"].map(it => it.id), ["r1", "r2", "soir"]);
+});
+
 test("ajouterAuxSeptJours : sans doublon, sans muter l'entrée", () => {
   const st = S.creerSemaineType([{ type: "routine", id: "r1" }]);
   const apres = S.ajouterAuxSeptJours(S.ajouterAuxSeptJours(st, { type: "routine", id: "r2" }), { type: "routine", id: "r2" });

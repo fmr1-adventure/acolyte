@@ -26,10 +26,14 @@ function planningDuJour(semaineType, cleJour) {
   return copieProfonde(semaineType[String(jourSemaineDe(cleJour))] || []);
 }
 
-function ajouterAuxSeptJours(semaineType, item) {
+// `estCoucher(item)` (facultatif) : l'item se place juste avant le coucher
+// plutôt qu'en toute fin, comme insererActivite().
+function ajouterAuxSeptJours(semaineType, item, estCoucher) {
   const resultat = copieProfonde(semaineType);
   Object.keys(resultat).forEach(j => {
-    if (!resultat[j].some(it => it.type === item.type && it.id === item.id)) resultat[j].push(copieProfonde(item));
+    if (resultat[j].some(it => it.type === item.type && it.id === item.id)) return;
+    const pos = estCoucher ? resultat[j].findIndex(estCoucher) : -1;
+    resultat[j].splice(pos === -1 ? resultat[j].length : pos, 0, copieProfonde(item));
   });
   return resultat;
 }

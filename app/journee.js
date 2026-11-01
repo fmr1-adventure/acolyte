@@ -20,18 +20,19 @@ function heureAtteinte(item, heureHHMM, heureParDefaut) {
 
 // `horaire(item)` : `null` si l'item n'a pas d'heure de déblocage, sinon
 // `true`/`false` selon qu'elle est atteinte (cf. heureAtteinte()). Avant
-// son heure, un item n'est jamais « maintenant » ni raté : il attend plus
-// tard, même quand il ne reste rien d'autre à faire (le matin, une fois
-// parti à l'école, la liste ne propose pas d'aller se coucher). À son
-// heure, il reprend sa place dans l'ordre de la liste — sauf s'il est
-// `prioritaire(item)` (le coucher) : il passe alors devant ce qui n'est
-// pas fait (statut "rate", sans reproche). Sans `prioritaire`, tout item
-// débloqué par son heure l'est.
-function statutsJournee(planning, horaire, prioritaire) {
+// son heure, un item n'est jamais « maintenant » : il attend plus tard,
+// même quand il ne reste rien d'autre à faire (le matin, une fois parti à
+// l'école, la liste ne propose pas d'aller se coucher). À son heure, il
+// prend sa place dans l'ordre de la liste, sans passer devant ce qui n'est
+// pas fait. Un item sans heure peut passer devant un item qui attend la
+// sienne — sauf `cloture(item)` (le coucher), qui clôt la journée : il
+// attend que tout le reste soit fait, où qu'il soit dans la liste (une
+// routine ajoutée après lui compris). Rien n'est jamais sauté, seul un
+// parent peut passer un item.
+function statutsJournee(planning, horaire, cloture) {
   const attendSonHeure = (it) => horaire(it) === false;
-  const passeDevant = prioritaire || (() => true);
-  let maintenant = planning.findIndex(it => resteAFaire(it) && horaire(it) === true && passeDevant(it));
-  if (maintenant === -1) maintenant = planning.findIndex(it => resteAFaire(it) && !attendSonHeure(it));
+  const attendLaFin = (it, i) => cloture && cloture(it) && planning.some((autre, j) => j !== i && resteAFaire(autre) && !cloture(autre));
+  const maintenant = planning.findIndex((it, i) => resteAFaire(it) && !attendSonHeure(it) && !attendLaFin(it, i));
   const statuts = planning.map(it => (it.fait ? "fait" : it.passe ? "passe" : null));
 
   let debutSuite;
@@ -39,8 +40,7 @@ function statutsJournee(planning, horaire, prioritaire) {
     statuts[maintenant] = "maintenant";
     for (let i = 0; i < maintenant; i++) {
       if (statuts[i] !== null) continue;
-      statuts[i] = resteAFaire(planning[i]) && attendSonHeure(planning[i]) ? "plus-tard"
-        : estAFaire(planning[i]) ? "rate" : "repere-passe";
+      statuts[i] = resteAFaire(planning[i]) ? "plus-tard" : "repere-passe";
     }
     debutSuite = maintenant + 1;
   } else {
@@ -72,9 +72,9 @@ function statutsJournee(planning, horaire, prioritaire) {
 function finPhrase(texte) { return /[.!?…]$/.test(texte.trim()) ? texte.trim() : texte + "."; }
 
 // Lecture de toute la journée : une phrase courte par élément, ce qui est
-// fait d'abord, puis maintenant / après / ensuite. Ni les items sautés ni
-// ceux restés pas faits (pas de reproche). `nomDe(item)` peut renvoyer
-// `null` (référence orpheline) : l'item est alors ignoré.
+// fait d'abord, puis maintenant / après / ensuite, sans les items sautés.
+// `nomDe(item)` peut renvoyer `null` (référence orpheline) : l'item est
+// alors ignoré.
 function phrasesJournee(planning, resultat, nomDe) {
   const faits = [];
   const suite = [];

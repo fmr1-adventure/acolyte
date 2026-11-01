@@ -109,7 +109,8 @@ Chaque item peut recevoir une **heure facultative** (réglée par un parent
 en mode édition). Sur une routine ou une activité, elle débloque l'item :
 avant cette heure, il n'est jamais « maintenant » dans la liste de
 l'enfant ; le coucher prend aussi son heure du planning (sinon
-`disponibleApresHeure`, 18 h). Sur un repas ou une info, ce n'est qu'un
+`disponibleApresHeure`, 18 h) et attend que tout le reste de la journée
+soit fait. Sur un repas ou une info, ce n'est qu'un
 repère visuel. L'ordre du planning reste la seule source de vérité ;
 l'heure ne trie jamais la liste. Quand au moins un item a une heure, un repère **"maintenant"**
 (dérivé de l'horloge déjà affichée au menu) met en avant l'item en cours
