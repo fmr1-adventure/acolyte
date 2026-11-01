@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <!-- Même numéro que VERSION_APP (app.js) et CACHE_NAME (sw.js), cf.
      verifierVersionPage() dans app.js. -->
-<meta name="acolyte-version" content="24">
+<meta name="acolyte-version" content="25">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Acolyte</title>
 <link rel="stylesheet" href="styles.css">
@@ -177,6 +177,16 @@
       <div class="prenom-actif" id="titre-journee">Ma journée</div>
       <button class="btn-voix" id="btn-modifier-journee" aria-label="Modifier la journée">✏️</button>
       <div></div>
+    </div>
+    <!-- Un jour de la semaine type (cf. construireJournee()) : les onglets du
+         Planning et les sept jours, pour passer de l'un à l'autre. -->
+    <div id="journee-entete-semaine" class="hidden">
+      <div class="onglets-planning" role="tablist">
+        <button class="onglet-planning actif" role="tab" aria-selected="true">Semaine type</button>
+        <button class="onglet-planning" id="btn-onglet-jours-semaine" role="tab" aria-selected="false">Prochains jours</button>
+      </div>
+      <div class="puces-jours" id="journee-puces-jours"></div>
+      <div class="groupe-journee-titre" id="journee-titre-jour"></div>
     </div>
     <div id="journee-contenu"></div>
   </div>
@@ -612,8 +622,12 @@
   <div id="screen-parent-historique" class="screen">
     <div class="barre-haut">
       <button class="btn-retour-ecran" id="btn-retour-parent-historique" aria-label="Retour à l'espace parent">←</button>
-      <div class="prenom-actif">Historique</div>
+      <div class="prenom-actif">Journées et séances</div>
       <div></div>
+    </div>
+    <div class="onglets-planning" role="tablist">
+      <button class="onglet-planning actif" role="tab" aria-selected="true" data-onglet="journees">Journées</button>
+      <button class="onglet-planning" role="tab" aria-selected="false" data-onglet="seances">Séances</button>
     </div>
     <div id="parent-historique-liste"></div>
   </div>
@@ -622,8 +636,12 @@
   <div id="screen-parent-seances" class="screen">
     <div class="barre-haut">
       <button class="btn-retour-ecran" id="btn-retour-parent-seances" aria-label="Retour à l'espace parent">←</button>
-      <div class="prenom-actif">Notes des séances</div>
+      <div class="prenom-actif">Journées et séances</div>
       <div></div>
+    </div>
+    <div class="onglets-planning" role="tablist">
+      <button class="onglet-planning" role="tab" aria-selected="false" data-onglet="journees">Journées</button>
+      <button class="onglet-planning actif" role="tab" aria-selected="true" data-onglet="seances">Séances</button>
     </div>
     <div id="parent-seances-liste"></div>
   </div>
@@ -632,19 +650,39 @@
   <div id="screen-parent-activites" class="screen">
     <div class="barre-haut">
       <button class="btn-retour-ecran" id="btn-retour-parent-activites" aria-label="Retour à l'espace parent">←</button>
-      <div class="prenom-actif">Activités</div>
+      <div class="prenom-actif">Bibliothèque</div>
       <div></div>
+    </div>
+    <div class="onglets-planning" role="tablist">
+      <button class="onglet-planning actif" role="tab" aria-selected="true" data-onglet="activites">Activités</button>
+      <button class="onglet-planning" role="tab" aria-selected="false" data-onglet="routines">Routines</button>
+      <button class="onglet-planning" role="tab" aria-selected="false" data-onglet="entourage">Entourage</button>
     </div>
     <div id="parent-activites-liste"></div>
     <button class="btn-continuer" id="btn-nouvelle-activite">➕ Nouvelle activité</button>
+  </div>
+
+  <!-- ============ Espace parent : fiche d'une activité (quand elle revient) ============ -->
+  <div id="screen-parent-fiche-activite" class="screen">
+    <div class="barre-haut">
+      <button class="btn-retour-ecran" id="btn-retour-fiche-activite" aria-label="Retour">←</button>
+      <div class="prenom-actif" id="titre-fiche-activite"></div>
+      <div></div>
+    </div>
+    <div id="parent-fiche-contenu"></div>
   </div>
 
   <!-- ============ Espace parent : catalogue des routines ============ -->
   <div id="screen-parent-routines-catalogue" class="screen">
     <div class="barre-haut">
       <button class="btn-retour-ecran" id="btn-retour-parent-routines-catalogue" aria-label="Retour à l'espace parent">←</button>
-      <div class="prenom-actif">Routines</div>
+      <div class="prenom-actif">Bibliothèque</div>
       <div></div>
+    </div>
+    <div class="onglets-planning" role="tablist">
+      <button class="onglet-planning" role="tab" aria-selected="false" data-onglet="activites">Activités</button>
+      <button class="onglet-planning actif" role="tab" aria-selected="true" data-onglet="routines">Routines</button>
+      <button class="onglet-planning" role="tab" aria-selected="false" data-onglet="entourage">Entourage</button>
     </div>
     <div id="parent-routines-catalogue-liste"></div>
     <button class="btn-continuer" id="btn-nouvelle-routine">➕ Nouvelle routine</button>
@@ -654,8 +692,13 @@
   <div id="screen-parent-entourage" class="screen">
     <div class="barre-haut">
       <button class="btn-retour-ecran" id="btn-retour-parent-entourage" aria-label="Retour à l'espace parent">←</button>
-      <div class="prenom-actif">Mon entourage</div>
+      <div class="prenom-actif">Bibliothèque</div>
       <div></div>
+    </div>
+    <div class="onglets-planning" role="tablist">
+      <button class="onglet-planning" role="tab" aria-selected="false" data-onglet="activites">Activités</button>
+      <button class="onglet-planning" role="tab" aria-selected="false" data-onglet="routines">Routines</button>
+      <button class="onglet-planning actif" role="tab" aria-selected="true" data-onglet="entourage">Entourage</button>
     </div>
     <div id="parent-entourage-liste"></div>
     <button class="btn-continuer" id="btn-nouvelle-personne">➕ Nouvelle personne</button>

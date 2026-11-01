@@ -1006,6 +1006,67 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 /* option pas encore construite : même style "verrouillee" que le menu,
    mais sans le cadenas — juste moins mis en avant, pas cliquable. */
 .carte-parent.verrouillee { cursor: default; }
+/* Réglages de l'espace parent : deux petits boutons côte à côte. */
+.reglages-parent { display: flex; gap: 10px; }
+.reglages-parent .btn-secondaire { flex: 1; margin: 0; }
+
+/* ---------- Fiche d'une activité : quand elle revient ---------- */
+#parent-fiche-contenu { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 24px; }
+.fiche-activite-entete {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface-active);
+  border: 3px solid var(--surface-high); border-left: 6px solid var(--type-aventure);
+}
+.fiche-activite-entete.type-maison { border-left-color: var(--type-maison); }
+.fiche-activite-emoji { font-size: 30px; flex-shrink: 0; }
+.fiche-activite-texte { flex: 1; display: flex; flex-direction: column; gap: 3px; font-size: 18px; font-weight: 800; }
+.fiche-activite-entete .btn-secondaire { margin: 0; flex-shrink: 0; }
+.bloc-quand { display: flex; flex-direction: column; gap: 14px; padding: 14px; background: var(--surface); border: 3px solid var(--accent); }
+.champ-quand { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; color: var(--text-soft); }
+.champ-quand .onglets-planning { margin-bottom: 0; }
+.input-heure-quand {
+  font: inherit; font-size: 17px; font-weight: 700; color: var(--text); background: var(--bg);
+  border: 2px solid var(--surface-high); padding: 9px 10px;
+}
+.puces-jours { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.puce-jour { height: 44px; font-size: 16px; font-weight: 800; background: var(--bg); border: 2px solid var(--surface-high); color: var(--text-mute); }
+.puce-jour.actif { background: var(--accent); border: 3px solid var(--accent-edge); color: var(--deep); }
+.calendrier-quand { display: flex; flex-direction: column; gap: 4px; }
+.semaine-quand {
+  display: flex; justify-content: space-between; padding: 6px 10px; font-size: 15px; font-weight: 700;
+  color: var(--text-mute); border: 2px dashed var(--surface-high);
+}
+.semaine-quand.oui { color: var(--text); background: var(--surface-active); border-style: solid; }
+.semaine-quand.oui span:last-child { color: var(--accent); font-weight: 800; }
+.resume-quand { font-size: 16px; font-weight: 800; color: var(--text); padding: 10px 12px; background: var(--bg); border-left: 4px solid var(--accent); }
+.info-quand { font-size: 14px; font-weight: 600; color: var(--text-soft); padding: 8px 10px; border: 2px dashed var(--surface-high); }
+/* Étiquette du rythme d'une activité (bibliothèque, semaine type) : la
+   toucher ouvre sa fiche. */
+.tag-rythme {
+  flex-shrink: 0; font-size: 12px; font-weight: 800; padding: 4px 8px; color: var(--text-soft);
+  background: var(--bg); border: 2px solid var(--surface-high);
+}
+.tag-rythme.deux { color: var(--deep); background: var(--accent); border-color: var(--accent-edge); }
+#journee-entete-semaine { flex-shrink: 0; }
+#journee-entete-semaine .puces-jours { margin-bottom: 14px; }
+/* Prochains jours (cf. construireParentPlanningJournees()) : ce que chaque
+   jour contient, et ce qui change. */
+.carte-prochain-jour {
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 14px;
+  background: var(--surface-active); border: 2px solid var(--surface-high);
+}
+.carte-prochain-jour.aujourdhui { border: 3px solid var(--accent-edge); background: rgba(240,149,47,.16); }
+.carte-prochain-jour.modifie { border: 3px solid var(--accent); }
+.carte-prochain-jour-haut { display: flex; align-items: center; gap: 10px; }
+.carte-prochain-jour-nom { width: 112px; flex-shrink: 0; font-size: 16px; font-weight: 800; }
+.carte-prochain-jour-emojis { flex: 1; font-size: 18px; letter-spacing: 3px; }
+.badge-prochain-jour {
+  flex-shrink: 0; font-size: 12px; font-weight: 800; padding: 2px 8px;
+  color: var(--text-mute); border: 2px solid var(--surface-high);
+}
+.badge-prochain-jour.change { color: var(--deep); background: var(--accent); border-color: var(--accent-edge); }
+.badge-prochain-jour.cours { color: var(--deep); background: var(--accent-edge); border-color: var(--accent-edge); }
+.carte-prochain-jour-change { padding-left: 122px; font-size: 14px; font-weight: 700; color: var(--text); }
+@media (max-width: 420px) { .carte-prochain-jour-change { padding-left: 0; } }
 
 /* ---------- Formulaires parent (nouvelle activité / nouvelle routine) ---------- */
 #nouvelle-aventure-contenu, #nouvelle-routine-contenu, #nouvelle-personne-contenu, #seance-note-contenu, #premiere-configuration-contenu { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px; }

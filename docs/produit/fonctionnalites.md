@@ -323,22 +323,42 @@ confirmer une par une.
 
 Protégé par un code, accessible en permanence depuis un bouton
 discret, directement connecté à ce que voit l'enfant (rien à
-synchroniser séparément). Il est rangé en cinq blocs : **la journée**
-(le planning, relancer une routine), **la bibliothèque** (activités,
-routines, entourage), **le suivi** (historique, notes des séances),
-**les récompenses** (le chemin) et **les réglages** (code parent, cet
-appareil).
+synchroniser séparément). Son accueil tient en **cinq entrées** :
+**le planning** et **relancer une routine** (la journée), **la
+bibliothèque** (activités, routines, entourage, en trois onglets), **le
+chemin et les récompenses**, et **les journées et séances** (le suivi,
+en deux onglets). Les réglages, rarement utiles, sont deux petits
+boutons en bas : **code parent** et **cet appareil**.
 
 - **Préparer le planning**, en deux onglets :
   - **Semaine type** — un modèle pour chaque jour de la semaine (le
     lundi, le mardi...) : on y met une fois pour toutes ce qui revient
-    chaque semaine (l'école, une séance chez une praticienne...). Chaque
-    journée de l'enfant se prépare toute seule à partir de son jour de
-    la semaine type.
-  - **Prochains jours** — aujourd'hui et les 7 jours suivants, pour les
-    exceptions : un jour qu'on modifie (une sortie en plus, un rendez-vous
-    déplacé) devient « Modifié » et ne bouge plus ensuite, même si la
-    semaine type change ; les autres restent « Comme d'habitude ».
+    (l'école, une séance chez une praticienne...). L'onglet s'ouvre
+    directement sur le jour d'aujourd'hui, avec les sept jours en haut
+    pour passer de l'un à l'autre. Chaque activité y porte une étiquette
+    qui dit quand elle revient (« chaque mardi », « 1 mardi sur 2 »,
+    « tous les jours ») et, pour une activité une semaine sur deux, la
+    date de la prochaine fois. Chaque journée de l'enfant se prépare
+    toute seule à partir de son jour de la semaine type.
+  - **Prochains jours** — aujourd'hui et les deux semaines qui suivent,
+    regroupés par semaine, pour les exceptions. Chaque jour montre d'un
+    coup d'œil ce qu'il contient (les icônes de ses activités, moments
+    au choix et infos). Un jour qu'on modifie (une sortie en plus, un
+    rendez-vous déplacé) devient « modifié » et dit ce qui change par
+    rapport à d'habitude (« + Anniversaire, 18:00 », « − La piscine »,
+    ou « Ordre ou heures changés ») ; il ne bouge plus ensuite, même si
+    la semaine type change. Les autres restent « comme d'hab. ».
+- **Quand une activité revient** — toucher une activité dans la
+  bibliothèque (ou son étiquette dans la semaine type) ouvre sa fiche :
+  on y coche ses jours, une heure si on veut, et son rythme, **chaque
+  semaine** ou **une semaine sur deux** (en choisissant la première
+  fois). Les cinq prochaines dates s'affichent, marquées « oui » ou
+  « pas cette fois », et une phrase résume le tout (« Un mardi sur deux
+  à 17:15. Première fois : mar. 10 nov. »). En enregistrant, l'app place
+  l'activité toute seule dans la semaine type, à son heure ; les parents
+  gardent la main sur l'ordre. Aujourd'hui, déjà préparé, et les jours
+  modifiés à la main ne changent pas : la fiche le signale. Une activité
+  créée depuis la bibliothèque ouvre aussitôt sa fiche.
 
   Depuis n'importe quel jour en cours de préparation, on peut créer
   directement une **nouvelle sortie**, une **activité à la maison** ou une
@@ -350,12 +370,12 @@ appareil).
   s'est redéshabillé après coup) : les tâches décochées sont à refaire
   et la routine redevient « maintenant » dans la liste — l'étoile
   gagnée, elle, reste acquise.
-- **Historique des journées** — chaque jour archivé avec ses étoiles,
-  ses routines faites, et désormais **les réponses du réveil**
-  (sommeil, humeur).
-- **Notes des séances** — toutes les notes laissées par les
-  praticiennes, les plus récentes d'abord, sans avoir à les chercher
-  jour par jour dans l'historique.
+- **Journées et séances**, en deux onglets :
+  - **Journées** — chaque jour archivé avec ses étoiles, ses routines
+    faites, et **les réponses du réveil** (sommeil, humeur).
+  - **Séances** — toutes les notes laissées par les praticiennes, les
+    plus récentes d'abord, sans avoir à les chercher jour par jour dans
+    l'historique.
 - **Changer le code parent.**
 - **Créer et modifier des activités et des routines sur mesure**, sans
   toucher au code — y compris les routines de départ (S'habiller...),

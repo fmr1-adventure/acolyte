@@ -77,14 +77,21 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   montré), ajouter, retirer ou sauter un élément, ajout rapide par phrase
   tapée ou dictée.
 - **Semaine type** : un modèle pour chaque jour de la semaine, d'où part
-  chaque journée ; les exceptions se règlent sur les prochains jours
-  (« Comme d'habitude » / « Modifié »). Une sortie ou une séance se crée
-  directement depuis le jour qu'on prépare, comme une activité à la maison.
-- **Espace parent** (code), en cinq blocs : la journée (planning,
-  relancer une routine), la bibliothèque (activités, routines,
-  entourage), le suivi (historique, notes des séances), les récompenses
-  (chemin, à donner), les réglages (code parent, profils et journal
-  technique de l'appareil, utile pour comprendre un souci après coup).
+  chaque journée, montré jour par jour. Les exceptions se règlent sur les
+  deux semaines à venir, où chaque jour dit ce qu'il contient et ce qui
+  change (« + Anniversaire, 18:00 », « − La piscine »). Une sortie ou une
+  séance se crée directement depuis le jour qu'on prépare, comme une
+  activité à la maison.
+- **Quand une activité revient** : sa fiche règle ses jours, son heure et
+  son rythme, **chaque semaine** ou **une semaine sur deux** (avec la
+  première fois et les prochaines dates à vérifier d'un coup d'œil) ;
+  l'app la place toute seule dans la semaine type, à son heure.
+- **Espace parent** (code), en cinq entrées : le planning, relancer une
+  routine, la bibliothèque (activités, routines, entourage, en onglets),
+  le chemin et les récompenses (avec ce qui est à donner), les journées et
+  séances (historique et notes des praticiennes). Les réglages tiennent
+  en deux petits boutons : code parent, et cet appareil (profils et
+  journal technique, utile pour comprendre un souci après coup).
 - **Reprise automatique** : quittée en pleine routine ou sortie, l'app
   rouvre là où on en était plutôt que de revenir à la liste. Sur une
   tablette jamais fermée, elle repart d'elle-même au changement de jour

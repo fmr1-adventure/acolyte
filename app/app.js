@@ -47,7 +47,7 @@
 // caches et on recharge, une seule fois par session, avant d'exécuter
 // quoi que ce soit d'autre.
 // ---------------------------------------------------------------------
-const VERSION_APP = "24";
+const VERSION_APP = "25";
 
 // Journal technique de l'appareil (`acolyte_journal`, partagé par appareil
 // comme le code parent) : démarrages, rechargements et erreurs non
@@ -1417,6 +1417,9 @@ function afficherEcran(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   const ecran = document.getElementById(id);
   ecran.classList.add("active");
+  // La page défile en entier : un nouvel écran commence en haut, pas à la
+  // hauteur où l'on a touché l'écran précédent.
+  if (!precedent || precedent.id !== id) window.scrollTo(0, 0);
   if (ecran.querySelector(".bande-journee") && profilActifId()) construireBandeJournee(ecran);
 }
 
@@ -2345,6 +2348,15 @@ function dateLisible(dateKey) {
   const texte = new Date(y, m - 1, d).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   return texte.charAt(0).toUpperCase() + texte.slice(1);
 }
+// "mar. 3 nov."
+function dateCourte(dateKey) {
+  return dateDeCle(dateKey).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+}
+// "Mardi 10 nov."
+function dateMoyenne(dateKey) {
+  const texte = dateDeCle(dateKey).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" });
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
 
 // "HH:MM" (24h, zéro-paddé) de l'heure actuelle — respecte
 // `dateDebugForcee` comme `disponibleApresHeure` (cf. construireMenu),
@@ -2385,10 +2397,13 @@ function construireJournee() {
   conteneur.innerHTML = "";
   const { courantIdx, suivantIdx } = reperesJournee(planning);
 
+  const jourSemaine = planningCibleEstAujourdhui() ? null : planningCible.jourSemaine;
   document.getElementById("titre-journee").textContent =
     planningCibleEstAujourdhui() ? "Ma journée"
-      : planningCible.jourSemaine ? "Chaque " + NOMS_JOURS[planningCible.jourSemaine - 1]
+      : jourSemaine ? "Planning"
       : "Planning du " + dateLisible(planningCible.date);
+  construireEnteteSemaine(jourSemaine);
+  const semaineType = jourSemaine ? chargerSemaineType() : null;
 
   const liste = document.createElement("div");
   liste.className = "liste-planning";
@@ -2413,8 +2428,19 @@ function construireJournee() {
     const badge = aujourdhui && item.passe ? `<span class="badge-maintenant">SAUTÉ</span>`
       : aujourdhui && item.fait ? `<span class="badge-fait">✓</span>`
       : i === courantIdx ? `<span class="badge-maintenant">MAINTENANT</span>` : "";
+    const sousLigneRythme = jourSemaine && item.rythme
+      ? `<span class="texte-journee-reveil">prochaine fois : ${dateCourte(prochaineFois(item.rythme, jourSemaine, cleJour()))}</span>` : "";
     ligne.innerHTML = `<span class="emoji-journee">${lib.emoji}</span>`
-      + `<span class="texte-journee"><span>${lib.nom}</span>${sousLigneHeure}${sousLigneEntourage}</span>${badge}`;
+      + `<span class="texte-journee"><span>${lib.nom}</span>${sousLigneHeure}${sousLigneRythme}${sousLigneEntourage}</span>${badge}`;
+    // Dans la semaine type, le rythme d'une activité se règle dans sa fiche.
+    if (jourSemaine && item.type === "aventure") {
+      const tag = document.createElement("button");
+      tag.type = "button";
+      tag.className = "tag-rythme" + (item.rythme ? " deux" : "");
+      tag.textContent = etiquetteRythme({ jours: quandDeLActivite(semaineType, item.id).jours, rythme: item.rythme || null }, jourSemaine);
+      tag.onclick = () => ouvrirFicheActivite(item.id, jourSemaine);
+      ligne.querySelector(".texte-journee").after(tag);
+    }
     if (journeeEnEdition) {
       // Poignée de glisser-déposer : seule zone qui capte le geste, pour
       // que le reste de la ligne laisse défiler la liste au doigt.
@@ -2472,6 +2498,26 @@ function construireJournee() {
   const btnModifier = document.getElementById("btn-modifier-journee");
   btnModifier.textContent = journeeEnEdition ? "✅" : "✏️";
   btnModifier.setAttribute("aria-label", journeeEnEdition ? "Terminer la modification" : "Modifier la journée");
+}
+
+// En tête d'un jour de la semaine type : les onglets du Planning et les
+// sept jours ; masqué pour aujourd'hui et pour un jour à venir.
+function construireEnteteSemaine(jourSemaine) {
+  document.getElementById("journee-entete-semaine").classList.toggle("hidden", !jourSemaine);
+  if (!jourSemaine) return;
+  const puces = document.getElementById("journee-puces-jours");
+  puces.innerHTML = "";
+  NOMS_JOURS.forEach((nom, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "puce-jour" + (i + 1 === jourSemaine ? " actif" : "");
+    b.textContent = nom.charAt(0).toUpperCase();
+    b.setAttribute("aria-label", nom);
+    b.setAttribute("aria-pressed", String(i + 1 === jourSemaine));
+    b.onclick = () => ouvrirJourSemaineType(i + 1);
+    puces.appendChild(b);
+  });
+  document.getElementById("journee-titre-jour").textContent = "Chaque " + NOMS_JOURS[jourSemaine - 1];
 }
 
 // Active le mode édition — protégé par le code parent, réutilise le même
@@ -2634,8 +2680,9 @@ function ajouterItemPlanning(type, id) {
 }
 function insererItemPlanning(item) {
   const planning = chargerPlanningCible();
+  const entree = !planningCibleEstAujourdhui() && planningCible.jourSemaine ? avecRythmeDeLActivite(chargerSemaineType(), item) : item;
   const posCoucher = planning.findIndex(estItemCoucher);
-  if (posCoucher === -1) planning.push(item); else planning.splice(posCoucher, 0, item);
+  if (posCoucher === -1) planning.push(entree); else planning.splice(posCoucher, 0, entree);
   sauverPlanningCible(planning);
   construireJournee();
 }
@@ -2990,9 +3037,10 @@ function construireAjoutTexteLibre() {
 }
 
 // ---------------------------------------------------------------------
-// Planning (espace parent) — deux onglets. « Semaine type » : les 7 jours
-// qui servent de modèle (cf. chargerSemaineType()), chacun avec les emojis
-// de ses activités. « Prochains jours » : UNE liste, aujourd'hui d'abord
+// Planning (espace parent) — deux onglets. « Semaine type » : un jour du
+// modèle (cf. chargerSemaineType()), ouvert directement dans l'éditeur de
+// journée avec les sept jours en tête (cf. ouvrirPlanning()). « Prochains
+// jours » : UNE liste, aujourd'hui d'abord
 // puis les JOURS_PLANNING_FUTUR prochains jours (demandé explicitement :
 // deux boutons séparés pour "aujourd'hui" et "les jours suivants" dans
 // l'espace parent gênait plus qu'autre chose). Chaque ligne ouvre "Ma
@@ -3003,10 +3051,17 @@ function construireAjoutTexteLibre() {
 // `dateActuelle()` — cohérent avec `cleJour()`, qui ignore déjà
 // délibérément l'heure forcée du panneau debug (cf. son commentaire).
 // ---------------------------------------------------------------------
-const JOURS_PLANNING_FUTUR = 7;
-// Onglet affiché, gardé d'une visite à l'autre de l'écran (on revient d'un
-// jour modifié sur l'onglet d'où on l'a ouvert).
+const JOURS_PLANNING_FUTUR = 14;
+// Onglet affiché et jour de la semaine type, gardés d'une visite à l'autre
+// (on revient d'un jour modifié sur l'onglet d'où on l'a ouvert).
 let ongletPlanning = "semaine";
+let jourSemainePlanning = null;
+
+function ouvrirPlanning() {
+  if (ongletPlanning === "semaine") { ouvrirJourSemaineType(jourSemainePlanning || jourSemaineDe(cleJour())); return; }
+  construireParentPlanningJournees();
+  afficherEcran("screen-parent-planning-journees");
+}
 
 function construireParentPlanningJournees() {
   [["btn-onglet-semaine", "semaine"], ["btn-onglet-jours", "jours"]].forEach(([id, onglet]) => {
@@ -3016,54 +3071,96 @@ function construireParentPlanningJournees() {
   });
   const liste = document.getElementById("parent-planning-journees-liste");
   liste.innerHTML = "";
-  // Petit constructeur de carte partagé plutôt que dupliqué entre la
-  // ligne "Aujourd'hui" (cas particulier : ni "personnalisé" ni "par
-  // défaut", juste "en cours") et la boucle des jours futurs.
-  const ajouterCarte = (nom, etatTexte, accentuee, onClick) => {
+  // Une carte par jour : ce qu'il contient et, s'il a été modifié à la
+  // main, ce qui change par rapport à son jour habituel.
+  const ajouterCarte = ({ nom, items, badge, classe, changements, ouvrir }) => {
     const carte = document.createElement("div");
-    carte.className = "carte-routine" + (accentuee ? " faite" : "");
-    const nomDiv = document.createElement("div");
-    nomDiv.className = "carte-routine-nom";
+    carte.className = "carte-prochain-jour" + (classe ? " " + classe : "");
+    const haut = document.createElement("div");
+    haut.className = "carte-prochain-jour-haut";
+    const nomDiv = document.createElement("span");
+    nomDiv.className = "carte-prochain-jour-nom";
     nomDiv.textContent = nom;
-    const droite = document.createElement("div");
-    droite.className = "carte-routine-droite";
-    const etatDiv = document.createElement("div");
-    etatDiv.className = "carte-routine-etat";
-    etatDiv.textContent = etatTexte;
-    droite.appendChild(etatDiv);
-    carte.append(nomDiv, droite);
-    carte.onclick = onClick;
+    const emojis = document.createElement("span");
+    emojis.className = "carte-prochain-jour-emojis";
+    emojis.textContent = emojisDuJour(items);
+    const badgeDiv = document.createElement("span");
+    badgeDiv.className = "badge-prochain-jour" + (classe === "modifie" ? " change" : classe === "aujourdhui" ? " cours" : "");
+    badgeDiv.textContent = badge;
+    haut.append(nomDiv, emojis, badgeDiv);
+    carte.appendChild(haut);
+    changements.forEach(texte => {
+      const ligne = document.createElement("div");
+      ligne.className = "carte-prochain-jour-change";
+      ligne.textContent = texte;
+      carte.appendChild(ligne);
+    });
+    carte.onclick = ouvrir;
     liste.appendChild(carte);
   };
 
-  if (ongletPlanning === "semaine") {
-    const semaineType = chargerSemaineType();
-    NOMS_JOURS.forEach((nom, i) => {
-      const emojis = (semaineType[String(i + 1)] || [])
-        .filter(item => item.type === "aventure")
-        .map(item => libelleItemPlanning(item))
-        .filter(Boolean)
-        .map(l => l.emoji);
-      ajouterCarte(nom.charAt(0).toUpperCase() + nom.slice(1), emojis.join(" ") || "—", false, () => ouvrirJourSemaineType(i + 1));
-    });
-    return;
-  }
-
-  ajouterCarte("Aujourd'hui", "En cours", true, () => {
-    ciblerAujourdhui();
-    journeeEnEdition = true;
-    construireJournee();
-    afficherEcran("screen-journee");
+  ajouterCarte({
+    nom: "Aujourd'hui", items: chargerEtat().planning, badge: "en cours", classe: "aujourdhui", changements: [],
+    ouvrir: () => {
+      ciblerAujourdhui();
+      journeeEnEdition = true;
+      construireJournee();
+      afficherEcran("screen-journee");
+    },
   });
 
   const futur = chargerPlanningFutur();
   const aujourdhui = new Date();
+  let lundi = null;
   for (let i = 1; i <= JOURS_PLANNING_FUTUR; i++) {
     const d = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + i);
     const dateKey = cleJourPour(d);
-    const personnalise = Array.isArray(futur[dateKey]);
-    ajouterCarte(dateLisible(dateKey), personnalise ? "Modifié" : "Comme d'habitude", personnalise, () => ouvrirJourneeFuture(dateKey));
+    if (lundiDe(dateKey) !== lundi) {
+      lundi = lundiDe(dateKey);
+      const titre = document.createElement("div");
+      titre.className = "groupe-journee-titre groupe-parent-titre";
+      titre.textContent = "Semaine du " + dateDeCle(lundi).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+      liste.appendChild(titre);
+    }
+    const habituel = planningParDefaut(dateKey);
+    const modifie = Array.isArray(futur[dateKey]) ? futur[dateKey] : null;
+    // Un jour modifié puis remis comme d'habitude ne montre plus rien de
+    // différent : il redevient « comme d'hab. ».
+    const changements = modifie ? changementsDuJour(differencesJour(modifie, habituel)) : [];
+    ajouterCarte({
+      nom: dateCourte(dateKey), items: modifie || habituel, changements,
+      badge: changements.length ? "modifié" : "comme d'hab.", classe: changements.length ? "modifie" : "",
+      ouvrir: () => ouvrirJourneeFuture(dateKey),
+    });
   }
+}
+
+// Ce que contient un jour, en un coup d'œil : ses activités, moments au
+// choix et infos (routines et repas reviennent tous les jours).
+function emojisDuJour(items) {
+  return items
+    .filter(item => item.type === "aventure" || item.type === "choix" || item.type === "note")
+    .map(libelleItemPlanning)
+    .filter(Boolean)
+    .map(l => l.emoji)
+    .join(" ");
+}
+
+// "Anniversaire, 18:00", "Info : « Mamie vient au goûter »" ; `null`
+// pour une référence orpheline.
+function libelleChangement(item) {
+  const lib = libelleItemPlanning(item);
+  if (!lib) return null;
+  return (item.type === "note" ? "Info : « " + item.texte + " »" : lib.nom) + (item.heure ? ", " + item.heure : "");
+}
+
+function changementsDuJour(differences) {
+  const lignes = [
+    ...differences.ajoutes.map(libelleChangement).filter(Boolean).map(t => "+ " + t),
+    ...differences.retires.map(libelleChangement).filter(Boolean).map(t => "− " + t),
+  ];
+  if (!lignes.length && differences.ordreOuHeures) lignes.push("Ordre ou heures changés");
+  return lignes;
 }
 
 function ouvrirJourneeFuture(dateKey) {
@@ -3074,6 +3171,8 @@ function ouvrirJourneeFuture(dateKey) {
 }
 
 function ouvrirJourSemaineType(jour) {
+  jourSemainePlanning = jour;
+  ongletPlanning = "semaine";
   planningCible = { jourSemaine: jour };
   journeeEnEdition = true;
   construireJournee();
@@ -4451,16 +4550,17 @@ function ouvrirEspaceParent() {
 function construireEspaceParent() {
   const conteneur = document.getElementById("parent-contenu");
   conteneur.innerHTML = "";
-  // Quatre blocs : ce qui se passe (la journée), ce qui existe (la
-  // bibliothèque), ce qui s'est passé (le suivi), et l'appareil.
+  // Cinq entrées en quatre blocs : ce qui se passe (la journée), ce qui
+  // existe (la bibliothèque), les récompenses et ce qui s'est passé (le
+  // suivi) ; les réglages, rarement utiles, en deux petits boutons.
   const blocs = [
     {
       titre: "LA JOURNÉE",
       options: [
         {
           emoji: "🗓️", titre: "Planning",
-          soustitre: "La semaine type, et les jours qui changent",
-          action: () => { construireParentPlanningJournees(); afficherEcran("screen-parent-planning-journees"); },
+          soustitre: "La semaine type, et les deux semaines à venir",
+          action: () => { ouvrirPlanning(); },
         },
         {
           emoji: "🔁", titre: "Relancer une routine",
@@ -4473,34 +4573,9 @@ function construireEspaceParent() {
       titre: "LA BIBLIOTHÈQUE",
       options: [
         {
-          emoji: "🗺️", titre: "Activités",
-          soustitre: "Voir toutes les sorties, ou en créer une nouvelle",
-          action: () => { construireParentActivites(); afficherEcran("screen-parent-activites"); },
-        },
-        {
-          emoji: "🧩", titre: "Routines",
-          soustitre: "Voir toutes les routines, ou en créer une nouvelle",
-          action: () => { construireRoutinesCatalogue(); afficherEcran("screen-parent-routines-catalogue"); },
-        },
-        {
-          emoji: "👪", titre: "Mon entourage",
-          soustitre: "Voir qui entoure " + profilActif().prenom + ", ou ajouter une nouvelle personne",
-          action: () => { construireParentEntourage(); afficherEcran("screen-parent-entourage"); },
-        },
-      ],
-    },
-    {
-      titre: "LE SUIVI",
-      options: [
-        {
-          emoji: "📅", titre: "Historique des journées",
-          soustitre: "Revoir les jours précédents",
-          action: () => { construireHistorique(); afficherEcran("screen-parent-historique"); },
-        },
-        {
-          emoji: "🧑‍⚕️", titre: "Notes des séances",
-          soustitre: "Relire les notes laissées par les praticiennes",
-          action: () => { construireParentSeances(); afficherEcran("screen-parent-seances"); },
+          emoji: "🧰", titre: "Activités, routines, entourage",
+          soustitre: "Tout ce qui existe, et quand ça revient",
+          action: () => ouvrirOnglet("activites"),
         },
       ],
     },
@@ -4508,7 +4583,7 @@ function construireEspaceParent() {
       titre: "LES RÉCOMPENSES",
       options: [
         {
-          emoji: "🪜", titre: "Chemin et récompenses",
+          emoji: "🏆", titre: "Chemin et récompenses",
           soustitre: aDonner().length
             ? "🎁 " + aDonner().length + (aDonner().length > 1 ? " récompenses à donner" : " récompense à donner")
             : "La jauge, le chemin de pièces et ses récompenses",
@@ -4517,17 +4592,12 @@ function construireEspaceParent() {
       ],
     },
     {
-      titre: "RÉGLAGES",
+      titre: "LE SUIVI",
       options: [
         {
-          emoji: "🔑", titre: "Changer le code parent",
-          soustitre: "Code à 4 chiffres, actuellement " + codeParentActuel().replace(/./g, "•"),
-          action: () => { demarrerChangementCode(); },
-        },
-        {
-          emoji: "📱", titre: "Cet appareil",
-          soustitre: "Affiche " + profilActif().prenom + " — changer l'enfant de cet appareil",
-          action: () => { construireParentAppareil(); afficherEcran("screen-parent-appareil"); },
+          emoji: "📅", titre: "Journées et séances",
+          soustitre: "L'historique, et ce que les praticiennes ont noté",
+          action: () => ouvrirOnglet("journees"),
         },
       ],
     },
@@ -4546,6 +4616,39 @@ function construireEspaceParent() {
       conteneur.appendChild(carte);
     });
   });
+
+  const titreReglages = document.createElement("div");
+  titreReglages.className = "groupe-journee-titre groupe-parent-titre";
+  titreReglages.textContent = "RÉGLAGES";
+  const reglages = document.createElement("div");
+  reglages.className = "reglages-parent";
+  [
+    ["🔑 Code parent", () => demarrerChangementCode()],
+    ["📱 Cet appareil", () => { construireParentAppareil(); afficherEcran("screen-parent-appareil"); }],
+  ].forEach(([texte, action]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn-secondaire";
+    b.textContent = texte;
+    b.onclick = action;
+    reglages.appendChild(b);
+  });
+  conteneur.append(titreReglages, reglages);
+}
+
+// La bibliothèque et le suivi : un écran par onglet, avec la même barre
+// d'onglets en tête (cf. les [data-onglet] d'index.html).
+const ONGLETS_PARENT = {
+  activites: [() => construireParentActivites(), "screen-parent-activites"],
+  routines: [() => construireRoutinesCatalogue(), "screen-parent-routines-catalogue"],
+  entourage: [() => construireParentEntourage(), "screen-parent-entourage"],
+  journees: [() => construireHistorique(), "screen-parent-historique"],
+  seances: [() => construireParentSeances(), "screen-parent-seances"],
+};
+function ouvrirOnglet(nom) {
+  const [construire, ecran] = ONGLETS_PARENT[nom];
+  construire();
+  afficherEcran(ecran);
 }
 
 // ---------------------------------------------------------------------
@@ -5044,24 +5147,232 @@ function demarrerChangementCode() {
 // (aujourd'hui ou à venir) se fait depuis "Planning" (cf.
 // construireParentPlanningJournees()) — rien ici à sélectionner ni à
 // mettre en surbrillance, une carte ne fait qu'ouvrir son édition.
+// Chaque activité dit quand elle revient ; la toucher ouvre sa fiche.
 function construireParentActivites() {
   const liste = document.getElementById("parent-activites-liste");
   liste.innerHTML = "";
+  const semaineType = chargerSemaineType();
   toutesLesAventures().forEach(a => {
+    const q = quandDeLActivite(semaineType, a.id);
     const carte = document.createElement("div");
-    carte.className = "carte-routine";
+    carte.className = "carte-routine carte-parent";
     const nom = document.createElement("div");
     nom.className = "carte-routine-nom";
     nom.textContent = a.emoji + " " + a.lieu;
-    const btnEditer = document.createElement("button");
-    btnEditer.type = "button";
-    btnEditer.className = "btn-mini-edition";
-    btnEditer.textContent = "✏️";
-    btnEditer.setAttribute("aria-label", "Modifier « " + a.lieu + " »");
-    btnEditer.onclick = () => ouvrirEditionAventure(a.id);
-    carte.append(nom, btnEditer);
+    const sousLigne = [joursCourts(q.jours), q.heure].filter(Boolean);
+    if (q.rythme) sousLigne.push("prochaine fois " + dateCourte(prochaineFoisActivite(q)));
+    if (sousLigne.length) {
+      const sous = document.createElement("div");
+      sous.className = "carte-parent-soustitre";
+      sous.textContent = sousLigne.join(" · ");
+      nom.appendChild(sous);
+    }
+    const tag = document.createElement("span");
+    tag.className = "tag-rythme" + (q.rythme ? " deux" : "");
+    tag.textContent = !q.jours.length ? "pas programmée" : q.rythme ? "1 sur 2" : "chaque semaine";
+    carte.append(nom, tag);
+    carte.onclick = () => ouvrirFicheActivite(a.id);
     liste.appendChild(carte);
   });
+}
+
+// La plus proche des prochaines fois, tous jours cochés confondus.
+function prochaineFoisActivite(quand) {
+  return quand.jours.map(j => prochaineFois(quand.rythme, j, cleJour())).sort((x, y) => dateDeCle(x) - dateDeCle(y))[0];
+}
+
+// ---------------------------------------------------------------------
+// Fiche d'une activité : quand elle revient. Elle lit la semaine type et
+// y écrit (cf. quandDeLActivite()/appliquerQuand() dans semaine.js), donc
+// les deux restent toujours d'accord. `depuisJour` (1…7) : ouverte depuis
+// l'étiquette d'un jour de la semaine type, où l'on revient ensuite.
+// ---------------------------------------------------------------------
+let ficheActivite = null;
+
+function natureDeLActivite(a) {
+  return a.nature === "maison" ? "maison" : a.personne ? "seance" : "sortie";
+}
+
+function ouvrirFicheActivite(id, depuisJour) {
+  const avant = quandDeLActivite(chargerSemaineType(), id);
+  ficheActivite = {
+    id, depuisJour: depuisJour || null, avant,
+    jours: [...avant.jours], heure: avant.heure || "",
+    rythme: avant.rythme ? "deux" : "semaine",
+    depuis: avant.rythme ? avant.rythme.depuis : null,
+  };
+  construireFicheActivite();
+  afficherEcran("screen-parent-fiche-activite");
+}
+
+// Sans première fois choisie : la prochaine date du premier jour coché.
+function quandDeLaFiche() {
+  const f = ficheActivite;
+  const rythme = f.rythme === "deux" && f.jours.length
+    ? { toutesLes: 2, depuis: f.depuis || lundiDe(prochainesDates(f.jours[0], cleJour(), 1)[0]) }
+    : null;
+  return { jours: [...f.jours], heure: f.heure, rythme };
+}
+
+function resumeFiche() {
+  const q = quandDeLaFiche();
+  return phraseQuand(q, q.jours.length ? dateCourte(prochaineFois(q.rythme, q.jours[0], cleJour())) : "");
+}
+
+function construireFicheActivite() {
+  const f = ficheActivite;
+  const a = aventureParId(f.id);
+  const conteneur = document.getElementById("parent-fiche-contenu");
+  conteneur.innerHTML = "";
+  document.getElementById("titre-fiche-activite").textContent = a.lieu;
+
+  const entete = document.createElement("div");
+  entete.className = "fiche-activite-entete" + (a.nature === "maison" ? " type-maison" : "");
+  const emoji = document.createElement("span");
+  emoji.className = "fiche-activite-emoji";
+  emoji.textContent = a.emoji;
+  const texte = document.createElement("span");
+  texte.className = "fiche-activite-texte";
+  const nom = document.createElement("span");
+  nom.textContent = a.lieu;
+  const nature = document.createElement("span");
+  nature.className = "carte-parent-soustitre";
+  nature.textContent = NATURES_ACTIVITE.find(([n]) => n === natureDeLActivite(a))[1];
+  texte.append(nom, nature);
+  const modifier = document.createElement("button");
+  modifier.type = "button";
+  modifier.className = "btn-secondaire";
+  modifier.textContent = "Modifier";
+  modifier.onclick = () => ouvrirEditionAventure(f.id);
+  entete.append(emoji, texte, modifier);
+  conteneur.appendChild(entete);
+
+  const titre = document.createElement("div");
+  titre.className = "groupe-journee-titre";
+  titre.textContent = "QUAND ÇA REVIENT";
+  conteneur.appendChild(titre);
+
+  const bloc = document.createElement("div");
+  bloc.className = "bloc-quand";
+  conteneur.appendChild(bloc);
+  const champ = (libelle) => {
+    const c = document.createElement("div");
+    c.className = "champ-quand";
+    const l = document.createElement("span");
+    l.textContent = libelle;
+    c.appendChild(l);
+    bloc.appendChild(c);
+    return c;
+  };
+  // Choix exclusifs (rythme, première fois) : chaque appui reconstruit la fiche.
+  const segment = (options, actif, choisir) => {
+    const s = document.createElement("div");
+    s.className = "onglets-planning";
+    options.forEach(([valeur, libelle]) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "onglet-planning" + (valeur === actif ? " actif" : "");
+      b.setAttribute("aria-pressed", String(valeur === actif));
+      b.textContent = libelle;
+      b.onclick = () => { choisir(valeur); construireFicheActivite(); };
+      s.appendChild(b);
+    });
+    return s;
+  };
+
+  const puces = document.createElement("div");
+  puces.className = "puces-jours";
+  NOMS_JOURS.forEach((nomJour, i) => {
+    const j = i + 1;
+    const coche = f.jours.includes(j);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "puce-jour" + (coche ? " actif" : "");
+    b.textContent = nomJour.charAt(0).toUpperCase();
+    b.setAttribute("aria-label", nomJour);
+    b.setAttribute("aria-pressed", String(coche));
+    b.onclick = () => {
+      f.jours = coche ? f.jours.filter(x => x !== j) : [...f.jours, j].sort((x, y) => x - y);
+      construireFicheActivite();
+    };
+    puces.appendChild(b);
+  });
+  champ("Quels jours").appendChild(puces);
+
+  const heure = document.createElement("input");
+  heure.type = "time";
+  heure.className = "input-heure-quand";
+  heure.value = f.heure;
+  heure.setAttribute("aria-label", "Heure");
+  champ("À quelle heure (facultatif)" + (f.avant.selonLeJour && !f.heure ? " — selon le jour" : "")).appendChild(heure);
+
+  champ("À quel rythme").appendChild(segment([["semaine", "Chaque semaine"], ["deux", "Une semaine sur deux"]], f.rythme, v => { f.rythme = v; }));
+
+  const quand = quandDeLaFiche();
+  const premier = f.jours[0];
+  if (premier && quand.rythme) {
+    const choix = prochainesDates(premier, cleJour(), 2);
+    champ("La première fois").appendChild(segment(choix.map(c => [c, dateCourte(c)]), choix.find(c => tombeCeJour(quand.rythme, c)), c => { f.depuis = lundiDe(c); }));
+  }
+  if (premier) {
+    const calendrier = document.createElement("div");
+    calendrier.className = "calendrier-quand";
+    prochainesDates(premier, cleJour(), 5).forEach(c => {
+      const oui = tombeCeJour(quand.rythme, c);
+      const ligne = document.createElement("div");
+      ligne.className = "semaine-quand" + (oui ? " oui" : "");
+      const date = document.createElement("span");
+      date.textContent = dateCourte(c);
+      const marque = document.createElement("span");
+      marque.textContent = oui ? "✓ oui" : "pas cette fois";
+      ligne.append(date, marque);
+      calendrier.appendChild(ligne);
+    });
+    bloc.appendChild(calendrier);
+  }
+
+  const resume = document.createElement("div");
+  resume.className = "resume-quand";
+  resume.textContent = resumeFiche();
+  bloc.appendChild(resume);
+  // Sans reconstruire : la saisie de l'heure garde le focus.
+  heure.oninput = (e) => { f.heure = e.target.value; resume.textContent = resumeFiche(); };
+
+  // Aujourd'hui et les jours modifiés à la main ne suivent plus la semaine type.
+  const concernes = new Set([...f.avant.jours, ...f.jours]);
+  const infos = [];
+  if (concernes.has(jourSemaineDe(cleJour()))) infos.push("Aujourd'hui est déjà préparé : il ne change pas.");
+  const aujourdhui = dateDeCle(cleJour());
+  Object.keys(chargerPlanningFutur())
+    .filter(c => dateDeCle(c) > aujourdhui && concernes.has(jourSemaineDe(c)))
+    .sort((x, y) => dateDeCle(x) - dateDeCle(y))
+    .forEach(c => infos.push(dateMoyenne(c) + " a été modifié à la main : il garde son programme."));
+  infos.forEach(t => {
+    const info = document.createElement("div");
+    info.className = "info-quand";
+    info.textContent = t;
+    conteneur.appendChild(info);
+  });
+
+  const enregistrer = document.createElement("button");
+  enregistrer.type = "button";
+  enregistrer.className = "btn-continuer";
+  enregistrer.textContent = "Enregistrer";
+  enregistrer.onclick = enregistrerFicheActivite;
+  conteneur.appendChild(enregistrer);
+}
+
+function enregistrerFicheActivite() {
+  sauverSemaineType(appliquerQuand(chargerSemaineType(), ficheActivite.id, quandDeLaFiche(), estItemCoucher));
+  quitterFicheActivite();
+}
+
+function quitterFicheActivite() {
+  const depuisJour = ficheActivite && ficheActivite.depuisJour;
+  ficheActivite = null;
+  if (depuisJour) { ouvrirJourSemaineType(depuisJour); return; }
+  construireParentActivites();
+  afficherEcran("screen-parent-activites");
 }
 
 // Nouvelle activité : formulaire minimal. Une nouvelle aventure n'a ni
@@ -5264,7 +5575,8 @@ function ouvrirNouvelleAventure(options = {}) {
 }
 
 // Sortie du formulaire (création, modification ou ←) : vers le jour édité
-// s'il a été ouvert depuis le planning, sinon vers la bibliothèque.
+// s'il a été ouvert depuis le planning, vers la fiche s'il a été ouvert
+// par « Modifier », sinon vers la bibliothèque.
 function quitterFormulaireActivite() {
   aventureEnEditionId = null;
   if (formulaireDepuisPlanning) {
@@ -5272,6 +5584,11 @@ function quitterFormulaireActivite() {
     journeeEnEdition = true;
     construireJournee();
     afficherEcran("screen-journee");
+    return;
+  }
+  if (ficheActivite) {
+    construireFicheActivite();
+    afficherEcran("screen-parent-fiche-activite");
     return;
   }
   construireParentActivites();
@@ -5294,7 +5611,7 @@ function ouvrirEditionAventure(id) {
   if (!a) return;
   aventureEnEditionId = id;
   formulaireDepuisPlanning = false;
-  natureFormulaireActivite = a.nature === "maison" ? "maison" : a.personne ? "seance" : "sortie";
+  natureFormulaireActivite = natureDeLActivite(a);
   // Retrouvée par son nom : `personne` ne garde que { emoji, nom }. Une
   // praticienne absente de l'entourage n'est simplement pas présélectionnée
   // — sa `personne` est conservée telle quelle (cf. creerNouvelleAventure()).
@@ -5401,11 +5718,11 @@ function creerNouvelleAventure() {
     return;
   }
 
-  // Depuis la bibliothèque, créer une activité ne l'ajoute qu'au
-  // CATALOGUE (demandé explicitement) — c'est "AJOUTER À LA JOURNÉE" qui
-  // la place ensuite sur un jour. Depuis l'éditeur de journée (« + Nouvelle
-  // sortie/séance », cf. formulaireDepuisPlanning), elle est ajoutée au
-  // jour édité — aujourd'hui, un jour à venir ou un jour de la semaine type.
+  // Depuis la bibliothèque, créer une activité ne la place sur aucun jour :
+  // sa fiche s'ouvre aussitôt pour régler quand elle revient. Depuis
+  // l'éditeur de journée (« + Nouvelle sortie/séance », cf.
+  // formulaireDepuisPlanning), elle est ajoutée au jour édité —
+  // aujourd'hui, un jour à venir ou un jour de la semaine type.
   const nouvelle = Object.assign({ id: "perso-" + Date.now() }, champs,
     champs.nature === "maison" ? {} : { texteTrajetRetour: "On a fini, on rentre à la maison." });
   // Champs optionnels omis (plutôt que mis à `[]`/`""`) si vides : garde
@@ -5421,8 +5738,13 @@ function creerNouvelleAventure() {
   sauverAventuresPerso(perso);
 
   dire("Nouvelle activité créée : " + nom + ".");
-  if (formulaireDepuisPlanning) ajouterItemPlanning("aventure", nouvelle.id);
-  quitterFormulaireActivite();
+  if (formulaireDepuisPlanning) {
+    ajouterItemPlanning("aventure", nouvelle.id);
+    quitterFormulaireActivite();
+    return;
+  }
+  aventureEnEditionId = null;
+  ouvrirFicheActivite(nouvelle.id);
 }
 
 // Une séance porte `personne` (affichage + bascule vers l'écran de
@@ -6846,11 +7168,13 @@ document.getElementById("btn-retour-validation").onclick = () => afficherEcran(e
 
 document.getElementById("btn-retour-menu").onclick = construireMenu;
 
-// Un jour à venir ou de la semaine type s'ouvre depuis l'écran Planning : on
-// y revient, plutôt que de sauter au menu de l'enfant.
+// Un jour à venir s'ouvre depuis l'écran Planning : on y revient, plutôt
+// que de sauter au menu de l'enfant. La semaine type EST l'écran Planning
+// (onglet « Semaine type ») : on revient à l'espace parent.
 document.getElementById("btn-retour-menu-journee").onclick = () => {
   ajoutEnLigne = null;
   if (planningCibleEstAujourdhui()) { construireMenu(); return; }
+  if (planningCible.jourSemaine) { construireEspaceParent(); afficherEcran("screen-parent"); return; }
   construireParentPlanningJournees();
   afficherEcran("screen-parent-planning-journees");
 };
@@ -6875,6 +7199,7 @@ document.getElementById("btn-creer-aventure").onclick = creerNouvelleAventure;
 document.getElementById("btn-retour-parent-nouvelle-aventure").onclick = quitterFormulaireActivite;
 
 document.getElementById("btn-nouvelle-activite").onclick = () => ouvrirNouvelleAventure();
+document.getElementById("btn-retour-fiche-activite").onclick = quitterFicheActivite;
 document.getElementById("btn-retour-parent-activites").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
 
 document.getElementById("btn-nouvelle-routine").onclick = ouvrirNouvelleRoutine;
@@ -6895,7 +7220,9 @@ document.getElementById("btn-retour-parent-nouvelle-routine").onclick = () => { 
 document.getElementById("btn-nouvelle-personne").onclick = ouvrirNouvellePersonne;
 document.getElementById("btn-retour-parent-entourage").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
 document.getElementById("btn-retour-parent-planning-journees").onclick = () => { construireEspaceParent(); afficherEcran("screen-parent"); };
-document.getElementById("btn-onglet-semaine").onclick = () => { ongletPlanning = "semaine"; construireParentPlanningJournees(); };
+document.querySelectorAll("[data-onglet]").forEach(b => { b.onclick = () => ouvrirOnglet(b.dataset.onglet); });
+document.getElementById("btn-onglet-semaine").onclick = () => { ongletPlanning = "semaine"; ouvrirPlanning(); };
+document.getElementById("btn-onglet-jours-semaine").onclick = () => { ongletPlanning = "jours"; ouvrirPlanning(); };
 document.getElementById("btn-onglet-jours").onclick = () => { ongletPlanning = "jours"; construireParentPlanningJournees(); };
 document.getElementById("np-emoji-trigger").onclick = () =>
   ouvrirSelecteurEmoji(EMOJI_PERSONNE, emojiChoisiPersonne, (e) => { emojiChoisiPersonne = e; construireDeclencheurEmoji("np-emoji-trigger", e); });
@@ -6969,7 +7296,7 @@ document.getElementById("btn-debug-parent-seances").onclick = puisFermerDebug(()
 document.getElementById("btn-debug-parent-activites").onclick = puisFermerDebug(() => { construireParentActivites(); afficherEcran("screen-parent-activites"); });
 document.getElementById("btn-debug-parent-routines-catalogue").onclick = puisFermerDebug(() => { construireRoutinesCatalogue(); afficherEcran("screen-parent-routines-catalogue"); });
 document.getElementById("btn-debug-parent-entourage").onclick = puisFermerDebug(() => { construireParentEntourage(); afficherEcran("screen-parent-entourage"); });
-document.getElementById("btn-debug-parent-planning-journees").onclick = puisFermerDebug(() => { construireParentPlanningJournees(); afficherEcran("screen-parent-planning-journees"); });
+document.getElementById("btn-debug-parent-planning-journees").onclick = puisFermerDebug(ouvrirPlanning);
 document.getElementById("btn-debug-parent-appareil").onclick = puisFermerDebug(() => { construireParentAppareil(); afficherEcran("screen-parent-appareil"); });
 document.getElementById("btn-debug-nouvelle-activite").onclick = puisFermerDebug(ouvrirNouvelleAventure);
 document.getElementById("btn-debug-nouvelle-routine").onclick = puisFermerDebug(ouvrirNouvelleRoutine);
