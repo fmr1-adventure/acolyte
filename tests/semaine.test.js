@@ -71,3 +71,22 @@ test("insererActivite : sans `apres`, juste avant le coucher s'il est indiqué",
   const { planningFutur } = S.migrerActivitesDatees([{ id: "m", date: "2026-10-27" }], {}, "2026-10-25", () => base, estCoucher);
   assert.deepEqual(planningFutur["2026-10-27"].map(i => i.id), ["shabiller", "m", "soir"]);
 });
+
+test("deplacerElement : position d'insertion, vers le haut comme vers le bas", () => {
+  const ids = l => l.map(it => it.id);
+  const jour = [{ id: "a" }, { id: "b", heure: "10:00" }, { id: "c" }, { id: "d", heure: "08:00" }];
+  assert.deepEqual(ids(S.deplacerElement(jour, 3, 0)), ["d", "a", "b", "c"]);
+  assert.deepEqual(ids(S.deplacerElement(jour, 0, 4)), ["b", "c", "d", "a"]);
+  assert.deepEqual(ids(S.deplacerElement(jour, 0, 2)), ["b", "a", "c", "d"]);
+  assert.deepEqual(ids(S.deplacerElement(jour, 2, 1)), ["a", "c", "b", "d"]);
+  assert.equal(jour[0].id, "a"); // liste d'origine intacte
+});
+
+test("deplacerElement : lâcher sur place ne change rien, les heures ne trient pas", () => {
+  const jour = [{ id: "a", heure: "18:00" }, { id: "b", heure: "07:00" }, { id: "c" }];
+  assert.deepEqual(S.deplacerElement(jour, 1, 1), jour);
+  assert.deepEqual(S.deplacerElement(jour, 1, 2), jour);
+  assert.deepEqual(S.deplacerElement(jour, 5, 0), jour);
+  assert.deepEqual(S.deplacerElement(jour, 2, 0).map(it => it.id), ["c", "a", "b"]);
+  assert.equal(S.deplacerElement(jour, 0, 3)[2].heure, "18:00");
+});

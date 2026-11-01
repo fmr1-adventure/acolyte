@@ -53,6 +53,19 @@ function insererActivite(items, aventure, estCoucher) {
   return resultat;
 }
 
+// Glisser-déposer du planning : `vers` est la position d'insertion dans
+// la liste d'origine (0 = tout en haut, items.length = tout en bas), donc
+// lâcher un élément juste avant ou juste après lui-même ne change rien.
+// L'heure éventuelle voyage avec l'élément sans jamais trier la liste.
+function deplacerElement(items, de, vers) {
+  const resultat = copieProfonde(items);
+  if (de < 0 || de >= resultat.length) return resultat;
+  const borne = Math.max(0, Math.min(vers, resultat.length));
+  const [element] = resultat.splice(de, 1);
+  resultat.splice(borne > de ? borne - 1 : borne, 0, element);
+  return resultat;
+}
+
 function migrerActivitesDatees(aventures, planningFutur, aujourdhui, planningPour, estCoucher) {
   const resultat = copieProfonde(planningFutur);
   const pourAujourdhui = [];
@@ -68,5 +81,5 @@ function migrerActivitesDatees(aventures, planningFutur, aujourdhui, planningPou
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { NOMS_JOURS, jourSemaineDe, creerSemaineType, planningDuJour, ajouterAuxSeptJours, insererActivite, migrerActivitesDatees };
+  module.exports = { NOMS_JOURS, jourSemaineDe, creerSemaineType, planningDuJour, ajouterAuxSeptJours, insererActivite, deplacerElement, migrerActivitesDatees };
 }

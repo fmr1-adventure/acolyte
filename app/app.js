@@ -47,7 +47,7 @@
 // caches et on recharge, une seule fois par session, avant d'exécuter
 // quoi que ce soit d'autre.
 // ---------------------------------------------------------------------
-const VERSION_APP = "23";
+const VERSION_APP = "24";
 
 // Journal technique de l'appareil (`acolyte_journal`, partagé par appareil
 // comme le code parent) : démarrages, rechargements et erreurs non
@@ -2416,6 +2416,15 @@ function construireJournee() {
     ligne.innerHTML = `<span class="emoji-journee">${lib.emoji}</span>`
       + `<span class="texte-journee"><span>${lib.nom}</span>${sousLigneHeure}${sousLigneEntourage}</span>${badge}`;
     if (journeeEnEdition) {
+      // Poignée de glisser-déposer : seule zone qui capte le geste, pour
+      // que le reste de la ligne laisse défiler la liste au doigt.
+      const poignee = document.createElement("button");
+      poignee.className = "poignee-glisser";
+      poignee.textContent = "⠿";
+      poignee.setAttribute("aria-label", "Déplacer « " + lib.nom + " »");
+      ligne.dataset.index = i;
+      ligne.prepend(poignee);
+      rendreLignePlanningGlissable(ligne, poignee, liste, i);
       const controles = document.createElement("div");
       controles.className = "controles-edition-journee";
       const champHeure = document.createElement("input");
@@ -2501,6 +2510,95 @@ function deplacerItemPlanning(i, delta) {
   planning[j] = tmp;
   sauverPlanningCible(planning);
   construireJournee();
+}
+
+// Glisser-déposer au doigt ou à la souris (pointer events : le drag HTML5
+// natif ne marche pas au toucher sur la tablette). La ligne suit le geste,
+// les autres s'écartent pour ouvrir une case en pointillés là où elle
+// atterrira, et l'ordre est sauvé au lâcher — sans jamais trier par heure
+// (cf. deplacerElement() dans semaine.js). Les positions viennent de
+// `offsetTop`, insensible aux `transform` : la cible reste stable pendant
+// que les lignes glissent.
+function rendreLignePlanningGlissable(ligne, poignee, liste, de) {
+  let geste = null, zoneDefilement = null;
+  function cible() {
+    // Centre de la carte soulevée, quel que soit l'endroit où on l'a prise.
+    const y = geste.y + geste.versCentre - liste.getBoundingClientRect().top;
+    const idx = geste.autres.findIndex(l => y < l.offsetTop + l.offsetHeight / 2);
+    return idx === -1 ? geste.autres.length : idx; // position parmi les autres lignes
+  }
+  function marquer() {
+    const pos = cible();
+    const avant = geste.autres.filter(l => l.offsetTop < ligne.offsetTop).length;
+    // Lignes entre l'ancienne et la nouvelle place : décalées d'une case.
+    geste.autres.forEach((l, k) => {
+      const dy = pos <= k && k < avant ? geste.pas : avant <= k && k < pos ? -geste.pas : 0;
+      l.style.transform = dy ? "translateY(" + dy + "px)" : "";
+    });
+    // Vers le bas, la case suit la dernière ligne remontée ; vers le haut,
+    // elle prend la place de la première ligne descendue.
+    const precedente = geste.autres[pos - 1];
+    geste.case.style.top = (pos > avant ? precedente.offsetTop + precedente.offsetHeight + geste.marge - geste.pas
+      : pos < avant ? geste.autres[pos].offsetTop : ligne.offsetTop) + "px";
+    const dy = geste.y - geste.y0 + zoneDefilement.scrollTop - geste.defil0;
+    ligne.style.transform = "translateY(" + dy + "px)";
+  }
+  // Près du bord haut/bas, la liste défile seule : un coucher en bas
+  // d'une longue journée reste atteignable sans lâcher. Selon la taille
+  // d'écran, c'est #journee-contenu ou la page entière qui défile.
+  function conteneurDefilant() {
+    for (let e = liste.parentElement; e && e !== document.body; e = e.parentElement) {
+      const o = getComputedStyle(e).overflowY;
+      if ((o === "auto" || o === "scroll") && e.scrollHeight > e.clientHeight) return e;
+    }
+    return document.scrollingElement;
+  }
+  function defiler() {
+    if (!geste) return;
+    const r = zoneDefilement === document.scrollingElement
+      ? { top: 0, bottom: window.innerHeight } : zoneDefilement.getBoundingClientRect();
+    const pas = geste.y < r.top + 60 ? -10 : geste.y > r.bottom - 60 ? 10 : 0;
+    if (pas) { zoneDefilement.scrollTop += pas; marquer(); }
+    geste.raf = requestAnimationFrame(defiler);
+  }
+  function terminer(sauver) {
+    if (!geste) return;
+    cancelAnimationFrame(geste.raf);
+    const pos = cible(), autres = geste.autres;
+    geste = null;
+    if (sauver) {
+      const vers = pos < autres.length ? Number(autres[pos].dataset.index) : chargerPlanningCible().length;
+      if (vers !== de && vers !== de + 1) sauverPlanningCible(deplacerElement(chargerPlanningCible(), de, vers));
+    }
+    construireJournee();
+  }
+  poignee.addEventListener("pointerdown", ev => {
+    ev.preventDefault();
+    poignee.setPointerCapture(ev.pointerId);
+    zoneDefilement = conteneurDefilant();
+    const caseDepot = document.createElement("div");
+    caseDepot.className = "case-depot";
+    caseDepot.style.height = ligne.offsetHeight + "px";
+    liste.appendChild(caseDepot);
+    geste = {
+      y0: ev.clientY, y: ev.clientY, defil0: zoneDefilement.scrollTop, case: caseDepot,
+      versCentre: ligne.getBoundingClientRect().top + ligne.offsetHeight / 2 - ev.clientY,
+      autres: [...liste.querySelectorAll(".ligne-journee")].filter(l => l !== ligne),
+      marge: parseFloat(getComputedStyle(ligne).marginBottom),
+    };
+    geste.pas = ligne.offsetHeight + geste.marge;
+    liste.classList.add("en-glisser");
+    ligne.classList.add("ligne-soulevee");
+    marquer();
+    geste.raf = requestAnimationFrame(defiler);
+  });
+  poignee.addEventListener("pointermove", ev => {
+    if (!geste) return;
+    geste.y = ev.clientY;
+    marquer();
+  });
+  poignee.addEventListener("pointerup", () => terminer(true));
+  poignee.addEventListener("pointercancel", () => terminer(false));
 }
 
 function retirerItemPlanning(i) {

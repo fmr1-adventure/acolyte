@@ -301,7 +301,12 @@ lieu.
 Depuis l'espace parent, chaque journée (aujourd'hui, un jour à venir ou
 un jour de la semaine type) s'ouvre dans le même éditeur : les routines,
 activités et repas dans l'ordre, avec une couleur propre à chaque nature
-— réorganiser, ajouter, retirer. Pour aujourd'hui, ce qui est déjà fait
+— réorganiser, ajouter, retirer. Pour réorganiser, un parent attrape un
+élément par sa poignée ⠿ et le fait glisser, au doigt ou à la souris : les
+autres s'écartent pour montrer où il va se poser, et le nouvel ordre est
+gardé dès qu'on le lâche (les flèches ▲▼ restent là pour un petit pas).
+Les heures ne réordonnent jamais la liste : c'est l'ordre choisi qui
+compte. Pour aujourd'hui, ce qui est déjà fait
 est coché, et un parent peut **sauter** un élément (une sortie annulée)
 sans le retirer : il disparaît de la liste de l'enfant et se reprend d'un
 appui. Un parent peut aussi régler une heure pour un ou plusieurs

@@ -842,6 +842,29 @@ html { font-size: clamp(16px, 1.6vw + 12px, 19px); }
 .btn-mini-edition:disabled { opacity: .3; }
 .btn-mini-edition:active:not(:disabled) { transform: translate(1px, 1px); }
 .btn-retirer { color: #E8867A; }
+/* Glisser-déposer du planning (cf. rendreLignePlanningGlissable() dans
+   app.js) : `touch-action: none` sur la poignée seule, pour que le doigt
+   déplace la ligne au lieu de faire défiler. Pendant le geste, les autres
+   lignes glissent pour ouvrir la case en pointillés où elle atterrira. */
+.poignee-glisser {
+  width: 40px; height: 44px; margin-left: -8px; flex-shrink: 0; font-size: 22px; line-height: 1;
+  background: none; border: none; color: var(--text-faint); cursor: grab; touch-action: none;
+}
+.liste-planning { position: relative; }
+.liste-planning.en-glisser .ligne-journee { position: relative; transition: transform .15s ease; }
+.liste-planning.en-glisser .ligne-journee.ligne-soulevee {
+  z-index: 2; transition: none; opacity: .92; box-shadow: var(--shadow-hard); border-color: var(--accent);
+}
+.ligne-journee.ligne-soulevee .poignee-glisser { cursor: grabbing; color: var(--accent); }
+/* Écran étroit : la poignée en plus, les contrôles passent sous le nom. */
+@media (max-width: 520px) {
+  .liste-planning .ligne-journee { flex-wrap: wrap; }
+  .liste-planning .controles-edition-journee { flex-basis: 100%; justify-content: flex-end; }
+}
+.case-depot {
+  position: absolute; left: 0; right: 0; box-sizing: border-box; pointer-events: none;
+  border: 3px dashed var(--accent); background: var(--surface-active); transition: top .15s ease;
+}
 .grille-ajout-planning { display: flex; flex-wrap: wrap; gap: 10px; }
 .creer-depuis-planning { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .creer-depuis-planning .btn-secondaire { margin: 0; flex: 1; }

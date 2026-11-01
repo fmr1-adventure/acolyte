@@ -72,8 +72,10 @@ Détail technique : [`app/README.md`](app/README.md). En bref :
   l'enfant est prêt), puis trajet et arrivée, avec un déroulé à part
   pour les séances (la praticienne démarre la séance et laisse une note
   réservée aux parents).
-- **Préparer une journée** (côté parents) : réordonner, ajouter, retirer
-  ou sauter un élément, ajout rapide par phrase tapée ou dictée.
+- **Préparer une journée** (côté parents) : réordonner en faisant glisser
+  les éléments (au doigt ou à la souris, l'emplacement d'arrivée est
+  montré), ajouter, retirer ou sauter un élément, ajout rapide par phrase
+  tapée ou dictée.
 - **Semaine type** : un modèle pour chaque jour de la semaine, d'où part
   chaque journée ; les exceptions se règlent sur les prochains jours
   (« Comme d'habitude » / « Modifié »). Une sortie ou une séance se crée
